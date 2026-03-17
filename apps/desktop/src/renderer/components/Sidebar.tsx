@@ -7,6 +7,7 @@ import { Button } from './ui/Button';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { PendingInvites } from './PendingInvites';
 import { InviteMemberModal } from './InviteMemberModal';
+import { UpdateButton } from './UpdateBanner';
 import type { Server } from '@magicterm/shared';
 
 interface SidebarProps {
@@ -189,10 +190,11 @@ export function Sidebar({ onAddServer }: SidebarProps) {
       </div>
 
       <div className="border-t border-gray-800 p-4">
-        <div className="mb-3 truncate text-sm text-gray-400">
+        <div className="mb-2 truncate text-sm text-gray-400">
           {user?.email || 'Unknown user'}
         </div>
-        <Button variant="ghost" size="sm" className="w-full" onClick={logout}>
+        <UpdateButton />
+        <Button variant="ghost" size="sm" className="w-full mt-1" onClick={logout}>
           <svg
             className="mr-2 h-4 w-4"
             fill="none"

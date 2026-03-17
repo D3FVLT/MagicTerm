@@ -4,6 +4,19 @@ import { IPC_CHANNELS, type SSHConnectionConfig, type TerminalSize } from '@magi
 export type SSHDataCallback = (sessionId: string, data: string) => void;
 export type SSHStatusCallback = (sessionId: string, status: string, error?: string) => void;
 
+export interface UpdateStatus {
+  status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
+  info?: {
+    version: string;
+    releaseDate: string;
+    releaseNotes?: string;
+  };
+  progress?: number;
+  error?: string;
+}
+
+export type UpdateStatusCallback = (status: UpdateStatus) => void;
+
 const api = {
   ssh: {
     connect: (sessionId: string, config: SSHConnectionConfig) =>
@@ -46,6 +59,18 @@ const api = {
     update: (id: string, updates: unknown) =>
       ipcRenderer.invoke(IPC_CHANNELS.SERVERS_UPDATE, id, updates),
     delete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.SERVERS_DELETE, id),
+  },
+  updater: {
+    check: () => ipcRenderer.invoke('updater:check'),
+    download: () => ipcRenderer.invoke('updater:download'),
+    install: () => ipcRenderer.invoke('updater:install'),
+    onStatus: (callback: UpdateStatusCallback) => {
+      const handler = (_event: Electron.IpcRendererEvent, status: UpdateStatus) => {
+        callback(status);
+      };
+      ipcRenderer.on('updater:status', handler);
+      return () => ipcRenderer.removeListener('updater:status', handler);
+    },
   },
 };
 
