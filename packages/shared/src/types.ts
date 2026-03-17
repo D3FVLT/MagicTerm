@@ -44,6 +44,7 @@ export interface Server {
   authType: AuthType;
   connectionType: ConnectionType;
   credentials?: string;
+  comment?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -56,6 +57,7 @@ export interface ServerInput {
   authType: AuthType;
   connectionType: ConnectionType;
   credentials: string;
+  comment?: string;
   orgId?: string;
 }
 
@@ -70,6 +72,7 @@ export interface EncryptedServer {
   auth_type: AuthType;
   connection_type: ConnectionType;
   credentials: string | null;
+  comment: string | null;
   created_at: string;
   updated_at: string;
 }

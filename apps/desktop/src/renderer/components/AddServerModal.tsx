@@ -24,6 +24,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
   const [authType, setAuthType] = useState<AuthType>('password');
   const [password, setPassword] = useState('');
   const [privateKey, setPrivateKey] = useState('');
+  const [comment, setComment] = useState('');
 
   const resetForm = () => {
     setName('');
@@ -34,6 +35,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
     setAuthType('password');
     setPassword('');
     setPrivateKey('');
+    setComment('');
     setError('');
   };
 
@@ -79,6 +81,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
         connectionType,
         authType,
         credentials,
+        comment: comment.trim() || undefined,
       });
       handleClose();
     } catch (err) {
@@ -175,6 +178,13 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
             />
           </div>
         )}
+
+        <Input
+          label="Comment"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Optional note about this server"
+        />
 
         {error && (
           <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">

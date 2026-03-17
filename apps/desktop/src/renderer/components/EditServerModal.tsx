@@ -28,6 +28,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
   const [authType, setAuthType] = useState<AuthType>('password');
   const [password, setPassword] = useState('');
   const [privateKey, setPrivateKey] = useState('');
+  const [comment, setComment] = useState('');
 
   useEffect(() => {
     if (server && isOpen) {
@@ -36,6 +37,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
       setPort(String(server.port));
       setConnectionType(server.connectionType);
       setAuthType(server.authType);
+      setComment(server.comment || '');
       setPassword('');
       setPrivateKey('');
       setError('');
@@ -91,6 +93,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
         username: username.trim(),
         connectionType,
         authType,
+        comment: comment.trim() || null,
       };
 
       const credentials = authType === 'password' ? password : privateKey;
@@ -213,6 +216,13 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
             />
           </div>
         )}
+
+        <Input
+          label="Comment"
+          value={comment}
+          onChange={(e) => setComment(e.target.value)}
+          placeholder="Optional note about this server"
+        />
 
         {error && (
           <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">

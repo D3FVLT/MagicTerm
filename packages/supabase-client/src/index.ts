@@ -403,6 +403,7 @@ function mapToServer(row: EncryptedServer): Server {
     authType: row.auth_type,
     connectionType: row.connection_type,
     credentials: row.credentials ?? undefined,
+    comment: row.comment ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -464,6 +465,7 @@ export async function createServer(
     auth_type: server.authType,
     connection_type: server.connectionType,
     credentials: server.credentials,
+    comment: server.comment ?? null,
   };
 
   if (server.orgId) {
@@ -497,6 +499,7 @@ export async function updateServer(
   if (updates.authType !== undefined) updateData.auth_type = updates.authType;
   if (updates.connectionType !== undefined) updateData.connection_type = updates.connectionType;
   if (updates.credentials !== undefined) updateData.credentials = updates.credentials;
+  if (updates.comment !== undefined) updateData.comment = updates.comment;
 
   const { data, error } = await getSupabase()
     .from('servers')

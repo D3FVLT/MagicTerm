@@ -44,11 +44,6 @@ function createWindow(): void {
 
   if (!is.dev) {
     setupAutoUpdater(mainWindow);
-    mainWindow.webContents.once('did-finish-load', () => {
-      setTimeout(() => {
-        ipcMain.emit('updater:check');
-      }, 3000);
-    });
   }
 }
 
