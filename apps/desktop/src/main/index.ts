@@ -2,6 +2,8 @@ import { app, BrowserWindow, shell, ipcMain } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { setupSSHHandlers } from './ssh';
+import { setupSFTPHandlers } from './sftp';
+import { setupLocalFsHandlers } from './local-fs';
 import { setupAuthHandlers } from './auth';
 import { setupServerHandlers } from './servers';
 import { setupAutoUpdater, setupUpdaterHandlers } from './updater';
@@ -55,6 +57,8 @@ app.whenReady().then(() => {
   });
 
   setupSSHHandlers(ipcMain);
+  setupSFTPHandlers(ipcMain);
+  setupLocalFsHandlers(ipcMain);
   setupAuthHandlers(ipcMain);
   setupServerHandlers(ipcMain);
   setupUpdaterHandlers(ipcMain);
