@@ -4,7 +4,7 @@ import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
-import type { AuthType, ConnectionType } from '@magicterm/shared';
+import type { AuthType } from '@magicterm/shared';
 
 interface AddServerModalProps {
   isOpen: boolean;
@@ -20,7 +20,6 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
   const [host, setHost] = useState('');
   const [port, setPort] = useState('22');
   const [username, setUsername] = useState('');
-  const [connectionType, setConnectionType] = useState<ConnectionType>('ssh');
   const [authType, setAuthType] = useState<AuthType>('password');
   const [password, setPassword] = useState('');
   const [privateKey, setPrivateKey] = useState('');
@@ -31,24 +30,11 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
     setHost('');
     setPort('22');
     setUsername('');
-    setConnectionType('ssh');
     setAuthType('password');
     setPassword('');
     setPrivateKey('');
     setComment('');
     setError('');
-  };
-
-  const handleConnectionTypeChange = (type: ConnectionType) => {
-    setConnectionType(type);
-    if (type === 'ftp') {
-      setPort('21');
-      setAuthType('password');
-    } else if (type === 'sftp') {
-      setPort('22');
-    } else {
-      setPort('22');
-    }
   };
 
   const handleClose = () => {
@@ -78,7 +64,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
         host: host.trim(),
         port: parseInt(port, 10) || 22,
         username: username.trim(),
-        connectionType,
+        connectionType: 'ssh',
         authType,
         credentials,
         comment: comment.trim() || undefined,
@@ -102,17 +88,6 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
           required
         />
 
-        <Select
-          label="Connection Type"
-          value={connectionType}
-          onChange={(e) => handleConnectionTypeChange(e.target.value as ConnectionType)}
-          options={[
-            { value: 'ssh', label: 'SSH' },
-            { value: 'sftp', label: 'SFTP' },
-            { value: 'ftp', label: 'FTP' },
-          ]}
-        />
-
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2">
             <Input
@@ -128,7 +103,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
             type="number"
             value={port}
             onChange={(e) => setPort(e.target.value)}
-            placeholder={connectionType === 'ftp' ? '21' : '22'}
+            placeholder="22"
             min={1}
             max={65535}
           />
@@ -142,19 +117,17 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
           required
         />
 
-        {connectionType !== 'ftp' && (
-          <Select
-            label="Authentication"
-            value={authType}
-            onChange={(e) => setAuthType(e.target.value as AuthType)}
-            options={[
-              { value: 'password', label: 'Password' },
-              { value: 'key', label: 'Private Key' },
-            ]}
-          />
-        )}
+        <Select
+          label="Authentication"
+          value={authType}
+          onChange={(e) => setAuthType(e.target.value as AuthType)}
+          options={[
+            { value: 'password', label: 'Password' },
+            { value: 'key', label: 'Private Key' },
+          ]}
+        />
 
-        {authType === 'password' || connectionType === 'ftp' ? (
+        {authType === 'password' ? (
           <Input
             type="password"
             label="Password"
