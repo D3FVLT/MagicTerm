@@ -48,7 +48,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   return (
     <aside className="flex w-64 flex-col border-r border-gray-800 bg-gray-900">
       <div className="drag-region flex h-14 items-center border-b border-gray-800 px-4">
-        <h1 className="font-semibold text-white">MagicTerm</h1>
+        <h1 className="font-semibold text-white">Magic Term</h1>
       </div>
 
       <div className="border-b border-gray-800 p-4">

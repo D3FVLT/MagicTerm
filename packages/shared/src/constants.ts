@@ -1,4 +1,4 @@
-export const APP_NAME = 'MagicTerm';
+export const APP_NAME = 'Magic Term';
 export const APP_VERSION = '0.1.0';
 
 export const DEFAULT_SSH_PORT = 22;
