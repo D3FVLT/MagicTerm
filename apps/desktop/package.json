@@ -1,6 +1,6 @@
 {
   "name": "@magicterm/desktop",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Cross-platform SSH/SFTP client with E2E encryption",
   "author": "MagicTerm",
   "private": true,
@@ -46,7 +46,8 @@
     "@xterm/xterm": "^6.0.0",
     "autoprefixer": "^10.4.19",
     "electron": "^30.0.0",
-    "electron-builder": "^24.13.0",
+    "electron-builder": "^26.8.1",
+    "electron-builder-squirrel-windows": "^26.8.1",
     "electron-vite": "^2.2.0",
     "postcss": "^8.4.38",
     "react": "^18.3.0",
