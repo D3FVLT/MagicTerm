@@ -1,10 +1,12 @@
-# MagicTerm
+# Magic Term
 
 Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
 ## Features
 
 - SSH terminal with full color support
+- SFTP/FTP file transfer support
+- Organizations with team invites
 - Secure credential storage with E2E encryption
 - Cloud sync via Supabase
 - Cross-platform (macOS, Windows)
@@ -22,8 +24,8 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/your-username/magicterm.git
-cd magicterm
+git clone https://github.com/D3FVLT/MagicTerm.git
+cd MagicTerm
 ```
 
 2. Install dependencies:
@@ -50,10 +52,29 @@ cp apps/desktop/.env.example apps/desktop/.env
 pnpm dev
 ```
 
+## Installation
+
+### macOS
+
+Download the `.dmg` file from [Releases](../../releases).
+
+**Important:** Since the app is not code-signed, macOS may show "Magic Term is damaged". To fix this:
+
+```bash
+# Remove quarantine attribute
+xattr -cr "/Applications/Magic Term.app"
+```
+
+Or right-click the app → Open → Open (first time only).
+
+### Windows
+
+Download the `.exe` installer from [Releases](../../releases) and run it.
+
 ## Project Structure
 
 ```
-magicterm/
+MagicTerm/
 ├── apps/
 │   └── desktop/          # Electron app
 │       ├── src/
@@ -87,9 +108,16 @@ pnpm --filter @magicterm/desktop dist:mac
 pnpm --filter @magicterm/desktop dist:win
 ```
 
-## Releases
+## GitHub Actions Setup
 
-Releases are automated via GitHub Actions. To create a release:
+To enable automated releases, add these secrets in your repository settings:
+
+| Secret Name | Description |
+|-------------|-------------|
+| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_ANON_KEY` | Your Supabase publishable key |
+
+Then create a tag to trigger a release:
 
 ```bash
 git tag v0.1.0
