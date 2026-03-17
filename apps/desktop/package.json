@@ -1,6 +1,6 @@
 {
   "name": "@magicterm/desktop",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Cross-platform SSH/SFTP client with E2E encryption",
   "author": "MagicTerm",
   "private": true,

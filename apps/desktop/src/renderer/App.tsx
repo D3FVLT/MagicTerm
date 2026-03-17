@@ -2,6 +2,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { OrganizationsProvider } from './contexts/OrganizationsContext';
 import { ServersProvider } from './contexts/ServersContext';
 import { TerminalProvider } from './contexts/TerminalContext';
+import { SnippetsProvider } from './contexts/SnippetsContext';
 import { LoginPage } from './pages/LoginPage';
 import { SetupMasterKeyPage } from './pages/SetupMasterKeyPage';
 import { MainLayout } from './layouts/MainLayout';
@@ -31,9 +32,11 @@ function AppContent() {
   return (
     <OrganizationsProvider>
       <ServersProvider>
-        <TerminalProvider>
-          <MainLayout />
-        </TerminalProvider>
+        <SnippetsProvider>
+          <TerminalProvider>
+            <MainLayout />
+          </TerminalProvider>
+        </SnippetsProvider>
       </ServersProvider>
     </OrganizationsProvider>
   );
