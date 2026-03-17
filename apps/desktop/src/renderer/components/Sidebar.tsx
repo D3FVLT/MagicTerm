@@ -8,6 +8,7 @@ import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { PendingInvites } from './PendingInvites';
 import { InviteMemberModal } from './InviteMemberModal';
 import { EditServerModal } from './EditServerModal';
+import { SettingsModal } from './SettingsModal';
 import { UpdateButton } from './UpdateBanner';
 import type { Server, SessionType } from '@magicterm/shared';
 
@@ -25,6 +26,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   const { logout, user } = useAuth();
   const { currentOrg, members } = useOrganizations();
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
@@ -349,6 +351,28 @@ export function Sidebar({ onAddServer }: SidebarProps) {
           <span className="text-xs text-gray-600">v{__APP_VERSION__}</span>
         </div>
         <UpdateButton />
+        <Button variant="ghost" size="sm" className="w-full mt-1" onClick={() => setShowSettingsModal(true)}>
+          <svg
+            className="mr-2 h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
+          </svg>
+          Settings
+        </Button>
         <Button variant="ghost" size="sm" className="w-full mt-1" onClick={logout}>
           <svg
             className="mr-2 h-4 w-4"
@@ -368,6 +392,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
       </div>
 
       <InviteMemberModal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} />
+      <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
       <EditServerModal 
         isOpen={editingServer !== null} 
         onClose={() => setEditingServer(null)} 

@@ -13,6 +13,8 @@ import {
   removeMember,
   getPendingInvites,
   subscribeToOrgMembers,
+  getUserSettings,
+  updateUserSettings,
 } from '@magicterm/supabase-client';
 
 interface OrganizationsContextValue {
@@ -63,21 +65,43 @@ export function OrganizationsProvider({ children }: OrganizationsProviderProps) 
     try {
       setIsLoading(true);
       setError(null);
-      const [orgs, invites] = await Promise.all([
+      const [orgs, invites, settings] = await Promise.all([
         listOrganizations(),
         getPendingInvites(),
+        getUserSettings(),
       ]);
-      console.log('Organizations loaded:', orgs.length, orgs);
-      console.log('Pending invites:', invites.length);
       setOrganizations(orgs);
       setPendingInvites(invites);
+      
+      // Set current org based on saved default or keep current selection
+      if (!currentOrg) {
+        if (settings.defaultOrgId) {
+          const defaultOrg = orgs.find(o => o.id === settings.defaultOrgId);
+          if (defaultOrg) {
+            setCurrentOrg(defaultOrg);
+          } else {
+            // Default org no longer accessible (kicked), reset to personal
+            await updateUserSettings({ defaultOrgId: null });
+          }
+        }
+      } else {
+        // Check if current org is still accessible
+        const stillMember = orgs.find(o => o.id === currentOrg.id);
+        if (!stillMember) {
+          // User was kicked from current org, reset to personal
+          setCurrentOrg(null);
+          if (settings.defaultOrgId === currentOrg.id) {
+            await updateUserSettings({ defaultOrgId: null });
+          }
+        }
+      }
     } catch (err) {
       console.error('Failed to load organizations:', err);
       setError(err instanceof Error ? err.message : 'Failed to load organizations');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentOrg]);
 
   useEffect(() => {
     refreshOrganizations();

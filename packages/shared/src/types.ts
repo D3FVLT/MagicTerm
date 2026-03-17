@@ -25,6 +25,7 @@ export interface OrgMember {
   invitedBy: string | null;
   invitedAt: string;
   joinedAt: string | null;
+  nickname?: string;
 }
 
 export interface InviteMemberInput {
@@ -177,3 +178,17 @@ export interface SFTPSession {
 }
 
 export type SessionType = 'terminal' | 'sftp';
+
+export interface UserSettings {
+  nickname: string | null;
+  defaultOrgId: string | null;
+}
+
+export interface EncryptedUserProfile {
+  id: string;
+  master_key_hash: string | null;
+  nickname: string | null;
+  default_org_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
