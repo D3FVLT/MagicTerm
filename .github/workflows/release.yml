@@ -11,6 +11,7 @@ permissions:
 jobs:
   release:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: macos-latest
@@ -63,7 +64,10 @@ jobs:
 
       - name: Build Electron app (Windows)
         if: matrix.platform == 'win'
-        run: pnpm --filter @magicterm/desktop dist:win
+        shell: bash
+        run: |
+          cd apps/desktop
+          npx electron-builder --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -82,6 +86,7 @@ jobs:
   publish:
     needs: release
     runs-on: ubuntu-latest
+    if: always()
 
     steps:
       - name: Checkout
@@ -92,12 +97,17 @@ jobs:
         with:
           name: release-mac
           path: release
+        continue-on-error: true
 
       - name: Download Windows artifacts
         uses: actions/download-artifact@v4
         with:
           name: release-win
           path: release
+        continue-on-error: true
+
+      - name: List release files
+        run: ls -la release/ || echo "No release files"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

@@ -8,6 +8,7 @@ files:
   - "!**/*.map"
 asarUnpack:
   - "**/*.node"
+npmRebuild: false
 mac:
   category: public.app-category.developer-tools
   target:
