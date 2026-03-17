@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { setupSSHHandlers } from './ssh';
 import { setupAuthHandlers } from './auth';
 import { setupServerHandlers } from './servers';
+import { setupAutoUpdater, setupUpdaterHandlers } from './updater';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -39,6 +40,15 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
+
+  if (!is.dev) {
+    setupAutoUpdater(mainWindow);
+    mainWindow.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
+        ipcMain.emit('updater:check');
+      }, 3000);
+    });
+  }
 }
 
 app.whenReady().then(() => {
@@ -51,6 +61,7 @@ app.whenReady().then(() => {
   setupSSHHandlers(ipcMain);
   setupAuthHandlers(ipcMain);
   setupServerHandlers(ipcMain);
+  setupUpdaterHandlers(ipcMain);
 
   createWindow();
 

@@ -2,17 +2,20 @@ import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { TerminalView } from '../components/TerminalView';
 import { AddServerModal } from '../components/AddServerModal';
+import { UpdateBanner } from '../components/UpdateBanner';
 import { useTerminal } from '../contexts/TerminalContext';
 
 export function MainLayout() {
   const [isAddServerOpen, setIsAddServerOpen] = useState(false);
-  const { activeSessionId, sessions } = useTerminal();
+  const { activeSessionId } = useTerminal();
 
   return (
     <div className="flex h-screen bg-gray-950">
       <Sidebar onAddServer={() => setIsAddServerOpen(true)} />
 
       <main className="flex flex-1 flex-col overflow-hidden">
+        <UpdateBanner />
+        
         {activeSessionId ? (
           <TerminalView sessionId={activeSessionId} />
         ) : (
