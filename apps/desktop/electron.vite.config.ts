@@ -4,7 +4,7 @@ import { resolve } from 'path';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin({ exclude: ['@magicterm/shared', '@magicterm/crypto'] })],
     build: {
       rollupOptions: {
         input: {
@@ -14,7 +14,7 @@ export default defineConfig({
     },
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    plugins: [externalizeDepsPlugin({ exclude: ['@magicterm/shared'] })],
     build: {
       rollupOptions: {
         input: {
