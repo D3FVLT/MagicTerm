@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useServers } from '../contexts/ServersContext';
 import { useTerminal } from '../contexts/TerminalContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +9,6 @@ import { PendingInvites } from './PendingInvites';
 import { InviteMemberModal } from './InviteMemberModal';
 import { EditServerModal } from './EditServerModal';
 import { SettingsModal } from './SettingsModal';
-import { UpdateButton } from './UpdateBanner';
 import type { Server, SessionType } from '@magicterm/shared';
 
 const MIN_WIDTH = 200;
@@ -27,9 +26,25 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   const { currentOrg, members } = useOrganizations();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showUserMenu]);
 
   const handleMouseDown = useCallback(() => {
     setIsResizing(true);
@@ -92,12 +107,11 @@ export function Sidebar({ onAddServer }: SidebarProps) {
         onMouseDown={handleMouseDown}
       />
       
+      {/* Draggable header with organization switcher */}
       <div className="drag-region flex h-14 items-center border-b border-gray-800 pl-20 pr-4">
-        <h1 className="font-semibold text-white">Magic Term</h1>
-      </div>
-
-      <div className="border-b border-gray-800 p-4">
-        <OrganizationSwitcher />
+        <div className="no-drag flex-1">
+          <OrganizationSwitcher />
+        </div>
       </div>
 
       <PendingInvites />
@@ -297,10 +311,31 @@ export function Sidebar({ onAddServer }: SidebarProps) {
 
         {currentOrg && (
           <div className="mt-6">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-medium text-gray-400">Members</h2>
+            <button
+              onClick={() => setShowMembers(!showMembers)}
+              className="mb-2 flex w-full items-center justify-between rounded-lg px-1 py-1 text-left hover:bg-gray-800/50"
+            >
+              <div className="flex items-center gap-2">
+                <svg
+                  className={`h-3 w-3 text-gray-500 transition-transform ${showMembers ? 'rotate-90' : ''}`}
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                <h2 className="text-sm font-medium text-gray-400">
+                  Members ({members.filter((m) => m.status === 'active').length})
+                </h2>
+              </div>
               {canInvite && (
-                <Button variant="ghost" size="sm" onClick={() => setShowInviteModal(true)}>
+                <span
+                  role="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowInviteModal(true);
+                  }}
+                  className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
+                >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
                       strokeLinecap="round"
@@ -309,86 +344,123 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                       d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
                     />
                   </svg>
-                </Button>
+                </span>
               )}
-            </div>
-            <ul className="space-y-1">
-              {members
-                .filter((m) => m.status === 'active')
-                .map((member) => {
-                  const isCurrentUser = member.userId === user?.id;
-                  const displayName = isCurrentUser ? user?.email : member.email;
-                  const displayLabel = isCurrentUser ? 'You' : (displayName || 'Unknown');
-                  
-                  return (
-                    <li
-                      key={member.id}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400"
-                    >
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs uppercase">
-                        {displayName?.[0] || '?'}
-                      </div>
-                      <span className="flex-1 truncate">{displayLabel}</span>
-                      <span className="text-xs text-gray-500">{member.role}</span>
-                    </li>
-                  );
-                })}
-              {members.filter((m) => m.status === 'pending').length > 0 && (
-                <li className="px-3 py-1 text-xs text-gray-500">
-                  {members.filter((m) => m.status === 'pending').length} pending invite(s)
-                </li>
-              )}
-            </ul>
+            </button>
+            {showMembers && (
+              <ul className="space-y-1">
+                {members
+                  .filter((m) => m.status === 'active')
+                  .map((member) => {
+                    const isCurrentUser = member.userId === user?.id;
+                    const displayName = isCurrentUser ? user?.email : member.email;
+                    const displayLabel = isCurrentUser ? 'You' : (displayName || 'Unknown');
+                    
+                    return (
+                      <li
+                        key={member.id}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400"
+                      >
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs uppercase">
+                          {displayName?.[0] || '?'}
+                        </div>
+                        <span className="flex-1 truncate">{displayLabel}</span>
+                        <span className="text-xs text-gray-500">{member.role}</span>
+                      </li>
+                    );
+                  })}
+                {members.filter((m) => m.status === 'pending').length > 0 && (
+                  <li className="px-3 py-1 text-xs text-gray-500">
+                    {members.filter((m) => m.status === 'pending').length} pending invite(s)
+                  </li>
+                )}
+              </ul>
+            )}
           </div>
         )}
       </div>
 
-      <div className="border-t border-gray-800 p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="truncate text-sm text-gray-400">
-            {user?.email || 'Unknown user'}
-          </span>
-          <span className="text-xs text-gray-600">v{__APP_VERSION__}</span>
-        </div>
-        <UpdateButton />
-        <Button variant="ghost" size="sm" className="w-full mt-1" onClick={() => setShowSettingsModal(true)}>
+      {/* User menu */}
+      <div className="relative border-t border-gray-800 p-3" ref={userMenuRef}>
+        <button
+          onClick={() => setShowUserMenu(!showUserMenu)}
+          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-800"
+        >
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-white uppercase">
+            {user?.email?.[0] || '?'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="truncate text-sm text-gray-200">{user?.email || 'Unknown'}</div>
+            <div className="text-xs text-gray-500">v{__APP_VERSION__}</div>
+          </div>
           <svg
-            className="mr-2 h-4 w-4"
+            className={`h-4 w-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
           </svg>
-          Settings
-        </Button>
-        <Button variant="ghost" size="sm" className="w-full mt-1" onClick={logout}>
-          <svg
-            className="mr-2 h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-            />
-          </svg>
-          Sign Out
-        </Button>
+        </button>
+
+        {/* Dropdown menu */}
+        {showUserMenu && (
+          <div className="absolute bottom-full left-3 right-3 mb-2 rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-xl">
+            <button
+              onClick={() => {
+                setShowSettingsModal(true);
+                setShowUserMenu(false);
+              }}
+              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700"
+            >
+              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Settings
+            </button>
+            <button
+              onClick={() => {
+                window.electronAPI.updater.check();
+                setShowUserMenu(false);
+              }}
+              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700"
+            >
+              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              Check for Updates
+            </button>
+            <div className="my-1 border-t border-gray-700" />
+            <button
+              onClick={() => {
+                logout();
+                setShowUserMenu(false);
+              }}
+              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-400 hover:bg-gray-700"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              Sign Out
+            </button>
+          </div>
+        )}
       </div>
 
       <InviteMemberModal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} />

@@ -60,8 +60,9 @@ export function OrganizationsProvider({ children }: OrganizationsProviderProps) 
   const [members, setMembers] = useState<OrgMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  const refreshOrganizations = useCallback(async () => {
+  const refreshOrganizations = useCallback(async (isInitialLoad = false) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -73,22 +74,21 @@ export function OrganizationsProvider({ children }: OrganizationsProviderProps) 
       setOrganizations(orgs);
       setPendingInvites(invites);
       
-      // Set current org based on saved default or keep current selection
-      if (!currentOrg) {
-        if (settings.defaultOrgId) {
-          const defaultOrg = orgs.find(o => o.id === settings.defaultOrgId);
-          if (defaultOrg) {
-            setCurrentOrg(defaultOrg);
-          } else {
-            // Default org no longer accessible (kicked), reset to personal
-            await updateUserSettings({ defaultOrgId: null });
-          }
+      // Only apply default org on initial load, not when user explicitly switches
+      if (isInitialLoad && settings.defaultOrgId) {
+        const defaultOrg = orgs.find(o => o.id === settings.defaultOrgId);
+        if (defaultOrg) {
+          setCurrentOrg(defaultOrg);
+        } else {
+          // Default org no longer accessible (kicked), reset setting
+          await updateUserSettings({ defaultOrgId: null });
         }
-      } else {
-        // Check if current org is still accessible
+      }
+      
+      // Always check if current org is still accessible (user might have been kicked)
+      if (currentOrg) {
         const stillMember = orgs.find(o => o.id === currentOrg.id);
         if (!stillMember) {
-          // User was kicked from current org, reset to personal
           setCurrentOrg(null);
           if (settings.defaultOrgId === currentOrg.id) {
             await updateUserSettings({ defaultOrgId: null });
@@ -104,8 +104,11 @@ export function OrganizationsProvider({ children }: OrganizationsProviderProps) 
   }, [currentOrg]);
 
   useEffect(() => {
-    refreshOrganizations();
-  }, [refreshOrganizations]);
+    if (!hasInitialized) {
+      refreshOrganizations(true);
+      setHasInitialized(true);
+    }
+  }, [hasInitialized, refreshOrganizations]);
 
   useEffect(() => {
     if (!currentOrg) {
