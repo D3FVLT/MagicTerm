@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import { useServers } from '../contexts/ServersContext';
 import { useTerminal } from '../contexts/TerminalContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useOrganizations } from '../contexts/OrganizationsContext';
 import { Button } from './ui/Button';
+import { OrganizationSwitcher } from './OrganizationSwitcher';
+import { PendingInvites } from './PendingInvites';
+import { InviteMemberModal } from './InviteMemberModal';
 import type { Server } from '@magicterm/shared';
 
 interface SidebarProps {
@@ -12,6 +17,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   const { servers, isLoading, removeServer } = useServers();
   const { connect, sessions, activeSessionId, setActiveSession, disconnect } = useTerminal();
   const { logout, user } = useAuth();
+  const { currentOrg, members } = useOrganizations();
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const handleConnect = async (server: Server) => {
     const existingSession = sessions.find((s) => s.serverId === server.id);
@@ -36,15 +43,25 @@ export function Sidebar({ onAddServer }: SidebarProps) {
     return sessions.find((s) => s.serverId === serverId);
   };
 
+  const canInvite = currentOrg && (currentOrg.role === 'owner' || currentOrg.role === 'admin');
+
   return (
     <aside className="flex w-64 flex-col border-r border-gray-800 bg-gray-900">
-      <div className="drag-region flex h-14 items-center justify-between border-b border-gray-800 px-4">
+      <div className="drag-region flex h-14 items-center border-b border-gray-800 px-4">
         <h1 className="font-semibold text-white">MagicTerm</h1>
       </div>
 
+      <div className="border-b border-gray-800 p-4">
+        <OrganizationSwitcher />
+      </div>
+
+      <PendingInvites />
+
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-gray-400">Servers</h2>
+          <h2 className="text-sm font-medium text-gray-400">
+            {currentOrg ? 'Team Servers' : 'Personal Servers'}
+          </h2>
           <Button variant="ghost" size="sm" onClick={onAddServer}>
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -92,7 +109,12 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                       `}
                     />
                     <div className="flex-1 truncate">
-                      <div className="truncate text-sm font-medium">{server.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium">{server.name}</span>
+                        <span className="text-xs text-gray-500 uppercase">
+                          {server.connectionType}
+                        </span>
+                      </div>
                       <div className="truncate text-xs text-gray-500">
                         {server.port !== 22 ? `:${server.port}` : ''}
                       </div>
@@ -123,6 +145,47 @@ export function Sidebar({ onAddServer }: SidebarProps) {
             })}
           </ul>
         )}
+
+        {currentOrg && (
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-gray-400">Members</h2>
+              {canInvite && (
+                <Button variant="ghost" size="sm" onClick={() => setShowInviteModal(true)}>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                    />
+                  </svg>
+                </Button>
+              )}
+            </div>
+            <ul className="space-y-1">
+              {members
+                .filter((m) => m.status === 'active')
+                .map((member) => (
+                  <li
+                    key={member.id}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400"
+                  >
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs uppercase">
+                      {member.email[0]}
+                    </div>
+                    <span className="flex-1 truncate">{member.email}</span>
+                    <span className="text-xs text-gray-500">{member.role}</span>
+                  </li>
+                ))}
+              {members.filter((m) => m.status === 'pending').length > 0 && (
+                <li className="px-3 py-1 text-xs text-gray-500">
+                  {members.filter((m) => m.status === 'pending').length} pending invite(s)
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-gray-800 p-4">
@@ -146,6 +209,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
           Sign Out
         </Button>
       </div>
+
+      <InviteMemberModal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} />
     </aside>
   );
 }

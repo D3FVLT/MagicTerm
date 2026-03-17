@@ -2,6 +2,7 @@ export const APP_NAME = 'MagicTerm';
 export const APP_VERSION = '0.1.0';
 
 export const DEFAULT_SSH_PORT = 22;
+export const DEFAULT_SFTP_PORT = 22;
 export const DEFAULT_FTP_PORT = 21;
 
 export const PBKDF2_ITERATIONS = 100000;

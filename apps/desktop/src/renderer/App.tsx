@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { OrganizationsProvider } from './contexts/OrganizationsContext';
 import { ServersProvider } from './contexts/ServersContext';
 import { TerminalProvider } from './contexts/TerminalContext';
 import { LoginPage } from './pages/LoginPage';
@@ -29,11 +29,13 @@ function AppContent() {
   }
 
   return (
-    <ServersProvider>
-      <TerminalProvider>
-        <MainLayout />
-      </TerminalProvider>
-    </ServersProvider>
+    <OrganizationsProvider>
+      <ServersProvider>
+        <TerminalProvider>
+          <MainLayout />
+        </TerminalProvider>
+      </ServersProvider>
+    </OrganizationsProvider>
   );
 }
 
