@@ -5,12 +5,14 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 ## Features
 
 - SSH terminal with full color support
-- SFTP/FTP file transfer support
+- SFTP file manager with dual-panel UI
+- Built-in text editor for remote files
+- Drag-and-drop file transfers
 - Organizations with team invites
 - Secure credential storage with E2E encryption
 - Cloud sync via Supabase
-- Cross-platform (macOS, Windows)
-- Auto-update support
+- Cross-platform (macOS, Windows, Linux)
+- Auto-update support (macOS & Windows)
 
 ## Quick Start
 
@@ -71,6 +73,22 @@ Or right-click the app → Open → Open (first time only).
 
 Download the `.exe` installer from [Releases](../../releases) and run it.
 
+### Linux
+
+Build from source (pre-built binaries not available):
+
+```bash
+git clone https://github.com/D3FVLT/MagicTerm.git
+cd MagicTerm
+pnpm install
+pnpm build
+pnpm --filter @magicterm/desktop dist:linux
+```
+
+The built AppImage will be in `apps/desktop/release/`.
+
+**Note:** Auto-updates are not supported on Linux.
+
 ## Project Structure
 
 ```
@@ -106,6 +124,9 @@ pnpm --filter @magicterm/desktop dist:mac
 
 # Windows
 pnpm --filter @magicterm/desktop dist:win
+
+# Linux
+pnpm --filter @magicterm/desktop dist:linux
 ```
 
 ## GitHub Actions Setup
