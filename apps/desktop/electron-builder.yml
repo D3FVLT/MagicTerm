@@ -11,6 +11,7 @@ files:
 asarUnpack:
   - "**/*.node"
 npmRebuild: false
+afterPack: ./scripts/afterPack.js
 mac:
   category: public.app-category.developer-tools
   target:
@@ -22,8 +23,7 @@ mac:
       arch:
         - x64
         - arm64
-  sign: false
-  notarize: false
+  identity: null
 win:
   target:
     - target: nsis
