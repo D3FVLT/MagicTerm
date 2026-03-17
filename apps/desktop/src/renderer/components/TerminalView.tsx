@@ -5,6 +5,7 @@ import { WebglAddon } from '@xterm/addon-webgl';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
+import { SnippetsPanel } from './SnippetsPanel';
 import '@xterm/xterm/css/xterm.css';
 
 interface TerminalViewProps {
@@ -45,6 +46,7 @@ export function TerminalView({ sessionId, serverName }: TerminalViewProps) {
   const searchAddonRef = useRef<SearchAddon | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSnippets, setShowSnippets] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleResize = useCallback(() => {
@@ -78,6 +80,12 @@ export function TerminalView({ sessionId, serverName }: TerminalViewProps) {
       return !prev;
     });
   }, []);
+
+  const handlePasteToTerminal = useCallback((text: string) => {
+    if (terminalRef.current) {
+      window.electronAPI.ssh.sendData(sessionId, text);
+    }
+  }, [sessionId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -194,8 +202,8 @@ export function TerminalView({ sessionId, serverName }: TerminalViewProps) {
 
   return (
     <div className="flex h-full flex-col bg-[#1a1b26]">
-      {/* Terminal Header */}
-      <div className="drag-region flex h-10 items-center justify-between border-b border-[#292e42] bg-[#1f2335] px-4">
+      {/* Terminal Header - minimal, just for drag and status */}
+      <div className="drag-region flex h-10 items-center border-b border-[#292e42] bg-[#1f2335] px-4">
         <div className="flex items-center gap-2">
           <div className="flex h-3 w-3 items-center justify-center rounded-full bg-green-500">
             <div className="h-1.5 w-1.5 rounded-full bg-green-300 animate-pulse" />
@@ -204,29 +212,65 @@ export function TerminalView({ sessionId, serverName }: TerminalViewProps) {
             {serverName || 'Terminal'}
           </span>
         </div>
-        
-        <div className="flex items-center gap-1">
+      </div>
+
+      {/* Terminal Container with floating toolbar */}
+      <div className="relative flex-1">
+        <div 
+          ref={containerRef} 
+          className="terminal-container absolute inset-0" 
+          style={{ backgroundColor: TERMIUS_THEME.background }}
+        />
+
+        {/* Floating Toolbar - bottom right */}
+        <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-[#292e42] bg-[#1f2335]/95 p-1 shadow-lg backdrop-blur-sm">
+          {/* Snippets Button */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSnippets((prev) => !prev)}
+              className={`rounded-md p-2 transition-colors ${
+                showSnippets 
+                  ? 'bg-[#3d59a1] text-white' 
+                  : 'text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]'
+              }`}
+              title="Snippets (tokens, secrets)"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </button>
+            {/* Snippets panel opens upward */}
+            <div className="absolute bottom-full right-0 mb-2">
+              <SnippetsPanel
+                isOpen={showSnippets}
+                onClose={() => setShowSnippets(false)}
+                onPaste={handlePasteToTerminal}
+              />
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-[#292e42]" />
+
           {/* Search Button */}
           <button
             onClick={toggleSearch}
-            className={`rounded p-1.5 transition-colors ${
+            className={`rounded-md p-2 transition-colors ${
               showSearch 
                 ? 'bg-[#3d59a1] text-white' 
                 : 'text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]'
             }`}
-            title="Search (Cmd+F)"
+            title="Search (Cmd/Ctrl+F)"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
         </div>
-      </div>
 
-      {/* Search Bar */}
-      {showSearch && (
-        <div className="flex items-center gap-2 border-b border-[#292e42] bg-[#1f2335] px-4 py-2">
-          <div className="relative flex-1">
+        {/* Search Bar - floating above toolbar */}
+        {showSearch && (
+          <div className="absolute bottom-16 right-4 z-10 flex w-80 items-center gap-2 rounded-lg border border-[#292e42] bg-[#1f2335]/95 p-2 shadow-lg backdrop-blur-sm">
             <input
               ref={searchInputRef}
               type="text"
@@ -243,49 +287,42 @@ export function TerminalView({ sessionId, serverName }: TerminalViewProps) {
                 }
               }}
               placeholder="Search..."
-              className="w-full rounded bg-[#292e42] px-3 py-1.5 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none ring-1 ring-[#3d59a1]/30 focus:ring-[#7aa2f7]"
+              className="flex-1 rounded bg-[#292e42] px-3 py-1.5 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none"
             />
+            <button
+              onClick={() => handleSearch('prev')}
+              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+              title="Previous"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => handleSearch('next')}
+              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+              title="Next"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={() => {
+                setShowSearch(false);
+                setSearchQuery('');
+                terminalRef.current?.focus();
+              }}
+              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+              title="Close (Esc)"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={() => handleSearch('prev')}
-            className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
-            title="Previous (Shift+Enter)"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => handleSearch('next')}
-            className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
-            title="Next (Enter)"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <button
-            onClick={() => {
-              setShowSearch(false);
-              setSearchQuery('');
-              terminalRef.current?.focus();
-            }}
-            className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
-            title="Close (Esc)"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
-
-      {/* Terminal Container */}
-      <div 
-        ref={containerRef} 
-        className="terminal-container flex-1" 
-        style={{ backgroundColor: TERMIUS_THEME.background }}
-      />
+        )}
+      </div>
     </div>
   );
 }

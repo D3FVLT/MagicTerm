@@ -3,6 +3,7 @@ import type {
   EncryptedServer,
   EncryptedOrganization,
   EncryptedOrgMember,
+  EncryptedSnippet,
   Server,
   ServerInput,
   Organization,
@@ -11,6 +12,8 @@ import type {
   InviteMemberInput,
   MemberRole,
   OrganizationWithRole,
+  Snippet,
+  SnippetInput,
 } from '@magicterm/shared';
 
 export type { Session, User } from '@supabase/supabase-js';
@@ -613,4 +616,79 @@ export function subscribeToOrgMembers(
   return () => {
     channel.unsubscribe();
   };
+}
+
+// ============================================
+// SNIPPETS (Personal encrypted secrets)
+// ============================================
+
+function mapToSnippet(row: EncryptedSnippet): Snippet {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    name: row.name,
+    value: row.value,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listSnippets(): Promise<Snippet[]> {
+  const user = await getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await getSupabase()
+    .from('snippets')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('name');
+
+  if (error) throw error;
+  return (data as EncryptedSnippet[]).map(mapToSnippet);
+}
+
+export async function createSnippet(input: SnippetInput & { value: string }): Promise<Snippet> {
+  const user = await getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await getSupabase()
+    .from('snippets')
+    .insert({
+      user_id: user.id,
+      name: input.name,
+      value: input.value,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapToSnippet(data as EncryptedSnippet);
+}
+
+export async function updateSnippet(id: string, input: Partial<SnippetInput> & { value?: string }): Promise<Snippet> {
+  const updateData: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.name !== undefined) updateData.name = input.name;
+  if (input.value !== undefined) updateData.value = input.value;
+
+  const { data, error } = await getSupabase()
+    .from('snippets')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapToSnippet(data as EncryptedSnippet);
+}
+
+export async function deleteSnippet(id: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from('snippets')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
 }

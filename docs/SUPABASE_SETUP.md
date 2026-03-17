@@ -59,12 +59,22 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_Q4DGz...
 4. Нажми **Run** (или `Cmd+Enter`)
 5. Убедись что нет ошибок (зелёная галочка)
 
+### Дополнительные миграции
+
+После основной схемы, выполни дополнительные SQL файлы в том же порядке:
+
+1. `supabase/add-user-profiles.sql` — профили пользователей
+2. `supabase/add-user-settings.sql` — настройки пользователей (ник, дефолтная орга)
+3. `supabase/add-snippets.sql` — персональные зашифрованные сниппеты
+
 ### Проверка таблиц
 
 После выполнения SQL, в **Table Editor** должны появиться таблицы:
 - `organizations`
 - `org_members`  
 - `servers`
+- `user_profiles`
+- `snippets`
 
 ## 4. Настройка аутентификации
 
