@@ -1,5 +1,6 @@
 appId: com.magicterm.app
 productName: Magic Term
+artifactName: "MagicTerm-${version}-${arch}.${ext}"
 icon: build/icon.png
 directories:
   buildResources: build
