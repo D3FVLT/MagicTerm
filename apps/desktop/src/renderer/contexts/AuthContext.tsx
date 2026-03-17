@@ -15,6 +15,8 @@ import { hashPassword, verifyPasswordHash, cryptoManager } from '@magicterm/cryp
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
+const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
@@ -22,6 +24,8 @@ interface AuthContextValue {
   isLoading: boolean;
   hasMasterKey: boolean;
   needsMasterKeySetup: boolean;
+  isConfigured: boolean;
+  configError: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -49,10 +53,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasMasterKey, setHasMasterKey] = useState(false);
   const [masterKeyHash, setMasterKeyHash] = useState<string | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    if (!isSupabaseConfigured) {
+      console.error('Supabase not configured. VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required.');
+      setConfigError('Supabase is not configured. Please check environment variables.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
       initSupabase(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (err) {
+      console.error('Failed to initialize Supabase:', err);
+      setConfigError('Failed to initialize Supabase');
+      setIsLoading(false);
+      return;
     }
 
     async function initialize() {
@@ -60,12 +77,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const authStatus = await window.electronAPI.auth.getStatus();
         setMasterKeyHash(authStatus.masterKeyHash || null);
 
-        if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-          const currentSession = await getSession();
-          const currentUser = await getUser();
-          setSession(currentSession);
-          setUser(currentUser);
-        }
+        const currentSession = await getSession();
+        const currentUser = await getUser();
+        setSession(currentSession);
+        setUser(currentUser);
       } catch (error) {
         console.error('Failed to initialize auth:', error);
       } finally {
@@ -75,32 +90,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initialize();
 
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      const { data } = onAuthStateChange((_event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-      });
+    const { data } = onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+    });
 
-      return () => {
-        data.subscription.unsubscribe();
-      };
-    }
+    return () => {
+      data.subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase is not configured');
+    }
     const { session: newSession, user: newUser } = await signIn(email, password);
     setSession(newSession);
     setUser(newUser);
   };
 
   const register = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase is not configured');
+    }
     const { session: newSession, user: newUser } = await signUp(email, password);
     setSession(newSession);
     setUser(newUser ?? null);
   };
 
   const logout = async () => {
-    await signOut();
+    if (isSupabaseConfigured) {
+      await signOut();
+    }
     await window.electronAPI.auth.logout();
     cryptoManager.clearMasterPassword();
     setSession(null);
@@ -136,6 +157,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isLoading,
     hasMasterKey,
     needsMasterKeySetup: !!session && !masterKeyHash,
+    isConfigured: isSupabaseConfigured,
+    configError,
     login,
     register,
     logout,

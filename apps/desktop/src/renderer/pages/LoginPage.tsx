@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
 export function LoginPage() {
-  const { login, register } = useAuth();
+  const { login, register, isConfigured, configError } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,6 +15,11 @@ export function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!isConfigured) {
+      setError('Application is not configured. Please contact administrator.');
+      return;
+    }
 
     if (isRegistering && password !== confirmPassword) {
       setError('Passwords do not match');
@@ -39,9 +44,19 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold text-white">MagicTerm</h1>
+          <h1 className="mb-2 text-3xl font-bold text-white">Magic Term</h1>
           <p className="text-gray-400">Secure SSH client with E2E encryption</p>
         </div>
+
+        {configError && (
+          <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 p-4">
+            <h3 className="font-medium text-red-400 mb-2">Configuration Error</h3>
+            <p className="text-sm text-red-300">{configError}</p>
+            <p className="text-xs text-gray-500 mt-2">
+              Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in the build.
+            </p>
+          </div>
+        )}
 
         <div className="rounded-xl bg-gray-900 p-6 shadow-xl">
           <h2 className="mb-6 text-xl font-semibold text-white">
@@ -56,6 +71,7 @@ export function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
+              disabled={!isConfigured}
             />
 
             <Input
@@ -66,6 +82,7 @@ export function LoginPage() {
               placeholder="••••••••"
               required
               minLength={6}
+              disabled={!isConfigured}
             />
 
             {isRegistering && (
@@ -77,6 +94,7 @@ export function LoginPage() {
                 placeholder="••••••••"
                 required
                 minLength={6}
+                disabled={!isConfigured}
               />
             )}
 
@@ -86,7 +104,7 @@ export function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || !isConfigured}>
               {isLoading
                 ? 'Loading...'
                 : isRegistering
@@ -103,6 +121,7 @@ export function LoginPage() {
                 setError('');
               }}
               className="text-sm text-primary-400 hover:text-primary-300"
+              disabled={!isConfigured}
             >
               {isRegistering
                 ? 'Already have an account? Sign in'
