@@ -17,6 +17,7 @@ interface UpdateStatus {
 export function UpdateBanner() {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
     const unsubscribe = window.electronAPI.updater.onStatus((status) => {
@@ -31,16 +32,12 @@ export function UpdateBanner() {
     };
   }, []);
 
-  const handleCheckUpdate = async () => {
-    setUpdateStatus({ status: 'checking' });
-    await window.electronAPI.updater.check();
-  };
-
   const handleDownload = async () => {
     await window.electronAPI.updater.download();
   };
 
   const handleInstall = () => {
+    setIsInstalling(true);
     window.electronAPI.updater.install();
   };
 
@@ -53,7 +50,23 @@ export function UpdateBanner() {
   }
 
   if (updateStatus.status === 'error') {
-    return null;
+    return (
+      <div className="border-b border-red-500/30 bg-red-500/10 px-4 py-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-red-200">
+            Update failed: {updateStatus.error}
+          </span>
+          <button
+            onClick={() => setDismissed(true)}
+            className="rounded p-1 text-gray-400 hover:bg-gray-800 hover:text-white"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -109,8 +122,8 @@ export function UpdateBanner() {
           )}
 
           {updateStatus.status === 'downloaded' && (
-            <Button size="sm" onClick={handleInstall}>
-              Restart & Install
+            <Button size="sm" onClick={handleInstall} disabled={isInstalling}>
+              {isInstalling ? 'Restarting...' : 'Restart & Install'}
             </Button>
           )}
 

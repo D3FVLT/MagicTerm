@@ -16,18 +16,28 @@ export interface UpdateStatus {
 }
 
 let mainWindow: BrowserWindow | null = null;
+let isUpdaterSetup = false;
+let pendingUpdateInfo: UpdateInfo | null = null;
 
 function sendStatusToWindow(status: UpdateStatus) {
-  console.log('[Updater] Status:', status.status, status.info?.version || '');
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('updater:status', status);
+  console.log('[Updater] Status:', status.status, status.info?.version || '', status.error || '');
+  const targetWindow = mainWindow && !mainWindow.isDestroyed()
+    ? mainWindow
+    : BrowserWindow.getAllWindows().find((w) => !w.isDestroyed()) ?? null;
+  if (targetWindow) {
+    targetWindow.webContents.send('updater:status', status);
   } else {
-    console.warn('[Updater] Window not available, cannot send status');
+    console.warn('[Updater] No window available, cannot send status');
   }
 }
 
 export function setupAutoUpdater(window: BrowserWindow) {
   mainWindow = window;
+
+  if (isUpdaterSetup) {
+    return;
+  }
+  isUpdaterSetup = true;
 
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -37,13 +47,14 @@ export function setupAutoUpdater(window: BrowserWindow) {
   });
 
   autoUpdater.on('update-available', (info) => {
+    pendingUpdateInfo = {
+      version: info.version,
+      releaseDate: info.releaseDate,
+      releaseNotes: typeof info.releaseNotes === 'string' ? info.releaseNotes : undefined,
+    };
     sendStatusToWindow({
       status: 'available',
-      info: {
-        version: info.version,
-        releaseDate: info.releaseDate,
-        releaseNotes: typeof info.releaseNotes === 'string' ? info.releaseNotes : undefined,
-      },
+      info: pendingUpdateInfo,
     });
   });
 
@@ -52,15 +63,16 @@ export function setupAutoUpdater(window: BrowserWindow) {
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    console.log('Download progress:', Math.round(progress.percent) + '%');
+    const percent = Math.round(progress.percent ?? 0);
+    console.log('[Updater] Download progress:', percent + '%');
     sendStatusToWindow({
       status: 'downloading',
-      progress: Math.round(progress.percent),
+      progress: percent,
     });
   });
 
   autoUpdater.on('update-downloaded', (info) => {
-    console.log('Update downloaded:', info.version);
+    console.log('[Updater] Update downloaded:', info.version);
     sendStatusToWindow({
       status: 'downloaded',
       info: {
@@ -72,6 +84,7 @@ export function setupAutoUpdater(window: BrowserWindow) {
   });
 
   autoUpdater.on('error', (error) => {
+    console.error('[Updater] Error:', error);
     sendStatusToWindow({
       status: 'error',
       error: error.message,
@@ -93,15 +106,32 @@ export function setupUpdaterHandlers(ipc: typeof ipcMain) {
     try {
       console.log('[Updater] Starting download...');
       await autoUpdater.downloadUpdate();
-      console.log('[Updater] Download started successfully');
+      console.log('[Updater] Download completed');
+      // Fallback: update-downloaded event may not fire in some electron-updater versions/configs
+      if (pendingUpdateInfo) {
+        sendStatusToWindow({
+          status: 'downloaded',
+          info: pendingUpdateInfo,
+        });
+      }
       return { success: true };
     } catch (error) {
       console.error('[Updater] Download failed:', error);
+      sendStatusToWindow({
+        status: 'error',
+        error: (error as Error).message,
+      });
       return { success: false, error: (error as Error).message };
     }
   });
 
   ipc.handle('updater:install', () => {
-    autoUpdater.quitAndInstall(false, true);
+    // setImmediate + short delay: electron-updater needs time to finalize before quitAndInstall
+    // (see electron-builder#5521, #7054 - quitAndInstall can fail if called too soon)
+    setImmediate(() => {
+      setTimeout(() => {
+        autoUpdater.quitAndInstall(false, true);
+      }, 1500);
+    });
   });
 }
