@@ -37,9 +37,7 @@ jobs:
         shell: bash
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
-          # Update root package.json
           node -e "const pkg=require('./package.json'); pkg.version='$VERSION'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2)+'\n')"
-          # Update desktop package.json
           node -e "const pkg=require('./apps/desktop/package.json'); pkg.version='$VERSION'; require('fs').writeFileSync('apps/desktop/package.json', JSON.stringify(pkg, null, 2)+'\n')"
           echo "Updated versions to $VERSION"
 
@@ -72,7 +70,7 @@ jobs:
       - name: Build packages
         run: pnpm build
 
-      - name: Build Electron app (macOS)
+      - name: Build & Publish (macOS)
         if: matrix.platform == 'mac'
         run: pnpm --filter @magicterm/desktop dist:mac
         env:
@@ -80,59 +78,13 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
-      - name: Build Electron app (Windows)
+      - name: Build & Publish (Windows)
         if: matrix.platform == 'win'
         shell: bash
         run: |
           cd apps/desktop
-          npx electron-builder --win
+          npx electron-builder --win --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-${{ matrix.platform }}
-          path: |
-            apps/desktop/release/*.dmg
-            apps/desktop/release/*.zip
-            apps/desktop/release/*.exe
-          if-no-files-found: ignore
-
-  publish:
-    needs: release
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download macOS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-mac
-          path: release
-        continue-on-error: true
-
-      - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-win
-          path: release
-        continue-on-error: true
-
-      - name: List release files
-        run: ls -la release/ || echo "No release files"
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: release/*
-          generate_release_notes: true
-          draft: false
-          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
