@@ -114,6 +114,9 @@ jobs:
 
       - name: Build packages
         run: pnpm build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
       - name: Build & Publish (macOS)
         if: matrix.platform == 'mac'
