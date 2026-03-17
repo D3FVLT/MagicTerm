@@ -13,11 +13,24 @@
 
 ## 2. Получение ключей API
 
+### Новая система ключей (2025+)
+
+Supabase обновил систему API ключей:
+
+| Тип ключа | Формат | Использование |
+|-----------|--------|---------------|
+| **Publishable key** | `sb_publishable_...` | Клиентские приложения (наш случай) |
+| **Secret key** | `sb_secret_...` | Только серверный код |
+
+### Шаги:
+
 1. В sidebar нажми **Project Settings** (иконка шестерёнки)
-2. Перейди в **API**
+2. Перейди в **API Keys**
 3. Скопируй:
-   - **Project URL** → это `VITE_SUPABASE_URL`
-   - **anon public** key → это `VITE_SUPABASE_ANON_KEY`
+   - **Project URL** (вверху страницы или в Project Settings → General) → это `VITE_SUPABASE_URL`
+   - **Publishable key** (`sb_publishable_...`) → это `VITE_SUPABASE_ANON_KEY`
+
+> ⚠️ **Важно**: Используй именно **Publishable key**, а не Secret key!
 
 4. Создай файл `.env` в `apps/desktop/`:
 
@@ -30,8 +43,13 @@ cp .env.example .env
 
 ```env
 VITE_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_ANON_KEY=sb_publishable_Q4DGz...
 ```
+
+### Legacy ключи
+
+Если у тебя старый проект с `anon`/`service_role` ключами - они всё ещё работают.
+Найти их можно во вкладке **Legacy anon, service_role API keys**.
 
 ## 3. Создание схемы базы данных
 
