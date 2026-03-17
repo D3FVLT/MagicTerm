@@ -25,6 +25,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Get version from tag
+        id: version
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Update package.json versions
+        shell: bash
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          # Update root package.json
+          node -e "const pkg=require('./package.json'); pkg.version='$VERSION'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2)+'\n')"
+          # Update desktop package.json
+          node -e "const pkg=require('./apps/desktop/package.json'); pkg.version='$VERSION'; require('fs').writeFileSync('apps/desktop/package.json', JSON.stringify(pkg, null, 2)+'\n')"
+          echo "Updated versions to $VERSION"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
