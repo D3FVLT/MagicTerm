@@ -18,8 +18,11 @@ export interface UpdateStatus {
 let mainWindow: BrowserWindow | null = null;
 
 function sendStatusToWindow(status: UpdateStatus) {
-  if (mainWindow) {
+  console.log('[Updater] Status:', status.status, status.info?.version || '');
+  if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('updater:status', status);
+  } else {
+    console.warn('[Updater] Window not available, cannot send status');
   }
 }
 
@@ -49,6 +52,7 @@ export function setupAutoUpdater(window: BrowserWindow) {
   });
 
   autoUpdater.on('download-progress', (progress) => {
+    console.log('Download progress:', Math.round(progress.percent) + '%');
     sendStatusToWindow({
       status: 'downloading',
       progress: Math.round(progress.percent),
@@ -56,6 +60,7 @@ export function setupAutoUpdater(window: BrowserWindow) {
   });
 
   autoUpdater.on('update-downloaded', (info) => {
+    console.log('Update downloaded:', info.version);
     sendStatusToWindow({
       status: 'downloaded',
       info: {
@@ -86,9 +91,12 @@ export function setupUpdaterHandlers(ipc: typeof ipcMain) {
 
   ipc.handle('updater:download', async () => {
     try {
+      console.log('[Updater] Starting download...');
       await autoUpdater.downloadUpdate();
+      console.log('[Updater] Download started successfully');
       return { success: true };
     } catch (error) {
+      console.error('[Updater] Download failed:', error);
       return { success: false, error: (error as Error).message };
     }
   });

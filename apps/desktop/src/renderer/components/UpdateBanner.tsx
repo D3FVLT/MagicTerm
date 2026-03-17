@@ -137,24 +137,26 @@ export function UpdateButton() {
   const [isChecking, setIsChecking] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.updater.onStatus((updateStatus) => {
+      if (updateStatus.status === 'available' && updateStatus.info) {
+        setStatus(`v${updateStatus.info.version} available`);
+      } else if (updateStatus.status === 'not-available') {
+        setStatus('Up to date');
+        setTimeout(() => setStatus(null), 3000);
+      } else if (updateStatus.status === 'error') {
+        setStatus('Check failed');
+        setTimeout(() => setStatus(null), 3000);
+      }
+      setIsChecking(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleCheck = async () => {
     setIsChecking(true);
     setStatus('Checking...');
-    
-    try {
-      const result = await window.electronAPI.updater.check();
-      if (result.success && result.updateInfo) {
-        setStatus(`v${result.updateInfo.version} available`);
-      } else {
-        setStatus('Up to date');
-        setTimeout(() => setStatus(null), 3000);
-      }
-    } catch {
-      setStatus('Check failed');
-      setTimeout(() => setStatus(null), 3000);
-    } finally {
-      setIsChecking(false);
-    }
+    await window.electronAPI.updater.check();
   };
 
   return (

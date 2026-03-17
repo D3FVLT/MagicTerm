@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useServers } from '../contexts/ServersContext';
 import { useTerminal } from '../contexts/TerminalContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,10 @@ import { EditServerModal } from './EditServerModal';
 import { UpdateButton } from './UpdateBanner';
 import type { Server } from '@magicterm/shared';
 
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 400;
+const DEFAULT_WIDTH = 256;
+
 interface SidebarProps {
   onAddServer: () => void;
 }
@@ -22,6 +26,38 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   const { currentOrg, members } = useOrganizations();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleMouseDown = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
 
   const handleConnect = async (server: Server) => {
     const existingSession = sessions.find((s) => s.serverId === server.id);
@@ -52,7 +88,16 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   console.log('Current org:', currentOrg?.name, 'Members:', members);
 
   return (
-    <aside className="flex w-64 flex-col border-r border-gray-800 bg-gray-900">
+    <aside 
+      className="relative flex flex-col border-r border-gray-800 bg-gray-900"
+      style={{ width: sidebarWidth }}
+    >
+      {/* Resize handle */}
+      <div
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-500/50 transition-colors"
+        onMouseDown={handleMouseDown}
+      />
+      
       <div className="drag-region flex h-14 items-center border-b border-gray-800 pl-20 pr-4">
         <h1 className="font-semibold text-white">Magic Term</h1>
       </div>
@@ -100,7 +145,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
               const isConnecting = session?.status === 'connecting';
 
               return (
-                <li key={server.id}>
+                <li key={server.id} className="relative group/item">
                   <button
                     onClick={() => handleConnect(server)}
                     className={`
@@ -121,9 +166,15 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                           {server.connectionType}
                         </span>
                       </div>
-                      <div className="truncate text-xs text-gray-500">
-                        {server.port !== 22 ? `:${server.port}` : ''}
-                      </div>
+                      {server.comment ? (
+                        <div className="truncate text-xs text-gray-500 italic">
+                          {server.comment}
+                        </div>
+                      ) : server.port !== 22 ? (
+                        <div className="truncate text-xs text-gray-500">
+                          :{server.port}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="hidden items-center gap-1 group-hover:flex">
                       <span

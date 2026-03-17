@@ -75,6 +75,19 @@ export function ServersProvider({ children }: ServersProviderProps) {
   }, [currentOrg]);
 
   const addServer = async (input: ServerInput): Promise<Server> => {
+    // Check for duplicate host in current scope
+    for (const existingServer of servers) {
+      try {
+        const decryptedHost = await cryptoManager.decrypt(existingServer.host);
+        if (decryptedHost.toLowerCase() === input.host.toLowerCase()) {
+          throw new Error(`Server with host "${input.host}" already exists`);
+        }
+      } catch (e) {
+        // If decryption fails, skip this server
+        if ((e as Error).message?.includes('already exists')) throw e;
+      }
+    }
+
     const encryptedHost = await cryptoManager.encrypt(input.host);
     const encryptedUsername = await cryptoManager.encrypt(input.username);
     const encryptedCredentials = await cryptoManager.encrypt(input.credentials);
@@ -87,6 +100,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
       authType: input.authType,
       connectionType: input.connectionType,
       credentials: encryptedCredentials,
+      comment: input.comment,
       orgId: currentOrg?.id,
     });
 
@@ -97,14 +111,28 @@ export function ServersProvider({ children }: ServersProviderProps) {
   const editServer = async (id: string, input: Partial<ServerInput>): Promise<Server> => {
     const updates: Record<string, unknown> = {};
 
+    // Check for duplicate host if host is being changed
+    if (input.host !== undefined) {
+      for (const existingServer of servers) {
+        if (existingServer.id === id) continue; // Skip self
+        try {
+          const decryptedHost = await cryptoManager.decrypt(existingServer.host);
+          if (decryptedHost.toLowerCase() === input.host.toLowerCase()) {
+            throw new Error(`Server with host "${input.host}" already exists`);
+          }
+        } catch (e) {
+          if ((e as Error).message?.includes('already exists')) throw e;
+        }
+      }
+      updates.host = await cryptoManager.encrypt(input.host);
+    }
+
     if (input.name !== undefined) updates.name = input.name;
     if (input.port !== undefined) updates.port = input.port;
     if (input.authType !== undefined) updates.authType = input.authType;
     if (input.connectionType !== undefined) updates.connectionType = input.connectionType;
+    if (input.comment !== undefined) updates.comment = input.comment;
 
-    if (input.host !== undefined) {
-      updates.host = await cryptoManager.encrypt(input.host);
-    }
     if (input.username !== undefined) {
       updates.username = await cryptoManager.encrypt(input.username);
     }
