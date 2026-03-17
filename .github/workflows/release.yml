@@ -9,7 +9,60 @@ permissions:
   contents: write
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release with Download Table
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Magic Term v${{ steps.version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Downloads
+
+            | Platform | Architecture | Download |
+            |----------|--------------|----------|
+            | **Windows** | x64 | [Magic-Term-Setup-${{ steps.version.outputs.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/Magic-Term-Setup-${{ steps.version.outputs.VERSION }}.exe) |
+            | **macOS** | Intel (x64) | [Magic-Term-${{ steps.version.outputs.VERSION }}.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/Magic-Term-${{ steps.version.outputs.VERSION }}.dmg) |
+            | **macOS** | Apple Silicon (ARM64) | [Magic-Term-${{ steps.version.outputs.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/Magic-Term-${{ steps.version.outputs.VERSION }}-arm64.dmg) |
+
+            ---
+
+            ### First time on macOS?
+
+            After downloading, if you see "Magic Term is damaged", run:
+            ```bash
+            xattr -cr /Applications/Magic\ Term.app
+            ```
+
+            ### Auto-updates
+
+            The app includes auto-update functionality. You'll be notified when a new version is available.
+
+            ---
+
+            <details>
+            <summary>All assets (for auto-updater)</summary>
+
+            - `latest.yml` / `latest-mac.yml` — update metadata
+            - `*.zip` — used by auto-updater on macOS
+            - `*.blockmap` — for delta updates
+
+            </details>
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   release:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
@@ -25,18 +78,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get version from tag
-        id: version
-        shell: bash
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-          echo "Building version: $VERSION"
-
       - name: Update package.json versions
         shell: bash
         run: |
-          VERSION=${{ steps.version.outputs.VERSION }}
+          VERSION=${{ needs.create-release.outputs.version }}
           node -e "const pkg=require('./package.json'); pkg.version='$VERSION'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2)+'\n')"
           node -e "const pkg=require('./apps/desktop/package.json'); pkg.version='$VERSION'; require('fs').writeFileSync('apps/desktop/package.json', JSON.stringify(pkg, null, 2)+'\n')"
           echo "Updated versions to $VERSION"
