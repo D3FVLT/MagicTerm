@@ -161,6 +161,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                       group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors
                       ${hasActiveSession ? 'bg-primary-500/20 text-primary-400' : 'text-gray-300 hover:bg-gray-800'}
                     `}
+                    title={server.comment || undefined}
                   >
                     <div
                       className={`
@@ -171,19 +172,17 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="truncate text-sm font-medium">{server.name}</span>
-                        <span className="text-xs text-gray-500 uppercase flex-shrink-0">
-                          {server.connectionType}
-                        </span>
+                        {server.port !== 22 && (
+                          <span className="text-xs text-gray-500 flex-shrink-0">
+                            :{server.port}
+                          </span>
+                        )}
                       </div>
-                      {server.comment ? (
+                      {server.comment && (
                         <div className="truncate text-xs text-gray-500 italic">
                           {server.comment}
                         </div>
-                      ) : server.port !== 22 ? (
-                        <div className="truncate text-xs text-gray-500">
-                          :{server.port}
-                        </div>
-                      ) : null}
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       {/* Terminal button */}

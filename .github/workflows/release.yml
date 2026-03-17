@@ -132,6 +132,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Build & Publish (Windows)
         if: matrix.platform == 'win'

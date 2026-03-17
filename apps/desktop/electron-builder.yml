@@ -22,9 +22,8 @@ mac:
       arch:
         - x64
         - arm64
-  identity: null
-  hardenedRuntime: false
-  gatekeeperAssess: false
+  sign: false
+  notarize: false
 win:
   target:
     - target: nsis
