@@ -20,6 +20,13 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Delete existing release
+        run: |
+          gh release delete v${{ steps.version.outputs.VERSION }} --yes || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+
       - name: Create Release with Download Table
         uses: softprops/action-gh-release@v1
         with:
@@ -31,9 +38,9 @@ jobs:
 
             | Platform | Architecture | Download |
             |----------|--------------|----------|
-            | **Windows** | x64 | [Magic-Term-Setup-${{ steps.version.outputs.VERSION }}.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/Magic-Term-Setup-${{ steps.version.outputs.VERSION }}.exe) |
-            | **macOS** | Intel (x64) | [Magic-Term-${{ steps.version.outputs.VERSION }}.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/Magic-Term-${{ steps.version.outputs.VERSION }}.dmg) |
-            | **macOS** | Apple Silicon (ARM64) | [Magic-Term-${{ steps.version.outputs.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/Magic-Term-${{ steps.version.outputs.VERSION }}-arm64.dmg) |
+            | **Windows** | x64 | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.exe) |
+            | **macOS** | Intel (x64) | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.dmg) |
+            | **macOS** | Apple Silicon (ARM64) | [MagicTerm-${{ steps.version.outputs.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-arm64.dmg) |
 
             ---
 
