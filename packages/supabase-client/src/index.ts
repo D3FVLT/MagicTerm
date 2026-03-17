@@ -94,19 +94,28 @@ export function onAuthStateChange(
 }
 
 // ============================================
-// USER PROFILES
+// USER PROFILES & SETTINGS
 // ============================================
 
 export interface UserProfile {
   id: string;
   masterKeyHash: string | null;
+  nickname: string | null;
+  defaultOrgId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserSettings {
+  nickname: string | null;
+  defaultOrgId: string | null;
 }
 
 interface EncryptedUserProfile {
   id: string;
   master_key_hash: string | null;
+  nickname: string | null;
+  default_org_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -115,6 +124,8 @@ function mapToUserProfile(row: EncryptedUserProfile): UserProfile {
   return {
     id: row.id,
     masterKeyHash: row.master_key_hash,
+    nickname: row.nickname,
+    defaultOrgId: row.default_org_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -165,6 +176,38 @@ export async function setMasterKeyHash(hash: string): Promise<void> {
     });
 
   if (error) throw error;
+}
+
+export async function getUserSettings(): Promise<UserSettings> {
+  const profile = await getUserProfile();
+  return {
+    nickname: profile?.nickname ?? null,
+    defaultOrgId: profile?.defaultOrgId ?? null,
+  };
+}
+
+export async function updateUserSettings(settings: Partial<UserSettings>): Promise<UserSettings> {
+  const user = await getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const updateData: Record<string, unknown> = {};
+  if (settings.nickname !== undefined) updateData.nickname = settings.nickname || null;
+  if (settings.defaultOrgId !== undefined) updateData.default_org_id = settings.defaultOrgId;
+
+  const { data, error } = await getSupabase()
+    .from('user_profiles')
+    .update(updateData)
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  
+  const profile = data as EncryptedUserProfile;
+  return {
+    nickname: profile.nickname,
+    defaultOrgId: profile.default_org_id,
+  };
 }
 
 // ============================================
