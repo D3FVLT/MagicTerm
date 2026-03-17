@@ -5,8 +5,10 @@ node_modules/
 # Build outputs
 dist/
 out/
-build/
 *.tsbuildinfo
+
+# But keep electron-builder resources
+!apps/desktop/build/
 
 # Electron
 release/
