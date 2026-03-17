@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import type { Server, TerminalSession, ConnectionStatus, SSHConnectionConfig } from '@magicterm/shared';
-import { cryptoManager } from '@magicterm/crypto';
+import { useServers } from './ServersContext';
 
 interface TerminalContextValue {
   sessions: TerminalSession[];
@@ -26,6 +26,7 @@ interface TerminalProviderProps {
 }
 
 export function TerminalProvider({ children }: TerminalProviderProps) {
+  const { decryptServerHost, decryptServerUsername, decryptServerCredentials } = useServers();
   const [sessions, setSessions] = useState<TerminalSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
@@ -51,11 +52,9 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     setActiveSessionId(sessionId);
 
     try {
-      const decryptedHost = await cryptoManager.decrypt(server.host);
-      const decryptedUsername = await cryptoManager.decrypt(server.username);
-      const decryptedCredentials = server.credentials
-        ? await cryptoManager.decrypt(server.credentials)
-        : undefined;
+      const decryptedHost = await decryptServerHost(server);
+      const decryptedUsername = await decryptServerUsername(server);
+      const decryptedCredentials = await decryptServerCredentials(server);
 
       const config: SSHConnectionConfig = {
         host: decryptedHost,
@@ -79,7 +78,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
       updateSessionStatus(sessionId, 'error', errorMessage);
       throw error;
     }
-  }, [updateSessionStatus]);
+  }, [decryptServerHost, decryptServerUsername, decryptServerCredentials, updateSessionStatus]);
 
   const disconnect = useCallback(async (sessionId: string): Promise<void> => {
     await window.electronAPI.ssh.disconnect(sessionId);

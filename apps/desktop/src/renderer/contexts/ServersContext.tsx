@@ -1,13 +1,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { Server, ServerInput } from '@magicterm/shared';
+import type { Server, ServerInput, ConnectionType } from '@magicterm/shared';
 import {
   listServers,
+  listAllServers,
   createServer,
   updateServer,
   deleteServer,
   subscribeToServers,
 } from '@magicterm/supabase-client';
 import { cryptoManager } from '@magicterm/crypto';
+import { useOrganizations } from './OrganizationsContext';
 
 interface ServersContextValue {
   servers: Server[];
@@ -18,6 +20,8 @@ interface ServersContextValue {
   removeServer: (id: string) => Promise<void>;
   refreshServers: () => Promise<void>;
   decryptServerCredentials: (server: Server) => Promise<string | undefined>;
+  decryptServerHost: (server: Server) => Promise<string>;
+  decryptServerUsername: (server: Server) => Promise<string>;
 }
 
 const ServersContext = createContext<ServersContextValue | null>(null);
@@ -35,6 +39,7 @@ interface ServersProviderProps {
 }
 
 export function ServersProvider({ children }: ServersProviderProps) {
+  const { currentOrg } = useOrganizations();
   const [servers, setServers] = useState<Server[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +48,9 @@ export function ServersProvider({ children }: ServersProviderProps) {
     try {
       setIsLoading(true);
       setError(null);
-      const serverList = await listServers();
+      const serverList = currentOrg
+        ? await listServers(currentOrg.id)
+        : await listServers();
       setServers(serverList);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load servers');
@@ -56,13 +63,16 @@ export function ServersProvider({ children }: ServersProviderProps) {
     refreshServers();
 
     const unsubscribe = subscribeToServers((updatedServers) => {
-      setServers(updatedServers);
-    });
+      const filtered = currentOrg
+        ? updatedServers.filter((s) => s.orgId === currentOrg.id)
+        : updatedServers.filter((s) => s.orgId === null);
+      setServers(filtered);
+    }, currentOrg?.id);
 
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [currentOrg]);
 
   const addServer = async (input: ServerInput): Promise<Server> => {
     const encryptedHost = await cryptoManager.encrypt(input.host);
@@ -75,7 +85,9 @@ export function ServersProvider({ children }: ServersProviderProps) {
       port: input.port,
       username: encryptedUsername,
       authType: input.authType,
+      connectionType: input.connectionType,
       credentials: encryptedCredentials,
+      orgId: currentOrg?.id,
     });
 
     setServers((prev) => [...prev, server]);
@@ -88,6 +100,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
     if (input.name !== undefined) updates.name = input.name;
     if (input.port !== undefined) updates.port = input.port;
     if (input.authType !== undefined) updates.authType = input.authType;
+    if (input.connectionType !== undefined) updates.connectionType = input.connectionType;
 
     if (input.host !== undefined) {
       updates.host = await cryptoManager.encrypt(input.host);
@@ -114,6 +127,14 @@ export function ServersProvider({ children }: ServersProviderProps) {
     return cryptoManager.decrypt(server.credentials);
   };
 
+  const decryptServerHost = async (server: Server): Promise<string> => {
+    return cryptoManager.decrypt(server.host);
+  };
+
+  const decryptServerUsername = async (server: Server): Promise<string> => {
+    return cryptoManager.decrypt(server.username);
+  };
+
   const value: ServersContextValue = {
     servers,
     isLoading,
@@ -123,6 +144,8 @@ export function ServersProvider({ children }: ServersProviderProps) {
     removeServer,
     refreshServers,
     decryptServerCredentials,
+    decryptServerHost,
+    decryptServerUsername,
   };
 
   return <ServersContext.Provider value={value}>{children}</ServersContext.Provider>;
