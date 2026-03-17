@@ -7,6 +7,8 @@ import {
   getSession,
   getUser,
   onAuthStateChange,
+  getMasterKeyHash,
+  setMasterKeyHash as setMasterKeyHashInSupabase,
   type User,
   type Session,
 } from '@magicterm/supabase-client';
@@ -16,6 +18,17 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+// Initialize Supabase once at module level to avoid multiple instances
+let supabaseInitialized = false;
+if (isSupabaseConfigured && !supabaseInitialized) {
+  try {
+    initSupabase(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabaseInitialized = true;
+  } catch (err) {
+    console.error('Failed to initialize Supabase:', err);
+  }
+}
 
 interface AuthContextValue {
   user: User | null;
@@ -56,46 +69,78 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [configError, setConfigError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabaseInitialized) {
       console.error('Supabase not configured. VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required.');
       setConfigError('Supabase is not configured. Please check environment variables.');
       setIsLoading(false);
       return;
     }
 
-    try {
-      initSupabase(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } catch (err) {
-      console.error('Failed to initialize Supabase:', err);
-      setConfigError('Failed to initialize Supabase');
-      setIsLoading(false);
-      return;
-    }
+    let cancelled = false;
 
     async function initialize() {
       try {
-        const authStatus = await window.electronAPI.auth.getStatus();
-        setMasterKeyHash(authStatus.masterKeyHash || null);
-
         const currentSession = await getSession();
+        if (cancelled) return;
+        
         const currentUser = await getUser();
+        if (cancelled) return;
+
         setSession(currentSession);
         setUser(currentUser);
+
+        // Always try local storage first (fast and reliable)
+        try {
+          const authStatus = await window.electronAPI.auth.getStatus();
+          if (!cancelled && authStatus.masterKeyHash) {
+            setMasterKeyHash(authStatus.masterKeyHash);
+          }
+        } catch {
+          // Ignore local storage errors
+        }
+
+        // Then try cloud sync (if table exists)
+        if (currentUser && !cancelled) {
+          try {
+            const cloudHash = await getMasterKeyHash();
+            if (cancelled) return;
+            
+            if (cloudHash) {
+              setMasterKeyHash(cloudHash);
+              // Update local cache
+              await window.electronAPI.auth.setMasterKeyHash(cloudHash);
+            }
+          } catch (cloudError) {
+            // Cloud sync failed - this is OK, table might not exist yet
+            console.warn('Cloud master key sync not available:', cloudError);
+          }
+        }
       } catch (error) {
         console.error('Failed to initialize auth:', error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
     initialize();
 
-    const { data } = onAuthStateChange((_event, newSession) => {
+    const { data } = onAuthStateChange((event, newSession) => {
+      if (cancelled) return;
+      
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      
+      // When user signs out, clear master key
+      if (event === 'SIGNED_OUT') {
+        setMasterKeyHash(null);
+        setHasMasterKey(false);
+      }
     });
 
     return () => {
+      cancelled = true;
       data.subscription.unsubscribe();
     };
   }, []);
@@ -107,6 +152,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { session: newSession, user: newUser } = await signIn(email, password);
     setSession(newSession);
     setUser(newUser);
+    
+    // Try local storage first
+    try {
+      const authStatus = await window.electronAPI.auth.getStatus();
+      if (authStatus.masterKeyHash) {
+        setMasterKeyHash(authStatus.masterKeyHash);
+      }
+    } catch {
+      // Ignore
+    }
+    
+    // Then try cloud sync
+    if (newUser) {
+      try {
+        const cloudHash = await getMasterKeyHash();
+        if (cloudHash) {
+          setMasterKeyHash(cloudHash);
+          await window.electronAPI.auth.setMasterKeyHash(cloudHash);
+        }
+      } catch (error) {
+        console.warn('Cloud master key sync not available:', error);
+      }
+    }
   };
 
   const register = async (email: string, password: string) => {
@@ -132,7 +200,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const setupMasterKey = async (masterPassword: string) => {
     const hash = await hashPassword(masterPassword);
+    
+    // Save to Supabase (cloud sync)
+    await setMasterKeyHashInSupabase(hash);
+    
+    // Also save locally for offline access
     await window.electronAPI.auth.setMasterKeyHash(hash);
+    
     cryptoManager.setMasterPassword(masterPassword);
     setMasterKeyHash(hash);
     setHasMasterKey(true);

@@ -18,10 +18,16 @@ export type { Session, User } from '@supabase/supabase-js';
 let supabaseClient: SupabaseClient | null = null;
 
 export function initSupabase(url: string, anonKey: string): SupabaseClient {
+  // Prevent creating multiple instances
+  if (supabaseClient) {
+    return supabaseClient;
+  }
+  
   supabaseClient = createClient(url, anonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
+      detectSessionInUrl: false,
     },
   });
   return supabaseClient;
@@ -85,6 +91,80 @@ export function onAuthStateChange(
   callback: (event: string, session: Session | null) => void
 ) {
   return getSupabase().auth.onAuthStateChange(callback);
+}
+
+// ============================================
+// USER PROFILES
+// ============================================
+
+export interface UserProfile {
+  id: string;
+  masterKeyHash: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface EncryptedUserProfile {
+  id: string;
+  master_key_hash: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function mapToUserProfile(row: EncryptedUserProfile): UserProfile {
+  return {
+    id: row.id,
+    masterKeyHash: row.master_key_hash,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getUserProfile(): Promise<UserProfile | null> {
+  const user = await getUser();
+  if (!user) return null;
+
+  const { data, error } = await getSupabase()
+    .from('user_profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // No profile found, create one
+      const { data: newProfile, error: insertError } = await getSupabase()
+        .from('user_profiles')
+        .insert({ id: user.id })
+        .select()
+        .single();
+      
+      if (insertError) throw insertError;
+      return mapToUserProfile(newProfile as EncryptedUserProfile);
+    }
+    throw error;
+  }
+
+  return mapToUserProfile(data as EncryptedUserProfile);
+}
+
+export async function getMasterKeyHash(): Promise<string | null> {
+  const profile = await getUserProfile();
+  return profile?.masterKeyHash ?? null;
+}
+
+export async function setMasterKeyHash(hash: string): Promise<void> {
+  const user = await getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await getSupabase()
+    .from('user_profiles')
+    .upsert({
+      id: user.id,
+      master_key_hash: hash,
+    });
+
+  if (error) throw error;
 }
 
 // ============================================
@@ -161,7 +241,10 @@ export async function createOrganization(input: OrganizationInput): Promise<Orga
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Failed to create organization:', error);
+    throw new Error(error.message || 'Failed to create organization');
+  }
   return mapToOrganization(data as EncryptedOrganization);
 }
 

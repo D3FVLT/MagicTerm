@@ -7,6 +7,7 @@ import { Button } from './ui/Button';
 import { OrganizationSwitcher } from './OrganizationSwitcher';
 import { PendingInvites } from './PendingInvites';
 import { InviteMemberModal } from './InviteMemberModal';
+import { EditServerModal } from './EditServerModal';
 import { UpdateButton } from './UpdateBanner';
 import type { Server } from '@magicterm/shared';
 
@@ -15,11 +16,12 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onAddServer }: SidebarProps) {
-  const { servers, isLoading, removeServer } = useServers();
+  const { servers, isLoading } = useServers();
   const { connect, sessions, activeSessionId, setActiveSession, disconnect } = useTerminal();
   const { logout, user } = useAuth();
   const { currentOrg, members } = useOrganizations();
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [editingServer, setEditingServer] = useState<Server | null>(null);
 
   const handleConnect = async (server: Server) => {
     const existingSession = sessions.find((s) => s.serverId === server.id);
@@ -46,9 +48,12 @@ export function Sidebar({ onAddServer }: SidebarProps) {
 
   const canInvite = currentOrg && (currentOrg.role === 'owner' || currentOrg.role === 'admin');
 
+  // Debug: log members
+  console.log('Current org:', currentOrg?.name, 'Members:', members);
+
   return (
     <aside className="flex w-64 flex-col border-r border-gray-800 bg-gray-900">
-      <div className="drag-region flex h-14 items-center border-b border-gray-800 px-4">
+      <div className="drag-region flex h-14 items-center border-b border-gray-800 pl-20 pr-4">
         <h1 className="font-semibold text-white">Magic Term</h1>
       </div>
 
@@ -120,10 +125,22 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                         {server.port !== 22 ? `:${server.port}` : ''}
                       </div>
                     </div>
-                    {session && (
-                      <button
-                        onClick={(e) => handleDisconnect(session.id, e)}
-                        className="hidden rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white group-hover:block"
+                    <div className="hidden items-center gap-1 group-hover:flex">
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingServer(server);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.stopPropagation();
+                            setEditingServer(server);
+                          }
+                        }}
+                        className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer"
+                        title="Edit server"
                       >
                         <svg
                           className="h-4 w-4"
@@ -135,11 +152,35 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                           />
                         </svg>
-                      </button>
-                    )}
+                      </span>
+                      {session && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => handleDisconnect(session.id, e)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleDisconnect(session.id, e as unknown as React.MouseEvent)}
+                          className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer"
+                          title="Disconnect"
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
                   </button>
                 </li>
               );
@@ -167,18 +208,24 @@ export function Sidebar({ onAddServer }: SidebarProps) {
             <ul className="space-y-1">
               {members
                 .filter((m) => m.status === 'active')
-                .map((member) => (
-                  <li
-                    key={member.id}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400"
-                  >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs uppercase">
-                      {member.email[0]}
-                    </div>
-                    <span className="flex-1 truncate">{member.email}</span>
-                    <span className="text-xs text-gray-500">{member.role}</span>
-                  </li>
-                ))}
+                .map((member) => {
+                  const isCurrentUser = member.userId === user?.id;
+                  const displayName = isCurrentUser ? user?.email : member.email;
+                  const displayLabel = isCurrentUser ? 'You' : (displayName || 'Unknown');
+                  
+                  return (
+                    <li
+                      key={member.id}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400"
+                    >
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs uppercase">
+                        {displayName?.[0] || '?'}
+                      </div>
+                      <span className="flex-1 truncate">{displayLabel}</span>
+                      <span className="text-xs text-gray-500">{member.role}</span>
+                    </li>
+                  );
+                })}
               {members.filter((m) => m.status === 'pending').length > 0 && (
                 <li className="px-3 py-1 text-xs text-gray-500">
                   {members.filter((m) => m.status === 'pending').length} pending invite(s)
@@ -190,8 +237,11 @@ export function Sidebar({ onAddServer }: SidebarProps) {
       </div>
 
       <div className="border-t border-gray-800 p-4">
-        <div className="mb-2 truncate text-sm text-gray-400">
-          {user?.email || 'Unknown user'}
+        <div className="mb-2 flex items-center justify-between">
+          <span className="truncate text-sm text-gray-400">
+            {user?.email || 'Unknown user'}
+          </span>
+          <span className="text-xs text-gray-600">v{__APP_VERSION__}</span>
         </div>
         <UpdateButton />
         <Button variant="ghost" size="sm" className="w-full mt-1" onClick={logout}>
@@ -213,6 +263,11 @@ export function Sidebar({ onAddServer }: SidebarProps) {
       </div>
 
       <InviteMemberModal isOpen={showInviteModal} onClose={() => setShowInviteModal(false)} />
+      <EditServerModal 
+        isOpen={editingServer !== null} 
+        onClose={() => setEditingServer(null)} 
+        server={editingServer}
+      />
     </aside>
   );
 }
