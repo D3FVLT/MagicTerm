@@ -144,3 +144,36 @@ export interface OrganizationWithRole extends Organization {
   role: MemberRole;
   memberCount?: number;
 }
+
+export interface FileEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number;
+  modifiedAt: number;
+  permissions?: string;
+  isSymlink?: boolean;
+}
+
+export interface TransferProgress {
+  id: string;
+  sessionId: string;
+  filename: string;
+  localPath: string;
+  remotePath: string;
+  transferred: number;
+  total: number;
+  direction: 'upload' | 'download';
+  status: 'pending' | 'transferring' | 'completed' | 'error' | 'cancelled';
+  error?: string;
+}
+
+export interface SFTPSession {
+  id: string;
+  serverId: string;
+  status: ConnectionStatus;
+  currentPath: string;
+  error?: string;
+}
+
+export type SessionType = 'terminal' | 'sftp';

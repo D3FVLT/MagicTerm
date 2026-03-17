@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { TerminalView } from '../components/TerminalView';
+import { SFTPView } from '../components/SFTPView';
 import { AddServerModal } from '../components/AddServerModal';
 import { UpdateBanner } from '../components/UpdateBanner';
 import { useTerminal } from '../contexts/TerminalContext';
@@ -23,8 +24,14 @@ export function MainLayout() {
       <main className="flex flex-1 flex-col overflow-hidden bg-[#1a1b26]">
         <UpdateBanner />
         
-        {activeSessionId ? (
+        {activeSessionId && activeSession?.type === 'terminal' ? (
           <TerminalView sessionId={activeSessionId} serverName={activeServer?.name} />
+        ) : activeSessionId && activeSession?.type === 'sftp' && activeSession.config ? (
+          <SFTPView
+            sessionId={activeSessionId}
+            serverName={activeServer?.name}
+            config={activeSession.config}
+          />
         ) : (
           <div className="flex flex-1 items-center justify-center bg-[#1a1b26]">
             <div className="text-center">

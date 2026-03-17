@@ -1,14 +1,19 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import type { Server, TerminalSession, ConnectionStatus, SSHConnectionConfig } from '@magicterm/shared';
+import type { Server, TerminalSession, ConnectionStatus, SSHConnectionConfig, SessionType } from '@magicterm/shared';
 import { useServers } from './ServersContext';
 
+interface ExtendedSession extends TerminalSession {
+  type: SessionType;
+  config?: SSHConnectionConfig;
+}
+
 interface TerminalContextValue {
-  sessions: TerminalSession[];
+  sessions: ExtendedSession[];
   activeSessionId: string | null;
-  connect: (server: Server) => Promise<string>;
+  connect: (server: Server, type?: SessionType) => Promise<string>;
   disconnect: (sessionId: string) => Promise<void>;
   setActiveSession: (sessionId: string | null) => void;
-  getSession: (sessionId: string) => TerminalSession | undefined;
+  getSession: (sessionId: string) => ExtendedSession | undefined;
 }
 
 const TerminalContext = createContext<TerminalContextValue | null>(null);
@@ -27,7 +32,7 @@ interface TerminalProviderProps {
 
 export function TerminalProvider({ children }: TerminalProviderProps) {
   const { decryptServerHost, decryptServerUsername, decryptServerCredentials } = useServers();
-  const [sessions, setSessions] = useState<TerminalSession[]>([]);
+  const [sessions, setSessions] = useState<ExtendedSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
   const updateSessionStatus = useCallback(
@@ -39,17 +44,8 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     []
   );
 
-  const connect = useCallback(async (server: Server): Promise<string> => {
+  const connect = useCallback(async (server: Server, type: SessionType = 'terminal'): Promise<string> => {
     const sessionId = crypto.randomUUID();
-
-    const newSession: TerminalSession = {
-      id: sessionId,
-      serverId: server.id,
-      status: 'connecting',
-    };
-
-    setSessions((prev) => [...prev, newSession]);
-    setActiveSessionId(sessionId);
 
     try {
       const decryptedHost = await decryptServerHost(server);
@@ -69,7 +65,20 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
         config.privateKey = decryptedCredentials;
       }
 
-      await window.electronAPI.ssh.connect(sessionId, config);
+      const newSession: ExtendedSession = {
+        id: sessionId,
+        serverId: server.id,
+        status: 'connecting',
+        type,
+        config,
+      };
+
+      setSessions((prev) => [...prev, newSession]);
+      setActiveSessionId(sessionId);
+
+      if (type === 'terminal') {
+        await window.electronAPI.ssh.connect(sessionId, config);
+      }
       updateSessionStatus(sessionId, 'connected');
 
       return sessionId;
@@ -81,7 +90,12 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
   }, [decryptServerHost, decryptServerUsername, decryptServerCredentials, updateSessionStatus]);
 
   const disconnect = useCallback(async (sessionId: string): Promise<void> => {
-    await window.electronAPI.ssh.disconnect(sessionId);
+    const session = sessions.find((s) => s.id === sessionId);
+    if (session?.type === 'terminal') {
+      await window.electronAPI.ssh.disconnect(sessionId);
+    } else if (session?.type === 'sftp') {
+      await window.electronAPI.sftp.disconnect(sessionId);
+    }
     setSessions((prev) => prev.filter((s) => s.id !== sessionId));
 
     if (activeSessionId === sessionId) {
@@ -95,7 +109,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
   }, []);
 
   const getSession = useCallback(
-    (sessionId: string): TerminalSession | undefined => {
+    (sessionId: string): ExtendedSession | undefined => {
       return sessions.find((s) => s.id === sessionId);
     },
     [sessions]

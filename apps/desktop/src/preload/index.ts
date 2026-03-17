@@ -1,8 +1,14 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS, type SSHConnectionConfig, type TerminalSize } from '@magicterm/shared';
+import {
+  IPC_CHANNELS,
+  type SSHConnectionConfig,
+  type TerminalSize,
+  type TransferProgress,
+} from '@magicterm/shared';
 
 export type SSHDataCallback = (sessionId: string, data: string) => void;
 export type SSHStatusCallback = (sessionId: string, status: string, error?: string) => void;
+export type TransferProgressCallback = (progress: TransferProgress) => void;
 
 export interface UpdateStatus {
   status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
@@ -71,6 +77,43 @@ const api = {
       ipcRenderer.on('updater:status', handler);
       return () => ipcRenderer.removeListener('updater:status', handler);
     },
+  },
+  sftp: {
+    connect: (sessionId: string, config: SSHConnectionConfig) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_CONNECT, sessionId, config),
+    disconnect: (sessionId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_DISCONNECT, sessionId),
+    list: (sessionId: string, remotePath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_LIST, sessionId, remotePath),
+    stat: (sessionId: string, remotePath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_STAT, sessionId, remotePath),
+    download: (sessionId: string, transferId: string, remotePath: string, localPath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_DOWNLOAD, sessionId, transferId, remotePath, localPath),
+    upload: (sessionId: string, transferId: string, localPath: string, remotePath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_UPLOAD, sessionId, transferId, localPath, remotePath),
+    delete: (sessionId: string, remotePath: string, isDirectory: boolean) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_DELETE, sessionId, remotePath, isDirectory),
+    rename: (sessionId: string, oldPath: string, newPath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_RENAME, sessionId, oldPath, newPath),
+    mkdir: (sessionId: string, remotePath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_MKDIR, sessionId, remotePath),
+    readFile: (sessionId: string, remotePath: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_READ_FILE, sessionId, remotePath),
+    writeFile: (sessionId: string, remotePath: string, content: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SFTP_WRITE_FILE, sessionId, remotePath, content),
+    onProgress: (callback: TransferProgressCallback) => {
+      const handler = (_event: Electron.IpcRendererEvent, progress: TransferProgress) => {
+        callback(progress);
+      };
+      ipcRenderer.on(IPC_CHANNELS.SFTP_PROGRESS, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.SFTP_PROGRESS, handler);
+    },
+  },
+  localFs: {
+    getHome: () => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_GET_HOME),
+    list: (dirPath: string) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_LIST, dirPath),
+    openFile: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_OPEN_FILE, filePath),
+    reveal: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_REVEAL, filePath),
   },
 };
 

@@ -9,11 +9,11 @@ import { PendingInvites } from './PendingInvites';
 import { InviteMemberModal } from './InviteMemberModal';
 import { EditServerModal } from './EditServerModal';
 import { UpdateButton } from './UpdateBanner';
-import type { Server } from '@magicterm/shared';
+import type { Server, SessionType } from '@magicterm/shared';
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
-const DEFAULT_WIDTH = 256;
+const DEFAULT_WIDTH = 400;
 
 interface SidebarProps {
   onAddServer: () => void;
@@ -59,33 +59,25 @@ export function Sidebar({ onAddServer }: SidebarProps) {
     };
   }, [isResizing]);
 
-  const handleConnect = async (server: Server) => {
-    const existingSession = sessions.find((s) => s.serverId === server.id);
+  const handleConnect = async (server: Server, type: SessionType = 'terminal') => {
+    const existingSession = sessions.find((s) => s.serverId === server.id && s.type === type);
     if (existingSession) {
       setActiveSession(existingSession.id);
       return;
     }
 
     try {
-      await connect(server);
+      await connect(server, type);
     } catch (error) {
       console.error('Failed to connect:', error);
     }
   };
 
-  const handleDisconnect = async (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    await disconnect(sessionId);
-  };
-
-  const getServerSession = (serverId: string) => {
-    return sessions.find((s) => s.serverId === serverId);
+  const getServerSessions = (serverId: string) => {
+    return sessions.filter((s) => s.serverId === serverId);
   };
 
   const canInvite = currentOrg && (currentOrg.role === 'owner' || currentOrg.role === 'admin');
-
-  // Debug: log members
-  console.log('Current org:', currentOrg?.name, 'Members:', members);
 
   return (
     <aside 
@@ -139,30 +131,31 @@ export function Sidebar({ onAddServer }: SidebarProps) {
         ) : (
           <ul className="space-y-1">
             {servers.map((server) => {
-              const session = getServerSession(server.id);
-              const isActive = session?.id === activeSessionId;
-              const isConnected = session?.status === 'connected';
-              const isConnecting = session?.status === 'connecting';
+              const serverSessions = getServerSessions(server.id);
+              const terminalSession = serverSessions.find((s) => s.type === 'terminal');
+              const sftpSession = serverSessions.find((s) => s.type === 'sftp');
+              const hasActiveSession = serverSessions.some((s) => s.id === activeSessionId);
+              const isAnyConnected = serverSessions.some((s) => s.status === 'connected');
+              const isAnyConnecting = serverSessions.some((s) => s.status === 'connecting');
 
               return (
                 <li key={server.id} className="relative group/item">
-                  <button
-                    onClick={() => handleConnect(server)}
+                  <div
                     className={`
                       group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors
-                      ${isActive ? 'bg-primary-500/20 text-primary-400' : 'text-gray-300 hover:bg-gray-800'}
+                      ${hasActiveSession ? 'bg-primary-500/20 text-primary-400' : 'text-gray-300 hover:bg-gray-800'}
                     `}
                   >
                     <div
                       className={`
-                        h-2 w-2 rounded-full
-                        ${isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-gray-600'}
+                        h-2 w-2 rounded-full flex-shrink-0
+                        ${isAnyConnected ? 'bg-green-500' : isAnyConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-gray-600'}
                       `}
                     />
-                    <div className="flex-1 truncate">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="truncate text-sm font-medium">{server.name}</span>
-                        <span className="text-xs text-gray-500 uppercase">
+                        <span className="text-xs text-gray-500 uppercase flex-shrink-0">
                           {server.connectionType}
                         </span>
                       </div>
@@ -176,7 +169,66 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                         </div>
                       ) : null}
                     </div>
-                    <div className="hidden items-center gap-1 group-hover:flex">
+                    <div className="flex items-center gap-1">
+                      {/* Terminal button */}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (terminalSession) {
+                            setActiveSession(terminalSession.id);
+                          } else {
+                            handleConnect(server, 'terminal');
+                          }
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleConnect(server, 'terminal')}
+                        className={`rounded p-1 cursor-pointer transition-colors ${
+                          terminalSession
+                            ? 'text-green-400 hover:bg-gray-700'
+                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                        }`}
+                        title={terminalSession ? 'Open Terminal (connected)' : 'Connect Terminal'}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </span>
+                      {/* SFTP button */}
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (sftpSession) {
+                            setActiveSession(sftpSession.id);
+                          } else {
+                            handleConnect(server, 'sftp');
+                          }
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && handleConnect(server, 'sftp')}
+                        className={`rounded p-1 cursor-pointer transition-colors ${
+                          sftpSession
+                            ? 'text-green-400 hover:bg-gray-700'
+                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                        }`}
+                        title={sftpSession ? 'Open SFTP (connected)' : 'Connect SFTP'}
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                          />
+                        </svg>
+                      </span>
+                      {/* Edit button - show on hover */}
                       <span
                         role="button"
                         tabIndex={0}
@@ -190,15 +242,10 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             setEditingServer(server);
                           }
                         }}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer"
+                        className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer opacity-0 group-hover/item:opacity-100 transition-opacity"
                         title="Edit server"
                       >
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -207,21 +254,28 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                           />
                         </svg>
                       </span>
-                      {session && (
+                      {/* Disconnect button - show if any session exists */}
+                      {serverSessions.length > 0 && (
                         <span
                           role="button"
                           tabIndex={0}
-                          onClick={(e) => handleDisconnect(session.id, e)}
-                          onKeyDown={(e) => e.key === 'Enter' && handleDisconnect(session.id, e as unknown as React.MouseEvent)}
-                          className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer"
-                          title="Disconnect"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            for (const session of serverSessions) {
+                              await disconnect(session.id);
+                            }
+                          }}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                              for (const session of serverSessions) {
+                                await disconnect(session.id);
+                              }
+                            }
+                          }}
+                          className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-red-400 cursor-pointer opacity-0 group-hover/item:opacity-100 transition-opacity"
+                          title="Disconnect all"
                         >
-                          <svg
-                            className="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path
                               strokeLinecap="round"
                               strokeLinejoin="round"
@@ -232,7 +286,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                         </span>
                       )}
                     </div>
-                  </button>
+                  </div>
                 </li>
               );
             })}
