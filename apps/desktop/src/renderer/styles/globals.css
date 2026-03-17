@@ -24,25 +24,46 @@ body {
 .terminal-container {
   height: 100%;
   width: 100%;
+  overflow: hidden;
+  background-color: #1a1b26;
 }
 
-.xterm {
-  padding: 8px;
+.terminal-container .xterm {
+  height: 100%;
+  padding: 8px 12px;
+  background-color: #1a1b26;
+}
+
+.terminal-container .xterm-viewport {
+  background-color: #1a1b26 !important;
+}
+
+.terminal-container .xterm-screen {
+  background-color: #1a1b26;
 }
 
 .xterm-viewport::-webkit-scrollbar {
   width: 8px;
+  background-color: #1a1b26;
 }
 
 .xterm-viewport::-webkit-scrollbar-track {
-  background: transparent;
+  background: #1a1b26;
 }
 
 .xterm-viewport::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
+  background: #3d59a1;
   border-radius: 4px;
 }
 
 .xterm-viewport::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.3);
+  background: #7aa2f7;
+}
+
+.xterm-rows {
+  text-rendering: optimizeLegibility;
+}
+
+.xterm-cursor-layer {
+  z-index: 2;
 }

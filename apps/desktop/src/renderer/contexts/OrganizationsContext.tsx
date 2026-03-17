@@ -67,9 +67,12 @@ export function OrganizationsProvider({ children }: OrganizationsProviderProps) 
         listOrganizations(),
         getPendingInvites(),
       ]);
+      console.log('Organizations loaded:', orgs.length, orgs);
+      console.log('Pending invites:', invites.length);
       setOrganizations(orgs);
       setPendingInvites(invites);
     } catch (err) {
+      console.error('Failed to load organizations:', err);
       setError(err instanceof Error ? err.message : 'Failed to load organizations');
     } finally {
       setIsLoading(false);

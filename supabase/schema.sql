@@ -22,8 +22,15 @@ create index if not exists organizations_owner_id_idx on public.organizations(ow
 -- ORGANIZATION MEMBERS
 -- ============================================
 
-create type member_role as enum ('owner', 'admin', 'member', 'viewer');
-create type invite_status as enum ('pending', 'active', 'declined');
+do $$ begin
+  create type member_role as enum ('owner', 'admin', 'member', 'viewer');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type invite_status as enum ('pending', 'active', 'declined');
+exception when duplicate_object then null;
+end $$;
 
 create table if not exists public.org_members (
   id uuid primary key default gen_random_uuid(),
@@ -49,8 +56,6 @@ create index if not exists org_members_email_idx on public.org_members(email);
 
 create table if not exists public.servers (
   id uuid primary key default gen_random_uuid(),
-  -- Personal server: user_id is set, org_id is null
-  -- Organization server: org_id is set, user_id is null
   user_id uuid references auth.users(id) on delete cascade,
   org_id uuid references public.organizations(id) on delete cascade,
   
@@ -60,14 +65,11 @@ create table if not exists public.servers (
   username text not null,
   auth_type text not null check (auth_type in ('password', 'key')),
   credentials text,
-  
-  -- Connection type: ssh, ftp, sftp
   connection_type text not null default 'ssh' check (connection_type in ('ssh', 'ftp', 'sftp')),
   
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   
-  -- Either user_id or org_id must be set, but not both
   constraint server_owner_check check (
     (user_id is not null and org_id is null) or
     (user_id is null and org_id is not null)
@@ -81,20 +83,84 @@ create index if not exists servers_org_id_idx on public.servers(org_id);
 -- ROW LEVEL SECURITY
 -- ============================================
 
--- Organizations RLS
 alter table public.organizations enable row level security;
+alter table public.org_members enable row level security;
+alter table public.servers enable row level security;
+
+-- ============================================
+-- ORG_MEMBERS policies FIRST (no reference to organizations table)
+-- This prevents circular dependency with organizations policies
+-- ============================================
+
+create policy "Users can view org members"
+  on public.org_members for select
+  using (
+    user_id = auth.uid()
+    or email = (auth.jwt() ->> 'email')
+    or org_id in (
+      select om.org_id from public.org_members om
+      where om.user_id = auth.uid()
+      and om.status = 'active'
+    )
+  );
+
+create policy "Admins can invite members"
+  on public.org_members for insert
+  with check (
+    exists (
+      select 1 from public.org_members om
+      where om.org_id = org_members.org_id
+      and om.user_id = auth.uid()
+      and om.role in ('owner', 'admin')
+      and om.status = 'active'
+    )
+  );
+
+create policy "Admins and self can update members"
+  on public.org_members for update
+  using (
+    user_id = auth.uid()
+    or email = (auth.jwt() ->> 'email')
+    or exists (
+      select 1 from public.org_members om
+      where om.org_id = org_members.org_id
+      and om.user_id = auth.uid()
+      and om.role in ('owner', 'admin')
+      and om.status = 'active'
+    )
+  );
+
+create policy "Admins and self can remove members"
+  on public.org_members for delete
+  using (
+    user_id = auth.uid()
+    or exists (
+      select 1 from public.org_members om
+      where om.org_id = org_members.org_id
+      and om.user_id = auth.uid()
+      and om.role in ('owner', 'admin')
+      and om.status = 'active'
+    )
+  );
+
+-- ============================================
+-- ORGANIZATIONS policies (safely references org_members)
+-- ============================================
 
 create policy "Users can view orgs they belong to"
   on public.organizations for select
   using (
-    owner_id = auth.uid() or
     exists (
       select 1 from public.org_members
-      where org_id = organizations.id
-      and user_id = auth.uid()
-      and status = 'active'
+      where org_members.org_id = organizations.id
+      and org_members.user_id = auth.uid()
+      and org_members.status = 'active'
     )
   );
+
+create policy "Authenticated users can create orgs"
+  on public.organizations for insert
+  with check (auth.uid() = owner_id);
 
 create policy "Only owner can update org"
   on public.organizations for update
@@ -104,100 +170,21 @@ create policy "Only owner can delete org"
   on public.organizations for delete
   using (owner_id = auth.uid());
 
-create policy "Authenticated users can create orgs"
-  on public.organizations for insert
-  with check (auth.uid() = owner_id);
+-- ============================================
+-- SERVERS policies
+-- ============================================
 
--- Org Members RLS
-alter table public.org_members enable row level security;
-
-create policy "Members can view org members"
-  on public.org_members for select
-  using (
-    user_id = auth.uid() or
-    exists (
-      select 1 from public.organizations
-      where id = org_members.org_id
-      and owner_id = auth.uid()
-    ) or
-    exists (
-      select 1 from public.org_members om
-      where om.org_id = org_members.org_id
-      and om.user_id = auth.uid()
-      and om.status = 'active'
-    )
-  );
-
-create policy "Admins can invite members"
-  on public.org_members for insert
-  with check (
-    exists (
-      select 1 from public.organizations
-      where id = org_members.org_id
-      and owner_id = auth.uid()
-    ) or
-    exists (
-      select 1 from public.org_members om
-      where om.org_id = org_members.org_id
-      and om.user_id = auth.uid()
-      and om.role in ('owner', 'admin')
-      and om.status = 'active'
-    )
-  );
-
-create policy "Admins can update members"
-  on public.org_members for update
-  using (
-    exists (
-      select 1 from public.organizations
-      where id = org_members.org_id
-      and owner_id = auth.uid()
-    ) or
-    exists (
-      select 1 from public.org_members om
-      where om.org_id = org_members.org_id
-      and om.user_id = auth.uid()
-      and om.role in ('owner', 'admin')
-      and om.status = 'active'
-    ) or
-    -- Users can accept/decline their own invites
-    (email = (select email from auth.users where id = auth.uid()))
-  );
-
-create policy "Admins can remove members"
-  on public.org_members for delete
-  using (
-    exists (
-      select 1 from public.organizations
-      where id = org_members.org_id
-      and owner_id = auth.uid()
-    ) or
-    exists (
-      select 1 from public.org_members om
-      where om.org_id = org_members.org_id
-      and om.user_id = auth.uid()
-      and om.role in ('owner', 'admin')
-      and om.status = 'active'
-    ) or
-    -- Users can leave orgs
-    user_id = auth.uid()
-  );
-
--- Servers RLS
-alter table public.servers enable row level security;
-
--- Personal servers: user can CRUD their own
 create policy "Users can view own servers"
   on public.servers for select
   using (
-    user_id = auth.uid() or
-    (
-      org_id is not null and
-      exists (
+    user_id = auth.uid()
+    or (
+      org_id is not null
+      and exists (
         select 1 from public.org_members
-        where org_id = servers.org_id
-        and user_id = auth.uid()
-        and status = 'active'
+        where org_members.org_id = servers.org_id
+        and org_members.user_id = auth.uid()
+        and org_members.status = 'active'
       )
     )
   );
@@ -205,15 +192,15 @@ create policy "Users can view own servers"
 create policy "Users can insert own servers"
   on public.servers for insert
   with check (
-    user_id = auth.uid() or
-    (
-      org_id is not null and
-      exists (
+    user_id = auth.uid()
+    or (
+      org_id is not null
+      and exists (
         select 1 from public.org_members
-        where org_id = servers.org_id
-        and user_id = auth.uid()
-        and role in ('owner', 'admin', 'member')
-        and status = 'active'
+        where org_members.org_id = servers.org_id
+        and org_members.user_id = auth.uid()
+        and org_members.role in ('owner', 'admin', 'member')
+        and org_members.status = 'active'
       )
     )
   );
@@ -221,15 +208,15 @@ create policy "Users can insert own servers"
 create policy "Users can update own servers"
   on public.servers for update
   using (
-    user_id = auth.uid() or
-    (
-      org_id is not null and
-      exists (
+    user_id = auth.uid()
+    or (
+      org_id is not null
+      and exists (
         select 1 from public.org_members
-        where org_id = servers.org_id
-        and user_id = auth.uid()
-        and role in ('owner', 'admin', 'member')
-        and status = 'active'
+        where org_members.org_id = servers.org_id
+        and org_members.user_id = auth.uid()
+        and org_members.role in ('owner', 'admin', 'member')
+        and org_members.status = 'active'
       )
     )
   );
@@ -237,15 +224,15 @@ create policy "Users can update own servers"
 create policy "Users can delete own servers"
   on public.servers for delete
   using (
-    user_id = auth.uid() or
-    (
-      org_id is not null and
-      exists (
+    user_id = auth.uid()
+    or (
+      org_id is not null
+      and exists (
         select 1 from public.org_members
-        where org_id = servers.org_id
-        and user_id = auth.uid()
-        and role in ('owner', 'admin')
-        and status = 'active'
+        where org_members.org_id = servers.org_id
+        and org_members.user_id = auth.uid()
+        and org_members.role in ('owner', 'admin')
+        and org_members.status = 'active'
       )
     )
   );
@@ -254,7 +241,6 @@ create policy "Users can delete own servers"
 -- FUNCTIONS & TRIGGERS
 -- ============================================
 
--- Auto-update updated_at
 create or replace function public.handle_updated_at()
 returns trigger as $$
 begin
@@ -263,15 +249,17 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists organizations_updated_at on public.organizations;
 create trigger organizations_updated_at
   before update on public.organizations
   for each row execute function public.handle_updated_at();
 
+drop trigger if exists servers_updated_at on public.servers;
 create trigger servers_updated_at
   before update on public.servers
   for each row execute function public.handle_updated_at();
 
--- Auto-add owner as member when org is created
+-- Auto-add owner as member when org is created (security definer bypasses RLS)
 create or replace function public.handle_new_organization()
 returns trigger as $$
 begin
@@ -287,6 +275,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
+drop trigger if exists on_organization_created on public.organizations;
 create trigger on_organization_created
   after insert on public.organizations
   for each row execute function public.handle_new_organization();
@@ -302,6 +291,7 @@ begin
 end;
 $$ language plpgsql security definer;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();

@@ -4,26 +4,33 @@ import { TerminalView } from '../components/TerminalView';
 import { AddServerModal } from '../components/AddServerModal';
 import { UpdateBanner } from '../components/UpdateBanner';
 import { useTerminal } from '../contexts/TerminalContext';
+import { useServers } from '../contexts/ServersContext';
 
 export function MainLayout() {
   const [isAddServerOpen, setIsAddServerOpen] = useState(false);
-  const { activeSessionId } = useTerminal();
+  const { activeSessionId, getSession } = useTerminal();
+  const { servers } = useServers();
+  
+  const activeSession = activeSessionId ? getSession(activeSessionId) : null;
+  const activeServer = activeSession 
+    ? servers.find(s => s.id === activeSession.serverId) 
+    : null;
 
   return (
-    <div className="flex h-screen bg-gray-950">
+    <div className="flex h-screen bg-[#1a1b26]">
       <Sidebar onAddServer={() => setIsAddServerOpen(true)} />
 
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden bg-[#1a1b26]">
         <UpdateBanner />
         
         {activeSessionId ? (
-          <TerminalView sessionId={activeSessionId} />
+          <TerminalView sessionId={activeSessionId} serverName={activeServer?.name} />
         ) : (
-          <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-1 items-center justify-center bg-[#1a1b26]">
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-800">
+              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3d59a1] to-[#7aa2f7] shadow-lg shadow-[#7aa2f7]/20">
                 <svg
-                  className="h-8 w-8 text-gray-500"
+                  className="h-10 w-10 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -31,15 +38,15 @@ export function MainLayout() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={1.5}
                     d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
               </div>
-              <h2 className="mb-2 text-lg font-medium text-gray-300">
+              <h2 className="mb-2 text-xl font-semibold text-[#c0caf5]">
                 No active connection
               </h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[#565f89]">
                 Select a server from the sidebar to connect
               </p>
             </div>
