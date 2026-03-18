@@ -284,6 +284,13 @@ jobs:
           package() {
               install -dm755 "${pkgdir}/opt/${pkgname}"
               cp -r squashfs-root/* "${pkgdir}/opt/${pkgname}/"
+              
+              find "${pkgdir}/opt/${pkgname}" -type d -exec chmod 755 {} \;
+              find "${pkgdir}/opt/${pkgname}" -type f -exec chmod 644 {} \;
+              chmod 755 "${pkgdir}/opt/${pkgname}/@magictermdesktop"
+              chmod 755 "${pkgdir}/opt/${pkgname}/chrome_crashpad_handler"
+              chmod 755 "${pkgdir}/opt/${pkgname}/chrome-sandbox"
+              chmod 4755 "${pkgdir}/opt/${pkgname}/chrome-sandbox"
 
               install -dm755 "${pkgdir}/usr/bin"
               ln -s "/opt/${pkgname}/@magictermdesktop" "${pkgdir}/usr/bin/magicterm"
