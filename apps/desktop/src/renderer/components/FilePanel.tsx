@@ -166,10 +166,18 @@ export function FilePanel({
 
   const handleContextMenu = (e: React.MouseEvent, file?: FileEntry) => {
     e.preventDefault();
+    e.stopPropagation();
     if (file && !selectedFiles.has(file.path)) {
       onSelect(new Set([file.path]));
     }
-    setContextMenu({ x: e.clientX, y: e.clientY, file });
+    const padding = 8;
+    const approxWidth = 220;
+    const approxHeight = 320;
+    const maxX = window.innerWidth - approxWidth - padding;
+    const maxY = window.innerHeight - approxHeight - padding;
+    const x = Math.max(padding, Math.min(e.clientX, maxX));
+    const y = Math.max(padding, Math.min(e.clientY, maxY));
+    setContextMenu({ x, y, file });
   };
 
   const handleRenameSubmit = (file: FileEntry) => {
