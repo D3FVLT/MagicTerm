@@ -2,7 +2,7 @@
 
 Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
-![Magic Term](https://img.shields.io/badge/version-0.3.9-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Magic Term](https://img.shields.io/badge/version-0.3.11-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
@@ -17,6 +17,15 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 - **Cross-platform** — macOS, Windows, Linux
 - **Auto-updates** — Windows (silent), macOS (notification with download link)
 
+## Known Issues
+
+**Registration flow** is functional but visually unpolished:
+
+- After registration, the confirmation email redirects to `localhost` or `google.com` — this is expected behavior
+- Clicking the confirmation link in your email verifies your account
+- The registration dialog doesn't auto-close — after confirming your email, go back to the app and click "Login"
+- This will be improved in future releases
+
 ## Installation
 
 ### Windows
@@ -28,7 +37,7 @@ Auto-updates are enabled — the app will silently update in background.
 ### macOS
 
 Download the `.dmg` for your architecture:
-- **Apple Silicon (M1/M2/M3):** [MagicTerm-arm64.dmg](../../releases/latest)
+- **Apple Silicon (M1/M2/M3/M4):** [MagicTerm-arm64.dmg](../../releases/latest)
 - **Intel:** [MagicTerm-x64.dmg](../../releases/latest)
 
 **First launch fix** (app is not code-signed):
@@ -44,8 +53,8 @@ Auto-updates show a notification with download link.
 **AppImage:**
 
 ```bash
-chmod +x MagicTerm-*-x64.AppImage
-./MagicTerm-*-x64.AppImage
+chmod +x MagicTerm-*-x86_64.AppImage
+./MagicTerm-*-x86_64.AppImage
 ```
 
 **Debian/Ubuntu:**
