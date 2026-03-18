@@ -123,6 +123,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
     steps:
       - name: Get version from tag
         id: version
@@ -204,3 +206,132 @@ jobs:
             </details>
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  aur:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if AUR secrets are set
+        id: check-secrets
+        run: |
+          if [ -z "${{ secrets.AUR_SSH_PRIVATE_KEY }}" ]; then
+            echo "AUR_SSH_PRIVATE_KEY not set, skipping AUR publish"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout
+        if: steps.check-secrets.outputs.skip != 'true'
+        uses: actions/checkout@v4
+
+      - name: Get version
+        if: steps.check-secrets.outputs.skip != 'true'
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Download AppImage for checksum
+        if: steps.check-secrets.outputs.skip != 'true'
+        id: checksum
+        run: |
+          wget -q "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage"
+          SHA256=$(sha256sum "MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage" | cut -d' ' -f1)
+          echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH
+        if: steps.check-secrets.outputs.skip != 'true'
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SSH_PRIVATE_KEY }}" > ~/.ssh/aur_key
+          chmod 600 ~/.ssh/aur_key
+          echo "Host aur.archlinux.org" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/aur_key" >> ~/.ssh/config
+          echo "  User aur" >> ~/.ssh/config
+          ssh-keyscan -t ed25519 aur.archlinux.org >> ~/.ssh/known_hosts
+
+      - name: Clone AUR repo
+        if: steps.check-secrets.outputs.skip != 'true'
+        run: |
+          git clone ssh://aur@aur.archlinux.org/magicterm-bin.git aur-repo || git init aur-repo
+
+      - name: Update PKGBUILD
+        if: steps.check-secrets.outputs.skip != 'true'
+        run: |
+          cd aur-repo
+          cat > PKGBUILD << 'EOF'
+          # Maintainer: MagicTerm <magicterm@users.noreply.github.com>
+          pkgname=magicterm-bin
+          pkgver=${{ steps.version.outputs.VERSION }}
+          pkgrel=1
+          pkgdesc="Cross-platform SSH/SFTP client with E2E encryption"
+          arch=('x86_64')
+          url="https://github.com/D3FVLT/MagicTerm"
+          license=('MIT')
+          depends=('gtk3' 'nss' 'libxss' 'libsecret')
+          provides=('magicterm')
+          conflicts=('magicterm')
+          options=('!strip')
+          source=("${pkgname}-${pkgver}.AppImage::https://github.com/D3FVLT/MagicTerm/releases/download/v${pkgver}/MagicTerm-${pkgver}-x64.AppImage")
+          sha256sums=('${{ steps.checksum.outputs.SHA256 }}')
+
+          prepare() {
+              chmod +x "${pkgname}-${pkgver}.AppImage"
+              "./${pkgname}-${pkgver}.AppImage" --appimage-extract
+          }
+
+          package() {
+              install -dm755 "${pkgdir}/opt/${pkgname}"
+              cp -r squashfs-root/* "${pkgdir}/opt/${pkgname}/"
+              
+              install -dm755 "${pkgdir}/usr/bin"
+              ln -s "/opt/${pkgname}/magic-term" "${pkgdir}/usr/bin/magicterm"
+              
+              if [ -f "squashfs-root/magic-term.desktop" ]; then
+                  install -Dm644 "squashfs-root/magic-term.desktop" "${pkgdir}/usr/share/applications/magicterm.desktop"
+              fi
+              
+              for size in 16 32 48 64 128 256 512; do
+                  if [ -f "squashfs-root/usr/share/icons/hicolor/${size}x${size}/apps/magic-term.png" ]; then
+                      install -Dm644 "squashfs-root/usr/share/icons/hicolor/${size}x${size}/apps/magic-term.png" \
+                          "${pkgdir}/usr/share/icons/hicolor/${size}x${size}/apps/magicterm.png"
+                  fi
+              done
+          }
+          EOF
+
+      - name: Generate .SRCINFO
+        if: steps.check-secrets.outputs.skip != 'true'
+        run: |
+          cd aur-repo
+          cat > .SRCINFO << EOF
+          pkgbase = magicterm-bin
+          	pkgdesc = Cross-platform SSH/SFTP client with E2E encryption
+          	pkgver = ${{ steps.version.outputs.VERSION }}
+          	pkgrel = 1
+          	url = https://github.com/D3FVLT/MagicTerm
+          	arch = x86_64
+          	license = MIT
+          	depends = gtk3
+          	depends = nss
+          	depends = libxss
+          	depends = libsecret
+          	provides = magicterm
+          	conflicts = magicterm
+          	options = !strip
+          	source = magicterm-bin-${{ steps.version.outputs.VERSION }}.AppImage::https://github.com/D3FVLT/MagicTerm/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage
+          	sha256sums = ${{ steps.checksum.outputs.SHA256 }}
+
+          pkgname = magicterm-bin
+          EOF
+
+      - name: Push to AUR
+        if: steps.check-secrets.outputs.skip != 'true'
+        run: |
+          cd aur-repo
+          git config user.email "${{ secrets.AUR_EMAIL }}"
+          git config user.name "MagicTerm Bot"
+          git add PKGBUILD .SRCINFO
+          git commit -m "Update to ${{ steps.version.outputs.VERSION }}" || echo "No changes to commit"
+          git push origin master || git push origin main || echo "Push failed - repo may not exist yet"

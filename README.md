@@ -2,19 +2,67 @@
 
 Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
+![Magic Term](https://img.shields.io/badge/version-0.3.9-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+
 ## Features
 
-- SSH terminal with full color support
-- SFTP file manager with dual-panel UI
-- Built-in text editor for remote files
-- Drag-and-drop file transfers
-- Organizations with team invites
-- Secure credential storage with E2E encryption
-- Cloud sync via Supabase
-- Cross-platform (macOS, Windows, Linux)
-- Auto-update support (macOS & Windows)
+- **SSH Terminal** — full color support, search (Cmd/Ctrl+F)
+- **SFTP File Manager** — dual-panel UI, drag-and-drop transfers
+- **Built-in Text Editor** — edit remote files directly
+- **Session Tabs** — multiple connections with persistent state
+- **Personal Snippets** — encrypted storage for tokens/secrets, paste to terminal
+- **Organizations** — team collaboration with role management (owner/admin/member/viewer)
+- **E2E Encryption** — credentials encrypted client-side with AES-256-GCM
+- **Cloud Sync** — via Supabase, works across devices
+- **Cross-platform** — macOS, Windows, Linux
+- **Auto-updates** — Windows (silent), macOS (notification with download link)
 
-## Quick Start
+## Installation
+
+### Windows
+
+Download [MagicTerm-x64.exe](../../releases/latest) and run the installer.
+
+Auto-updates are enabled — the app will silently update in background.
+
+### macOS
+
+Download the `.dmg` for your architecture:
+- **Apple Silicon (M1/M2/M3):** [MagicTerm-arm64.dmg](../../releases/latest)
+- **Intel:** [MagicTerm-x64.dmg](../../releases/latest)
+
+**First launch fix** (app is not code-signed):
+
+```bash
+xattr -cr "/Applications/Magic Term.app"
+```
+
+Auto-updates show a notification with download link.
+
+### Linux
+
+**AppImage:**
+
+```bash
+chmod +x MagicTerm-*-x64.AppImage
+./MagicTerm-*-x64.AppImage
+```
+
+**Debian/Ubuntu:**
+
+```bash
+sudo dpkg -i magicterm_*_amd64.deb
+```
+
+**Arch Linux (AUR):**
+
+```bash
+yay -S magicterm-bin
+```
+
+> Auto-updates are not supported on Linux.
+
+## Quick Start (Development)
 
 ### Prerequisites
 
@@ -23,127 +71,90 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
 ### Setup
 
-1. Clone the repository:
-
 ```bash
+# Clone
 git clone https://github.com/D3FVLT/MagicTerm.git
 cd MagicTerm
-```
 
-2. Install dependencies:
-
-```bash
+# Install dependencies
 pnpm install
-```
 
-3. Set up Supabase:
-   - Create a project at [supabase.com](https://supabase.com)
-   - Run the SQL schema from `supabase/schema.sql` in the SQL Editor
-   - Enable Email auth in Authentication settings
-
-4. Configure environment:
-
-```bash
+# Set up Supabase (see docs/SUPABASE_SETUP.md)
 cp apps/desktop/.env.example apps/desktop/.env
 # Edit .env with your Supabase credentials
-```
 
-5. Start development:
+# Run the SQL schema
+# Execute supabase/schema.sql in your Supabase SQL Editor
+# Then run additional migrations: add-user-profiles.sql, add-user-settings.sql, add-snippets.sql
 
-```bash
+# Start development
 pnpm dev
 ```
-
-## Installation
-
-### macOS
-
-Download the `.dmg` file from [Releases](../../releases).
-
-**Important:** Since the app is not code-signed, macOS may show "Magic Term is damaged". To fix this:
-
-```bash
-# Remove quarantine attribute
-xattr -cr "/Applications/Magic Term.app"
-```
-
-Or right-click the app → Open → Open (first time only).
-
-### Windows
-
-Download the `.exe` installer from [Releases](../../releases) and run it.
-
-### Linux
-
-Build from source (pre-built binaries not available):
-
-```bash
-git clone https://github.com/D3FVLT/MagicTerm.git
-cd MagicTerm
-pnpm install
-pnpm build
-pnpm --filter @magicterm/desktop dist:linux
-```
-
-The built AppImage will be in `apps/desktop/release/`.
-
-**Note:** Auto-updates are not supported on Linux.
 
 ## Project Structure
 
 ```
 MagicTerm/
 ├── apps/
-│   └── desktop/          # Electron app
+│   └── desktop/           # Electron app
 │       ├── src/
-│       │   ├── main/     # Electron main process
-│       │   ├── preload/  # Preload scripts
-│       │   └── renderer/ # React UI
+│       │   ├── main/      # Main process (SSH, SFTP, updater)
+│       │   ├── preload/   # IPC bridge
+│       │   └── renderer/  # React UI
 │       └── ...
 ├── packages/
-│   ├── shared/           # Shared types & constants
-│   ├── crypto/           # E2E encryption
-│   └── supabase-client/  # Supabase SDK wrapper
-└── ...
+│   ├── shared/            # Shared types & constants
+│   ├── crypto/            # E2E encryption (AES-256-GCM)
+│   └── supabase-client/   # Supabase SDK wrapper
+└── supabase/              # Database schema & migrations
 ```
 
 ## Security
 
-- All credentials are encrypted client-side with AES-256-GCM
-- Master password is never transmitted or stored
-- Only encrypted data is synced to Supabase
-- Row Level Security ensures users can only access their own data
+- **Client-side encryption** — All credentials encrypted with AES-256-GCM before leaving your device
+- **Master password** — Never transmitted or stored, only used to derive encryption keys
+- **Zero-knowledge sync** — Supabase only stores encrypted blobs
+- **Row Level Security** — Database policies ensure data isolation between users
 
 ## Building
 
-Build for your platform:
-
 ```bash
-# macOS
+# macOS (Intel + Apple Silicon)
 pnpm --filter @magicterm/desktop dist:mac
 
-# Windows
+# Windows (x64)
 pnpm --filter @magicterm/desktop dist:win
 
-# Linux
+# Linux (AppImage + deb)
 pnpm --filter @magicterm/desktop dist:linux
 ```
 
-## GitHub Actions Setup
+Output will be in `apps/desktop/release/`.
 
-To enable automated releases, add these secrets in your repository settings:
+## CI/CD Setup
 
-| Secret Name | Description |
-|-------------|-------------|
+Add these secrets to your GitHub repository:
+
+| Secret | Description |
+|--------|-------------|
 | `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_ANON_KEY` | Your Supabase publishable key |
+| `SUPABASE_ANON_KEY` | Supabase publishable (anon) key |
 
-Then create a tag to trigger a release:
+Create a tag to trigger a release:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.4.0
+git push origin v0.4.0
 ```
+
+The workflow builds all platforms in parallel, then creates a release with all artifacts.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## License
 
