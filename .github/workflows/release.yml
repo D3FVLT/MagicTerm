@@ -284,17 +284,17 @@ jobs:
           package() {
               install -dm755 "${pkgdir}/opt/${pkgname}"
               cp -r squashfs-root/* "${pkgdir}/opt/${pkgname}/"
-              
+
               install -dm755 "${pkgdir}/usr/bin"
-              ln -s "/opt/${pkgname}/magic-term" "${pkgdir}/usr/bin/magicterm"
-              
-              if [ -f "squashfs-root/magic-term.desktop" ]; then
-                  install -Dm644 "squashfs-root/magic-term.desktop" "${pkgdir}/usr/share/applications/magicterm.desktop"
-              fi
-              
-              for size in 16 32 48 64 128 256 512; do
-                  if [ -f "squashfs-root/usr/share/icons/hicolor/${size}x${size}/apps/magic-term.png" ]; then
-                      install -Dm644 "squashfs-root/usr/share/icons/hicolor/${size}x${size}/apps/magic-term.png" \
+              ln -s "/opt/${pkgname}/@magictermdesktop" "${pkgdir}/usr/bin/magicterm"
+
+              install -Dm644 "squashfs-root/@magictermdesktop.desktop" "${pkgdir}/usr/share/applications/magicterm.desktop"
+              sed -i 's|Exec=.*|Exec=/usr/bin/magicterm %U|g' "${pkgdir}/usr/share/applications/magicterm.desktop"
+              sed -i 's|Icon=.*|Icon=magicterm|g' "${pkgdir}/usr/share/applications/magicterm.desktop"
+
+              for size in 16 32 48 64 128 256 512 1024; do
+                  if [ -f "squashfs-root/usr/share/icons/hicolor/${size}x${size}/apps/@magictermdesktop.png" ]; then
+                      install -Dm644 "squashfs-root/usr/share/icons/hicolor/${size}x${size}/apps/@magictermdesktop.png" \
                           "${pkgdir}/usr/share/icons/hicolor/${size}x${size}/apps/magicterm.png"
                   fi
               done
