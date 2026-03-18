@@ -163,7 +163,7 @@ jobs:
             | **Windows** | x64 | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.exe) |
             | **macOS** | Intel (x64) | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.dmg) |
             | **macOS** | Apple Silicon (ARM64) | [MagicTerm-${{ steps.version.outputs.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-arm64.dmg) |
-            | **Linux** | x64 | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage) |
+            | **Linux** | x64 | [MagicTerm-${{ steps.version.outputs.VERSION }}-x86_64.AppImage](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x86_64.AppImage) |
             | **Linux** | x64 (deb) | [magicterm_${{ steps.version.outputs.VERSION }}_amd64.deb](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/magicterm_${{ steps.version.outputs.VERSION }}_amd64.deb) |
 
             ---
@@ -236,8 +236,8 @@ jobs:
         if: steps.check-secrets.outputs.skip != 'true'
         id: checksum
         run: |
-          wget -q "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage"
-          SHA256=$(sha256sum "MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage" | cut -d' ' -f1)
+          wget -q "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x86_64.AppImage"
+          SHA256=$(sha256sum "MagicTerm-${{ steps.version.outputs.VERSION }}-x86_64.AppImage" | cut -d' ' -f1)
           echo "SHA256=$SHA256" >> $GITHUB_OUTPUT
 
       - name: Setup SSH
@@ -273,7 +273,7 @@ jobs:
           provides=('magicterm')
           conflicts=('magicterm')
           options=('!strip')
-          source=("${pkgname}-${pkgver}.AppImage::https://github.com/D3FVLT/MagicTerm/releases/download/v${pkgver}/MagicTerm-${pkgver}-x64.AppImage")
+          source=("${pkgname}-${pkgver}.AppImage::https://github.com/D3FVLT/MagicTerm/releases/download/v${pkgver}/MagicTerm-${pkgver}-x86_64.AppImage")
           sha256sums=('${{ steps.checksum.outputs.SHA256 }}')
 
           prepare() {
@@ -320,7 +320,7 @@ jobs:
           	provides = magicterm
           	conflicts = magicterm
           	options = !strip
-          	source = magicterm-bin-${{ steps.version.outputs.VERSION }}.AppImage::https://github.com/D3FVLT/MagicTerm/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage
+          	source = magicterm-bin-${{ steps.version.outputs.VERSION }}.AppImage::https://github.com/D3FVLT/MagicTerm/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x86_64.AppImage
           	sha256sums = ${{ steps.checksum.outputs.SHA256 }}
 
           pkgname = magicterm-bin
