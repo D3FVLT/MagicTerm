@@ -279,13 +279,7 @@ export async function createOrganization(input: OrganizationInput): Promise<Orga
   if (!user) throw new Error('Not authenticated');
 
   const { data, error } = await getSupabase()
-    .from('organizations')
-    .insert({
-      name: input.name,
-      owner_id: user.id,
-    })
-    .select()
-    .single();
+    .rpc('create_organization', { org_name: input.name });
 
   if (error) {
     console.error('Failed to create organization:', error);
@@ -314,9 +308,7 @@ export async function updateOrganization(
 
 export async function deleteOrganization(id: string): Promise<void> {
   const { error } = await getSupabase()
-    .from('organizations')
-    .delete()
-    .eq('id', id);
+    .rpc('delete_organization', { target_org_id: id });
 
   if (error) throw error;
 }
