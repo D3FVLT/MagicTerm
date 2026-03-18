@@ -189,6 +189,7 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           const total = stats.size;
           let transferred = 0;
           let aborted = false;
+        let settled = false;
 
           const readStream = session.sftp.createReadStream(remotePath);
           const writeStream = createWriteStream(localPath);
@@ -225,6 +226,8 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           });
 
           readStream.on('error', (err: Error) => {
+            if (settled) return;
+            settled = true;
             activeTransfers.delete(transferId);
             if (!aborted) {
               sendProgress('error');
@@ -233,6 +236,8 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           });
 
           writeStream.on('error', (err: Error) => {
+            if (settled) return;
+            settled = true;
             activeTransfers.delete(transferId);
             readStream.destroy();
             if (!aborted) {
@@ -241,7 +246,9 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
             }
           });
 
-          writeStream.on('finish', () => {
+          const finalize = () => {
+            if (settled) return;
+            settled = true;
             activeTransfers.delete(transferId);
             if (!aborted) {
               sendProgress('completed');
@@ -250,7 +257,10 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
               sendProgress('cancelled');
               resolve({ success: false, error: 'Transfer cancelled' });
             }
-          });
+          };
+
+          writeStream.on('finish', finalize);
+          writeStream.on('close', finalize);
 
           readStream.pipe(writeStream);
         });
@@ -279,6 +289,7 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
         const total = localStats.size;
         let transferred = 0;
         let aborted = false;
+        let settled = false;
 
         const readStream = createReadStream(localPath);
         const writeStream = session.sftp.createWriteStream(remotePath);
@@ -316,6 +327,8 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           });
 
           readStream.on('error', (err: Error) => {
+            if (settled) return;
+            settled = true;
             activeTransfers.delete(transferId);
             if (!aborted) {
               sendProgress('error');
@@ -324,6 +337,8 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           });
 
           writeStream.on('error', (err: Error) => {
+            if (settled) return;
+            settled = true;
             activeTransfers.delete(transferId);
             readStream.destroy();
             if (!aborted) {
@@ -332,7 +347,9 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
             }
           });
 
-          writeStream.on('finish', () => {
+          const finalize = () => {
+            if (settled) return;
+            settled = true;
             activeTransfers.delete(transferId);
             if (!aborted) {
               sendProgress('completed');
@@ -341,7 +358,10 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
               sendProgress('cancelled');
               resolve({ success: false, error: 'Transfer cancelled' });
             }
-          });
+          };
+
+          writeStream.on('finish', finalize);
+          writeStream.on('close', finalize);
 
           readStream.pipe(writeStream);
         });
@@ -460,11 +480,20 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
       return new Promise((resolve) => {
         const writeStream = session.sftp.createWriteStream(remotePath);
 
-        writeStream.on('finish', () => {
+        let settled = false;
+
+        const finalize = () => {
+          if (settled) return;
+          settled = true;
           resolve({ success: true });
-        });
+        };
+
+        writeStream.on('finish', finalize);
+        writeStream.on('close', finalize);
 
         writeStream.on('error', (err: Error) => {
+          if (settled) return;
+          settled = true;
           resolve({ success: false, error: err.message });
         });
 

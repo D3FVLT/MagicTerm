@@ -11,7 +11,8 @@ interface SFTPViewProps {
 }
 
 export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
-  const [isConnected, setIsConnected] = useState(false);
+  type UploadConflictDecision = 'skip' | 'replace' | 'cancel';
+
   const [isConnecting, setIsConnecting] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
@@ -31,7 +32,34 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
   const [splitPosition, setSplitPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [editingFile, setEditingFile] = useState<FileEntry | null>(null);
+
+  const [uploadConflict, setUploadConflict] = useState<{
+    localFile: FileEntry;
+    remoteFile: FileEntry;
+    remoteFilePath: string;
+  } | null>(null);
+  const uploadConflictResolver = useRef<((d: UploadConflictDecision) => void) | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const formatBytes = (bytes: number): string => {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[Math.min(i, sizes.length - 1)];
+  };
+
+  const formatDate = (timestamp: number): string => {
+    if (!timestamp) return '—';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   useEffect(() => {
     const connect = async () => {
@@ -40,7 +68,6 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
       try {
         const result = await window.electronAPI.sftp.connect(sessionId, config);
         if (result.success) {
-          setIsConnected(true);
           loadRemoteDir('/');
         } else {
           setConnectionError(result.error || 'Failed to connect');
@@ -140,12 +167,35 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
     [sessionId]
   );
 
+  const resolveUploadConflict = (decision: UploadConflictDecision) => {
+    uploadConflictResolver.current?.(decision);
+    uploadConflictResolver.current = null;
+    setUploadConflict(null);
+  };
+
   const handleLocalTransfer = useCallback(
     async (files: FileEntry[]) => {
       for (const file of files) {
         if (file.isDirectory) continue;
-        const transferId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
         const remoteFilePath = remotePath + '/' + file.name;
+
+        const remoteStat = await window.electronAPI.sftp.stat(sessionId, remoteFilePath);
+        if (remoteStat.success && remoteStat.entry && !remoteStat.entry.isDirectory) {
+          const decision = await new Promise<UploadConflictDecision>((resolve) => {
+            uploadConflictResolver.current = resolve;
+            setUploadConflict({
+              localFile: file,
+              remoteFile: remoteStat.entry!,
+              remoteFilePath,
+            });
+          });
+
+          if (decision === 'cancel') break;
+          if (decision === 'skip') continue;
+        }
+
+        const transferId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         await window.electronAPI.sftp.upload(sessionId, transferId, file.path, remoteFilePath);
       }
     },
@@ -164,7 +214,7 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
     [sessionId, localPath]
   );
 
-  const handleLocalDelete = useCallback(async (files: FileEntry[]) => {
+  const handleLocalDelete = useCallback(async (_files: FileEntry[]) => {
     console.log('Local delete not implemented for security reasons');
   }, []);
 
@@ -398,6 +448,72 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
           onClose={() => setEditingFile(null)}
           onSaved={() => loadRemoteDir(remotePath)}
         />
+      )}
+
+      {/* Upload conflict modal */}
+      {uploadConflict && (
+        <>
+          <div className="fixed inset-0 z-50 bg-black/60" onClick={() => resolveUploadConflict('cancel')} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="w-full max-w-xl rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-3 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-500/10">
+                  <svg className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86l-8.02 14.13a2 2 0 0 0 1.71 3h16.04a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-100">File already exists</h3>
+                  <p className="text-sm text-gray-400">Choose what to do with the server version.</p>
+                </div>
+              </div>
+
+              <p className="mb-4 text-sm text-gray-300">
+                <span className="font-medium text-gray-100">{uploadConflict.localFile.name}</span> exists on the server:
+                <span className="ml-2 font-mono text-gray-400">{uploadConflict.remoteFilePath}</span>
+              </p>
+
+              <div className="space-y-2 rounded-lg border border-gray-700 bg-gray-800/30 p-3 text-sm text-gray-300">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-400">Local</span>
+                  <span className="text-right">
+                    {formatBytes(uploadConflict.localFile.size)} · {formatDate(uploadConflict.localFile.modifiedAt)}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-gray-400">Server</span>
+                  <span className="text-right">
+                    {formatBytes(uploadConflict.remoteFile.size)} · {formatDate(uploadConflict.remoteFile.modifiedAt)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-5 flex justify-end gap-3">
+                <button
+                  onClick={() => resolveUploadConflict('skip')}
+                  className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-700"
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={() => resolveUploadConflict('replace')}
+                  className="rounded-lg bg-[#7aa2f7] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6b8fd6]"
+                >
+                  Replace
+                </button>
+                <button
+                  onClick={() => resolveUploadConflict('cancel')}
+                  className="rounded-lg border border-gray-700 bg-transparent px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
