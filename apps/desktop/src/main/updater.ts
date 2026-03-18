@@ -21,6 +21,7 @@ const RELEASES_URL = 'https://github.com/D3FVLT/MagicTerm/releases/latest';
 let mainWindow: BrowserWindow | null = null;
 let isUpdaterSetup = false;
 let pendingUpdateInfo: UpdateInfo | null = null;
+let hasAutoCheckedOnStartup = false;
 
 function sendStatusToWindow(status: UpdateStatus) {
   console.log('[Updater] Status:', status.status, status.info?.version || '', status.error || '');
@@ -93,6 +94,18 @@ export function setupAutoUpdater(window: BrowserWindow) {
       error: error.message,
     });
   });
+
+  // Auto-check updates once on app startup.
+  // (Renderer currently only listens to events; it doesn't call `check` automatically.)
+  if (!hasAutoCheckedOnStartup) {
+    hasAutoCheckedOnStartup = true;
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        // Don't crash the app if update check fails (no network, no creds, etc.)
+        console.error('[Updater] Auto check failed:', err);
+      });
+    }, 8000);
+  }
 }
 
 export function setupUpdaterHandlers(ipc: typeof ipcMain) {

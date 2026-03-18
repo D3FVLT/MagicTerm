@@ -2,7 +2,7 @@
 
 Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
-![Magic Term](https://img.shields.io/badge/version-0.3.15-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Magic Term](https://img.shields.io/badge/version-0.3.16-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
