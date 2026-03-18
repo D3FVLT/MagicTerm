@@ -1,6 +1,6 @@
 import pkg from 'electron-updater';
 const { autoUpdater } = pkg;
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, shell } from 'electron';
 
 export interface UpdateInfo {
   version: string;
@@ -14,6 +14,9 @@ export interface UpdateStatus {
   progress?: number;
   error?: string;
 }
+
+const isMac = process.platform === 'darwin';
+const RELEASES_URL = 'https://github.com/D3FVLT/MagicTerm/releases/latest';
 
 let mainWindow: BrowserWindow | null = null;
 let isUpdaterSetup = false;
@@ -93,6 +96,11 @@ export function setupAutoUpdater(window: BrowserWindow) {
 }
 
 export function setupUpdaterHandlers(ipc: typeof ipcMain) {
+  // Return platform info to renderer
+  ipc.handle('updater:getPlatform', () => {
+    return { platform: process.platform, isMac };
+  });
+
   ipc.handle('updater:check', async () => {
     try {
       const result = await autoUpdater.checkForUpdates();
@@ -103,6 +111,12 @@ export function setupUpdaterHandlers(ipc: typeof ipcMain) {
   });
 
   ipc.handle('updater:download', async () => {
+    // On macOS, don't download - just open release page
+    if (isMac) {
+      shell.openExternal(RELEASES_URL);
+      return { success: true, openedExternal: true };
+    }
+
     try {
       console.log('[Updater] Starting download...');
       await autoUpdater.downloadUpdate();
@@ -126,12 +140,24 @@ export function setupUpdaterHandlers(ipc: typeof ipcMain) {
   });
 
   ipc.handle('updater:install', () => {
+    // On macOS, just open release page (shouldn't reach here normally)
+    if (isMac) {
+      shell.openExternal(RELEASES_URL);
+      return;
+    }
+
     // setImmediate + short delay: electron-updater needs time to finalize before quitAndInstall
     // (see electron-builder#5521, #7054 - quitAndInstall can fail if called too soon)
     setImmediate(() => {
       setTimeout(() => {
-        autoUpdater.quitAndInstall(false, true);
+        // Silent install on Windows (isSilent=true, isForceRunAfter=true)
+        autoUpdater.quitAndInstall(true, true);
       }, 1500);
     });
+  });
+
+  // Open releases page directly
+  ipc.handle('updater:openReleasePage', () => {
+    shell.openExternal(RELEASES_URL);
   });
 }

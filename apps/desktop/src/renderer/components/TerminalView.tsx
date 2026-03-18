@@ -11,6 +11,7 @@ import '@xterm/xterm/css/xterm.css';
 interface TerminalViewProps {
   sessionId: string;
   serverName?: string;
+  isActive?: boolean;
 }
 
 const TERMIUS_THEME = {
@@ -39,7 +40,7 @@ const TERMIUS_THEME = {
   brightWhite: '#c0caf5',
 };
 
-export function TerminalView({ sessionId, serverName }: TerminalViewProps) {
+export function TerminalView({ sessionId, serverName, isActive = true }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -101,6 +102,19 @@ export function TerminalView({ sessionId, serverName }: TerminalViewProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showSearch, toggleSearch]);
+
+  useEffect(() => {
+    if (isActive && fitAddonRef.current && terminalRef.current) {
+      const timer = setTimeout(() => {
+        try {
+          fitAddonRef.current?.fit();
+          terminalRef.current?.focus();
+        } catch {
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isActive]);
 
   useEffect(() => {
     if (!containerRef.current) return;

@@ -18,8 +18,13 @@ export function UpdateBanner() {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
+    window.electronAPI.updater.getPlatform().then((info) => {
+      setIsMac(info.isMac);
+    });
+
     const unsubscribe = window.electronAPI.updater.onStatus((status) => {
       setUpdateStatus(status);
       if (status.status === 'available' || status.status === 'downloaded') {
@@ -33,10 +38,20 @@ export function UpdateBanner() {
   }, []);
 
   const handleDownload = async () => {
-    await window.electronAPI.updater.download();
+    if (isMac) {
+      // On macOS, just open release page
+      await window.electronAPI.updater.openReleasePage();
+      setDismissed(true);
+    } else {
+      await window.electronAPI.updater.download();
+    }
   };
 
   const handleInstall = () => {
+    if (isMac) {
+      window.electronAPI.updater.openReleasePage();
+      return;
+    }
     setIsInstalling(true);
     window.electronAPI.updater.install();
   };
@@ -90,6 +105,7 @@ export function UpdateBanner() {
           {updateStatus.status === 'available' && (
             <span className="text-sm text-gray-200">
               Version {updateStatus.info?.version} is available
+              {isMac && ' (manual download required)'}
             </span>
           )}
 
@@ -117,7 +133,7 @@ export function UpdateBanner() {
         <div className="flex items-center gap-2">
           {updateStatus.status === 'available' && (
             <Button size="sm" onClick={handleDownload}>
-              Download
+              {isMac ? 'Download from GitHub' : 'Download'}
             </Button>
           )}
 

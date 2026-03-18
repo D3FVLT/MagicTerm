@@ -67,9 +67,11 @@ const api = {
     delete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.SERVERS_DELETE, id),
   },
   updater: {
+    getPlatform: () => ipcRenderer.invoke('updater:getPlatform'),
     check: () => ipcRenderer.invoke('updater:check'),
     download: () => ipcRenderer.invoke('updater:download'),
     install: () => ipcRenderer.invoke('updater:install'),
+    openReleasePage: () => ipcRenderer.invoke('updater:openReleasePage'),
     onStatus: (callback: UpdateStatusCallback) => {
       const handler = (_event: Electron.IpcRendererEvent, status: UpdateStatus) => {
         callback(status);
