@@ -45,9 +45,11 @@ export interface ElectronAPI {
     delete: (id: string) => Promise<{ id: string }>;
   };
   updater: {
+    getPlatform: () => Promise<{ platform: string; isMac: boolean }>;
     check: () => Promise<{ success: boolean; updateInfo?: UpdateInfo; error?: string }>;
-    download: () => Promise<{ success: boolean; error?: string }>;
+    download: () => Promise<{ success: boolean; error?: string; openedExternal?: boolean }>;
     install: () => void;
+    openReleasePage: () => Promise<void>;
     onStatus: (callback: UpdateStatusCallback) => () => void;
   };
   sftp: {

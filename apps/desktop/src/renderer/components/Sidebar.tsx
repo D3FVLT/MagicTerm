@@ -9,7 +9,7 @@ import { PendingInvites } from './PendingInvites';
 import { InviteMemberModal } from './InviteMemberModal';
 import { EditServerModal } from './EditServerModal';
 import { SettingsModal } from './SettingsModal';
-import type { Server, SessionType } from '@magicterm/shared';
+import type { Server, SessionType, MemberRole } from '@magicterm/shared';
 
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 400;
@@ -23,28 +23,53 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   const { servers, isLoading } = useServers();
   const { connect, sessions, activeSessionId, setActiveSession, disconnect } = useTerminal();
   const { logout, user } = useAuth();
-  const { currentOrg, members } = useOrganizations();
+  const { currentOrg, members, changeRole, remove } = useOrganizations();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
+  const [memberMenuId, setMemberMenuId] = useState<string | null>(null);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const memberMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setShowUserMenu(false);
       }
+      if (memberMenuRef.current && !memberMenuRef.current.contains(e.target as Node)) {
+        setMemberMenuId(null);
+      }
     };
-    if (showUserMenu) {
+    if (showUserMenu || memberMenuId) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showUserMenu]);
+  }, [showUserMenu, memberMenuId]);
+
+  const canManageMembers = currentOrg?.role === 'owner' || currentOrg?.role === 'admin';
+
+  const handleChangeRole = async (memberId: string, newRole: MemberRole) => {
+    try {
+      await changeRole(memberId, newRole);
+      setMemberMenuId(null);
+    } catch (err) {
+      console.error('Failed to change role:', err);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm('Remove this member from the organization?')) return;
+    try {
+      await remove(memberId);
+      setMemberMenuId(null);
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+    }
+  };
 
   const handleMouseDown = useCallback(() => {
     setIsResizing(true);
@@ -352,19 +377,76 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                   .filter((m) => m.status === 'active')
                   .map((member) => {
                     const isCurrentUser = member.userId === user?.id;
-                    const displayName = isCurrentUser ? user?.email : member.email;
+                    const isOwner = member.role === 'owner';
+                    const displayName = member.nickname || (isCurrentUser ? user?.email : member.email);
                     const displayLabel = isCurrentUser ? 'You' : (displayName || 'Unknown');
+                    const canEdit = canManageMembers && !isCurrentUser && !isOwner;
                     
                     return (
                       <li
                         key={member.id}
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400"
+                        className="group/member relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400"
                       >
                         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs uppercase">
                           {displayName?.[0] || '?'}
                         </div>
                         <span className="flex-1 truncate">{displayLabel}</span>
-                        <span className="text-xs text-gray-500">{member.role}</span>
+                        <span className={`text-xs ${member.role === 'owner' ? 'text-yellow-500' : member.role === 'admin' ? 'text-blue-400' : 'text-gray-500'}`}>
+                          {member.role}
+                        </span>
+                        
+                        {/* Member management button */}
+                        {canEdit && (
+                          <div className="relative" ref={memberMenuId === member.id ? memberMenuRef : null}>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMemberMenuId(memberMenuId === member.id ? null : member.id);
+                              }}
+                              className="rounded p-1 text-gray-500 opacity-0 group-hover/member:opacity-100 hover:bg-gray-700 hover:text-white"
+                            >
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                              </svg>
+                            </button>
+                            
+                            {/* Dropdown menu */}
+                            {memberMenuId === member.id && (
+                              <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-xl">
+                                <div className="px-3 py-1.5 text-xs text-gray-500">Change role</div>
+                                {(['admin', 'member', 'viewer'] as MemberRole[]).map((role) => (
+                                  <button
+                                    key={role}
+                                    onClick={() => handleChangeRole(member.id, role)}
+                                    disabled={member.role === role}
+                                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm ${
+                                      member.role === role
+                                        ? 'text-gray-500 cursor-default'
+                                        : 'text-gray-300 hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {member.role === role && (
+                                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                      </svg>
+                                    )}
+                                    <span className={member.role === role ? '' : 'ml-5'}>{role}</span>
+                                  </button>
+                                ))}
+                                <div className="my-1 border-t border-gray-700" />
+                                <button
+                                  onClick={() => handleRemoveMember(member.id)}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-gray-700"
+                                >
+                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                  Remove
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </li>
                     );
                   })}

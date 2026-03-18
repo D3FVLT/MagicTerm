@@ -41,6 +41,8 @@ jobs:
             | **Windows** | x64 | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.exe](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.exe) |
             | **macOS** | Intel (x64) | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.dmg) |
             | **macOS** | Apple Silicon (ARM64) | [MagicTerm-${{ steps.version.outputs.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-arm64.dmg) |
+            | **Linux** | x64 | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.AppImage) |
+            | **Linux** | x64 (deb) | [magicterm_${{ steps.version.outputs.VERSION }}_amd64.deb](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/magicterm_${{ steps.version.outputs.VERSION }}_amd64.deb) |
 
             ---
 
@@ -51,16 +53,31 @@ jobs:
             xattr -cr /Applications/Magic\ Term.app
             ```
 
+            ### Linux Installation
+
+            **AppImage:**
+            ```bash
+            chmod +x MagicTerm-*.AppImage
+            ./MagicTerm-*.AppImage
+            ```
+
+            **Debian/Ubuntu:**
+            ```bash
+            sudo dpkg -i magicterm_*.deb
+            ```
+
             ### Auto-updates
 
-            The app includes auto-update functionality. You'll be notified when a new version is available.
+            - **Windows**: Auto-updates enabled (silent install)
+            - **macOS**: Manual download required (notification will appear)
+            - **Linux**: Manual download required
 
             ---
 
             <details>
             <summary>All assets (for auto-updater)</summary>
 
-            - `latest.yml` / `latest-mac.yml` — update metadata
+            - `latest.yml` / `latest-mac.yml` / `latest-linux.yml` — update metadata
             - `*.zip` — used by auto-updater on macOS
             - `*.blockmap` — for delta updates
 
@@ -78,6 +95,8 @@ jobs:
             platform: mac
           - os: windows-latest
             platform: win
+          - os: ubuntu-latest
+            platform: linux
 
     runs-on: ${{ matrix.os }}
 
@@ -140,6 +159,17 @@ jobs:
         run: |
           cd apps/desktop
           npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Build & Publish (Linux)
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          cd apps/desktop
+          npx electron-builder --linux AppImage deb --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
