@@ -24,7 +24,13 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 - After registration, the confirmation email redirects to `localhost` or `google.com` — this is expected behavior
 - Clicking the confirmation link in your email verifies your account
 - The registration dialog doesn't auto-close — after confirming your email, go back to the app and click "Login"
-- This will be improved in future releases
+
+**UI quirks:**
+
+- Nickname changes don't reflect in organization member lists (shows email instead)
+- Some UI elements may jump/flicker, especially when changing member roles in organizations
+
+These will be improved in future releases.
 
 ## Installation
 
