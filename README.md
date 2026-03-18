@@ -2,7 +2,7 @@
 
 Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
-![Magic Term](https://img.shields.io/badge/version-0.3.13-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Magic Term](https://img.shields.io/badge/version-0.3.15-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
@@ -25,9 +25,14 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 - Clicking the confirmation link in your email verifies your account
 - The registration dialog doesn't auto-close — after confirming your email, go back to the app and click "Login"
 
+**Organizations:**
+
+- Inviting members does not send an email — the invite appears in the app UI only
+- Invited users need to re-login (restart the app) to see pending invites
+- Nickname changes don't reflect in organization member lists (shows email instead)
+
 **UI quirks:**
 
-- Nickname changes don't reflect in organization member lists (shows email instead)
 - Some UI elements may jump/flicker, especially when changing member roles in organizations
 
 These will be improved in future releases.
