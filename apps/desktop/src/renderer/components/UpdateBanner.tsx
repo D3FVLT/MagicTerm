@@ -19,6 +19,8 @@ export function UpdateBanner() {
   const [dismissed, setDismissed] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [isMac, setIsMac] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [shownVersion, setShownVersion] = useState<string | null>(null);
 
   useEffect(() => {
     window.electronAPI.updater.getPlatform().then((info) => {
@@ -29,13 +31,18 @@ export function UpdateBanner() {
       setUpdateStatus(status);
       if (status.status === 'available' || status.status === 'downloaded') {
         setDismissed(false);
+        // Auto-open changelog once per new version.
+        if (status.info?.version && status.info.version !== shownVersion) {
+          setShowChangelog(true);
+          setShownVersion(status.info.version);
+        }
       }
     });
 
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [shownVersion]);
 
   const handleDownload = async () => {
     if (isMac) {
@@ -137,6 +144,16 @@ export function UpdateBanner() {
             </Button>
           )}
 
+          {(updateStatus.status === 'available' || updateStatus.status === 'downloaded') && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowChangelog(true)}
+            >
+              View Changelog
+            </Button>
+          )}
+
           {updateStatus.status === 'downloaded' && (
             <Button size="sm" onClick={handleInstall} disabled={isInstalling}>
               {isInstalling ? 'Restarting...' : 'Restart & Install'}
@@ -158,6 +175,36 @@ export function UpdateBanner() {
           </button>
         </div>
       </div>
+
+      {showChangelog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-[#292e42] bg-[#1f2335] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#292e42] px-4 py-3">
+              <h3 className="text-sm font-semibold text-[#c0caf5]">
+                What&apos;s New in v{updateStatus.info?.version || 'next update'}
+              </h3>
+              <button
+                onClick={() => setShowChangelog(false)}
+                className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto px-4 py-3">
+              <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-[#c0caf5]">
+                {updateStatus.info?.releaseNotes?.trim() || 'Changelog is not available for this release.'}
+              </pre>
+            </div>
+            <div className="flex justify-end border-t border-[#292e42] px-4 py-3">
+              <Button size="sm" onClick={() => setShowChangelog(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -50,7 +50,7 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
   const [showSnippets, setShowSnippets] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const handleResize = useCallback(() => {
+  const syncPtySize = useCallback(() => {
     if (fitAddonRef.current && terminalRef.current && containerRef.current) {
       try {
         fitAddonRef.current.fit();
@@ -63,6 +63,10 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
       }
     }
   }, [sessionId]);
+
+  const handleResize = useCallback(() => {
+    syncPtySize();
+  }, [syncPtySize]);
 
   const handleSearch = useCallback((direction: 'next' | 'prev') => {
     if (!searchAddonRef.current || !searchQuery) return;
@@ -105,16 +109,24 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
 
   useEffect(() => {
     if (isActive && fitAddonRef.current && terminalRef.current) {
-      const timer = setTimeout(() => {
-        try {
-          fitAddonRef.current?.fit();
+      // Re-sync terminal dimensions a few times after activation.
+      // Some layouts/fonts settle asynchronously and bash/zsh history redraw
+      // can glitch if PTY width is stale.
+      const timers = [
+        setTimeout(() => {
+          syncPtySize();
           terminalRef.current?.focus();
-        } catch {
-        }
-      }, 50);
-      return () => clearTimeout(timer);
+        }, 20),
+        setTimeout(() => {
+          syncPtySize();
+        }, 120),
+        setTimeout(() => {
+          syncPtySize();
+        }, 300),
+      ];
+      return () => timers.forEach((t) => clearTimeout(t));
     }
-  }, [isActive]);
+  }, [isActive, syncPtySize]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -168,10 +180,49 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
       console.warn('WebGL addon failed to load, using canvas renderer');
     }
 
-    fitAddon.fit();
+    // Initial PTY sync (with a delayed second pass after layout settles).
+    syncPtySize();
+    requestAnimationFrame(() => {
+      syncPtySize();
+    });
 
-    const { cols, rows } = terminal;
-    window.electronAPI.ssh.resize(sessionId, { cols, rows });
+    terminal.attachCustomKeyEventHandler((ev) => {
+      // Windows copy/paste ergonomics:
+      // - Ctrl+Shift+C copies selection
+      // - Ctrl+C copies if there is selection (otherwise sends SIGINT to shell)
+      // - Ctrl+Shift+V pastes clipboard text
+      if (ev.type === 'keydown') {
+        const key = ev.key.toLowerCase();
+        const hasCtrl = ev.ctrlKey || ev.metaKey;
+        const hasSelection = terminal.hasSelection();
+
+        if (hasCtrl && ev.shiftKey && key === 'c') {
+          if (hasSelection) {
+            void navigator.clipboard.writeText(terminal.getSelection());
+          }
+          ev.preventDefault();
+          return false;
+        }
+
+        if (hasCtrl && !ev.shiftKey && key === 'c' && hasSelection) {
+          void navigator.clipboard.writeText(terminal.getSelection());
+          ev.preventDefault();
+          return false;
+        }
+
+        if (hasCtrl && ev.shiftKey && key === 'v') {
+          void navigator.clipboard.readText().then((text) => {
+            if (text) {
+              window.electronAPI.ssh.sendData(sessionId, text);
+            }
+          });
+          ev.preventDefault();
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     terminal.onData((data) => {
       window.electronAPI.ssh.sendData(sessionId, data);

@@ -23,6 +23,35 @@ let isUpdaterSetup = false;
 let pendingUpdateInfo: UpdateInfo | null = null;
 let hasAutoCheckedOnStartup = false;
 
+function normalizeReleaseNotes(
+  releaseNotes: unknown
+): string | undefined {
+  if (!releaseNotes) return undefined;
+  if (typeof releaseNotes === 'string') return releaseNotes;
+
+  if (Array.isArray(releaseNotes)) {
+    const notes = releaseNotes
+      .map((entry) => {
+        if (typeof entry === 'string') return entry;
+        if (entry && typeof entry === 'object') {
+          const maybeNote = (entry as { note?: unknown }).note;
+          if (typeof maybeNote === 'string') return maybeNote;
+        }
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n\n');
+    return notes || undefined;
+  }
+
+  if (releaseNotes && typeof releaseNotes === 'object') {
+    const maybeNote = (releaseNotes as { note?: unknown }).note;
+    if (typeof maybeNote === 'string') return maybeNote;
+  }
+
+  return undefined;
+}
+
 function sendStatusToWindow(status: UpdateStatus) {
   console.log('[Updater] Status:', status.status, status.info?.version || '', status.error || '');
   const targetWindow = mainWindow && !mainWindow.isDestroyed()
@@ -54,7 +83,7 @@ export function setupAutoUpdater(window: BrowserWindow) {
     pendingUpdateInfo = {
       version: info.version,
       releaseDate: info.releaseDate,
-      releaseNotes: typeof info.releaseNotes === 'string' ? info.releaseNotes : undefined,
+      releaseNotes: normalizeReleaseNotes(info.releaseNotes),
     };
     sendStatusToWindow({
       status: 'available',
@@ -82,7 +111,7 @@ export function setupAutoUpdater(window: BrowserWindow) {
       info: {
         version: info.version,
         releaseDate: info.releaseDate,
-        releaseNotes: typeof info.releaseNotes === 'string' ? info.releaseNotes : undefined,
+        releaseNotes: normalizeReleaseNotes(info.releaseNotes),
       },
     });
   });
@@ -95,13 +124,10 @@ export function setupAutoUpdater(window: BrowserWindow) {
     });
   });
 
-  // Auto-check updates once on app startup.
-  // (Renderer currently only listens to events; it doesn't call `check` automatically.)
   if (!hasAutoCheckedOnStartup) {
     hasAutoCheckedOnStartup = true;
     setTimeout(() => {
       autoUpdater.checkForUpdates().catch((err) => {
-        // Don't crash the app if update check fails (no network, no creds, etc.)
         console.error('[Updater] Auto check failed:', err);
       });
     }, 8000);
