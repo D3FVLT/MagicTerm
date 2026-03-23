@@ -126,11 +126,41 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.VERSION }}
     steps:
+      - name: Checkout (for changelog)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Get version from tag
         id: version
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate What's New from commits
+        id: changelog
+        shell: bash
+        run: |
+          CURRENT_TAG="v${{ steps.version.outputs.VERSION }}"
+          PREV_TAG=$(git tag --sort=-v:refname | awk -v cur="$CURRENT_TAG" '$0!=cur{print; exit}')
+
+          if [ -n "$PREV_TAG" ]; then
+            echo "Previous tag: $PREV_TAG"
+            COMMITS=$(git log --pretty=format:'- %s (%h)' "${PREV_TAG}..${CURRENT_TAG}")
+          else
+            echo "No previous tag found, using latest commits"
+            COMMITS=$(git log --pretty=format:'- %s (%h)' -n 20 "${CURRENT_TAG}")
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- Maintenance update"
+          fi
+
+          {
+            echo "WHATS_NEW<<EOF"
+            echo "$COMMITS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -156,6 +186,14 @@ jobs:
           prerelease: false
           files: artifacts/*
           body: |
+            ## What's New
+
+            ${{ steps.changelog.outputs.WHATS_NEW }}
+
+            > Full changelog: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.VERSION }}
+
+            ---
+
             ## Downloads
 
             | Platform | Architecture | Download |
@@ -179,8 +217,8 @@ jobs:
 
             **AppImage:**
             ```bash
-            chmod +x MagicTerm-*.AppImage
-            ./MagicTerm-*.AppImage
+            chmod +x MagicTerm-*-x86_64.AppImage
+            ./MagicTerm-*-x86_64.AppImage
             ```
 
             **Debian/Ubuntu:**

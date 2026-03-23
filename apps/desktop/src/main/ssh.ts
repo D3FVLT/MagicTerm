@@ -35,7 +35,13 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
         }
 
         client.on('ready', () => {
-          client.shell((err, stream) => {
+          client.shell(
+            {
+              term: 'xterm-256color',
+              cols: 120,
+              rows: 40,
+            },
+            (err, stream) => {
             if (err) {
               reject(err);
               return;
@@ -66,7 +72,8 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
             });
 
             resolve({ success: true });
-          });
+            }
+          );
         });
 
         client.on('error', (err) => {
