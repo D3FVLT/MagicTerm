@@ -69,8 +69,8 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl">
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="animate-slide-down absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl">
             <button
               onClick={() => handleSelect(null)}
               className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-800 ${

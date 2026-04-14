@@ -461,6 +461,8 @@ function mapToServer(row: EncryptedServer): Server {
     connectionType: row.connection_type,
     credentials: row.credentials ?? undefined,
     comment: row.comment ?? undefined,
+    isPinned: row.is_pinned ?? false,
+    sortOrder: row.sort_order ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -478,7 +480,10 @@ export async function listServers(orgId?: string): Promise<Server[]> {
     query = query.eq('user_id', user.id);
   }
 
-  const { data, error } = await query.order('name');
+  const { data, error } = await query
+    .order('is_pinned', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('name');
 
   if (error) throw error;
   return (data as EncryptedServer[]).map(mapToServer);
@@ -488,6 +493,8 @@ export async function listAllServers(): Promise<Server[]> {
   const { data, error } = await getSupabase()
     .from('servers')
     .select('*')
+    .order('is_pinned', { ascending: false })
+    .order('sort_order', { ascending: true })
     .order('name');
 
   if (error) throw error;
@@ -567,6 +574,29 @@ export async function updateServer(
 
   if (error) throw error;
   return mapToServer(data as EncryptedServer);
+}
+
+export async function toggleServerPin(id: string, isPinned: boolean): Promise<Server> {
+  const { data, error } = await getSupabase()
+    .from('servers')
+    .update({ is_pinned: isPinned, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapToServer(data as EncryptedServer);
+}
+
+export async function updateServerOrders(orders: { id: string; sort_order: number }[]): Promise<void> {
+  for (const { id, sort_order } of orders) {
+    const { error } = await getSupabase()
+      .from('servers')
+      .update({ sort_order, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+  }
 }
 
 export async function deleteServer(id: string): Promise<void> {
