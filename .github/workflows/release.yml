@@ -145,20 +145,53 @@ jobs:
           PREV_TAG=$(git tag --sort=-v:refname | awk -v cur="$CURRENT_TAG" '$0!=cur{print; exit}')
 
           if [ -n "$PREV_TAG" ]; then
-            echo "Previous tag: $PREV_TAG"
-            COMMITS=$(git log --pretty=format:'- %s (%h)' "${PREV_TAG}..${CURRENT_TAG}")
+            RANGE="${PREV_TAG}..${CURRENT_TAG}"
           else
-            echo "No previous tag found, using latest commits"
-            COMMITS=$(git log --pretty=format:'- %s (%h)' -n 20 "${CURRENT_TAG}")
+            RANGE="${CURRENT_TAG}"
           fi
 
-          if [ -z "$COMMITS" ]; then
-            COMMITS="- Maintenance update"
+          FIXES=""
+          FEATURES=""
+          OTHER=""
+
+          while IFS= read -r line; do
+            msg=$(echo "$line" | sed 's/^- //')
+            # Skip version bump commits
+            if echo "$msg" | grep -qiE '^chore(\(.+\))?: bump version'; then
+              continue
+            fi
+            # Strip conventional commit prefix for cleaner display
+            clean=$(echo "$msg" | sed -E 's/^(fix|feat|chore|refactor|perf|docs|style|test|ci|build)(\(.+\))?: //')
+            hash=$(echo "$msg" | grep -oE '\([a-f0-9]+\)$' || true)
+            clean=$(echo "$clean" | sed -E 's/ \([a-f0-9]+\)$//')
+            
+            if echo "$msg" | grep -qE '^fix(\(.+\))?:'; then
+              FIXES="${FIXES}- ${clean} ${hash}"$'\n'
+            elif echo "$msg" | grep -qE '^feat(\(.+\))?:'; then
+              FEATURES="${FEATURES}- ${clean} ${hash}"$'\n'
+            else
+              OTHER="${OTHER}- ${clean} ${hash}"$'\n'
+            fi
+          done <<< "$(git log --pretty=format:'- %s (%h)' "$RANGE")"
+
+          RESULT=""
+          if [ -n "$FEATURES" ]; then
+            RESULT="${RESULT}### New Features"$'\n'"${FEATURES}"$'\n'
+          fi
+          if [ -n "$FIXES" ]; then
+            RESULT="${RESULT}### Bug Fixes"$'\n'"${FIXES}"$'\n'
+          fi
+          if [ -n "$OTHER" ]; then
+            RESULT="${RESULT}### Other"$'\n'"${OTHER}"$'\n'
+          fi
+
+          if [ -z "$RESULT" ]; then
+            RESULT="- Maintenance update"
           fi
 
           {
             echo "WHATS_NEW<<EOF"
-            echo "$COMMITS"
+            echo "$RESULT"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
