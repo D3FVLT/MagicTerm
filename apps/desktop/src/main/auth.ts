@@ -1,4 +1,4 @@
-import { IpcMain, safeStorage } from 'electron';
+import { IpcMain, safeStorage, net } from 'electron';
 import Store from 'electron-store';
 import { IPC_CHANNELS, STORAGE_KEYS } from '@magicterm/shared';
 import { applyProxySettings } from './proxy';
@@ -63,5 +63,20 @@ export function setupAuthHandlers(ipcMain: IpcMain): void {
     store.set(STORAGE_KEYS.PROXY_CONFIG, config);
     applyProxySettings();
     return { success: true };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.PROXY_TEST, async () => {
+    try {
+      const response = await net.fetch('https://httpbin.org/ip', {
+        signal: AbortSignal.timeout(10000),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return { success: true, ip: data.origin };
+      }
+      return { success: false, error: `HTTP ${response.status}` };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
+    }
   });
 }

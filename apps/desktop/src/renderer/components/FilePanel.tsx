@@ -88,6 +88,7 @@ export function FilePanel({
   const [newFolderName, setNewFolderName] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'size' | 'date'>('name');
   const [sortAsc, setSortAsc] = useState(true);
+  const [pathCopied, setPathCopied] = useState(false);
   const renameInputRef = useRef<HTMLInputElement>(null);
   const newFolderInputRef = useRef<HTMLInputElement>(null);
 
@@ -314,6 +315,25 @@ export function FilePanel({
             </div>
           ))}
         </div>
+        <button
+          onClick={() => {
+            window.electronAPI.clipboard.writeText(currentPath);
+            setPathCopied(true);
+            setTimeout(() => setPathCopied(false), 1500);
+          }}
+          className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5] flex-shrink-0"
+          title="Copy path"
+        >
+          {pathCopied ? (
+            <svg className="h-3.5 w-3.5 text-[#9ece6a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+          )}
+        </button>
       </div>
 
       {/* Error */}

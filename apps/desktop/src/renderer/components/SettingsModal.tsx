@@ -7,6 +7,24 @@ import { useOrganizations } from '../contexts/OrganizationsContext';
 import { getUserSettings, updateUserSettings } from '@magicterm/supabase-client';
 import type { UserSettings } from '@magicterm/shared';
 
+interface ProxyConfig {
+  enabled: boolean;
+  type: 'http' | 'socks5';
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+}
+
+const DEFAULT_PROXY: ProxyConfig = {
+  enabled: false,
+  type: 'http',
+  host: '',
+  port: 8080,
+  username: '',
+  password: '',
+};
+
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -15,10 +33,12 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { organizations } = useOrganizations();
   const [settings, setSettings] = useState<UserSettings>({ nickname: null, defaultOrgId: null });
+  const [proxyConfig, setProxyConfig] = useState<ProxyConfig>(DEFAULT_PROXY);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [proxyTestResult, setProxyTestResult] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }>({ status: 'idle' });
 
   useEffect(() => {
     if (!isOpen) return;
@@ -27,8 +47,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       setIsLoading(true);
       setError(null);
       try {
-        const userSettings = await getUserSettings();
+        const [userSettings, proxyResult] = await Promise.all([
+          getUserSettings(),
+          window.electronAPI.proxy.get(),
+        ]);
         setSettings(userSettings);
+        if (proxyResult.success && proxyResult.config) {
+          setProxyConfig({ ...DEFAULT_PROXY, ...proxyResult.config, type: (proxyResult.config.type === 'socks5' ? 'socks5' : 'http') as ProxyConfig['type'] });
+        }
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -44,7 +70,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setError(null);
     setSuccess(false);
     try {
-      await updateUserSettings(settings);
+      await Promise.all([
+        updateUserSettings(settings),
+        window.electronAPI.proxy.set(proxyConfig),
+      ]);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
@@ -103,6 +132,108 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     This workspace will be selected automatically when you open the app.
                   </p>
                 </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[#292e42] pt-6">
+              <h3 className="mb-4 text-sm font-medium text-[#c0caf5]">Proxy</h3>
+              <div className="space-y-4">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={proxyConfig.enabled}
+                    onChange={(e) => setProxyConfig({ ...proxyConfig, enabled: e.target.checked })}
+                    className="h-4 w-4 rounded border-[#414868] bg-[#1a1b26] text-[#7aa2f7] focus:ring-[#7aa2f7] focus:ring-offset-0"
+                  />
+                  <span className="text-sm text-[#a9b1d6]">Enable proxy</span>
+                </label>
+
+                {proxyConfig.enabled && (
+                  <>
+                    <div>
+                      <label className="mb-1.5 block text-sm text-[#a9b1d6]">Type</label>
+                      <select
+                        value={proxyConfig.type}
+                        onChange={(e) => setProxyConfig({ ...proxyConfig, type: e.target.value as 'http' | 'socks5' })}
+                        className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] outline-none focus:border-[#7aa2f7]"
+                      >
+                        <option value="http">HTTP</option>
+                        <option value="socks5">SOCKS5</option>
+                      </select>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <div className="flex-1">
+                        <label className="mb-1.5 block text-sm text-[#a9b1d6]">Host</label>
+                        <input
+                          type="text"
+                          value={proxyConfig.host}
+                          onChange={(e) => setProxyConfig({ ...proxyConfig, host: e.target.value })}
+                          placeholder="127.0.0.1"
+                          className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none focus:border-[#7aa2f7]"
+                        />
+                      </div>
+                      <div className="w-24">
+                        <label className="mb-1.5 block text-sm text-[#a9b1d6]">Port</label>
+                        <input
+                          type="number"
+                          value={proxyConfig.port}
+                          onChange={(e) => setProxyConfig({ ...proxyConfig, port: Number(e.target.value) })}
+                          className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] outline-none focus:border-[#7aa2f7]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-sm text-[#a9b1d6]">Username (optional)</label>
+                      <input
+                        type="text"
+                        value={proxyConfig.username}
+                        onChange={(e) => setProxyConfig({ ...proxyConfig, username: e.target.value })}
+                        className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none focus:border-[#7aa2f7]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-sm text-[#a9b1d6]">Password (optional)</label>
+                      <input
+                        type="password"
+                        value={proxyConfig.password}
+                        onChange={(e) => setProxyConfig({ ...proxyConfig, password: e.target.value })}
+                        className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none focus:border-[#7aa2f7]"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={async () => {
+                      setProxyTestResult({ status: 'testing' });
+                      await window.electronAPI.proxy.set(proxyConfig);
+                      const result = await window.electronAPI.proxy.test();
+                      if (result.success) {
+                        setProxyTestResult({ status: 'ok', message: `Connected (IP: ${result.ip})` });
+                      } else {
+                        setProxyTestResult({ status: 'fail', message: result.error });
+                      }
+                      setTimeout(() => setProxyTestResult({ status: 'idle' }), 5000);
+                    }}
+                    disabled={proxyTestResult.status === 'testing'}
+                    className="rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-1.5 text-xs font-medium text-[#c0caf5] transition-colors hover:border-[#7aa2f7] hover:text-[#7aa2f7] disabled:opacity-50"
+                  >
+                    {proxyTestResult.status === 'testing' ? 'Testing...' : 'Test Connection'}
+                  </button>
+                  {proxyTestResult.status === 'ok' && (
+                    <span className="text-xs text-[#9ece6a]">{proxyTestResult.message}</span>
+                  )}
+                  {proxyTestResult.status === 'fail' && (
+                    <span className="text-xs text-red-400">{proxyTestResult.message}</span>
+                  )}
+                </div>
+                <p className="text-xs text-[#565f89]">
+                  Proxy applies to app traffic (authentication, updates).
+                </p>
               </div>
             </div>
 

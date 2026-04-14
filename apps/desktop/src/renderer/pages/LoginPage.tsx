@@ -23,12 +23,13 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [testResult, setTestResult] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }>({ status: 'idle' });
 
   useEffect(() => {
     if (!isOpen) return;
     window.electronAPI.proxy.get().then((result) => {
       if (result.success && result.config) {
-        setConfig({ ...config, ...result.config });
+        setConfig({ ...config, ...result.config, type: (result.config.type === 'socks5' ? 'socks5' : 'http') as ProxyConfig['type'] });
       }
     });
   }, [isOpen]);
@@ -127,6 +128,32 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 </div>
               </>
             )}
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  setTestResult({ status: 'testing' });
+                  await window.electronAPI.proxy.set(config);
+                  const result = await window.electronAPI.proxy.test();
+                  if (result.success) {
+                    setTestResult({ status: 'ok', message: `Connected (IP: ${result.ip})` });
+                  } else {
+                    setTestResult({ status: 'fail', message: result.error });
+                  }
+                  setTimeout(() => setTestResult({ status: 'idle' }), 5000);
+                }}
+                disabled={testResult.status === 'testing'}
+                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors hover:border-primary-500 hover:text-primary-400 disabled:opacity-50"
+              >
+                {testResult.status === 'testing' ? 'Testing...' : 'Test Connection'}
+              </button>
+              {testResult.status === 'ok' && (
+                <span className="text-xs text-green-400">{testResult.message}</span>
+              )}
+              {testResult.status === 'fail' && (
+                <span className="text-xs text-red-400">{testResult.message}</span>
+              )}
+            </div>
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
