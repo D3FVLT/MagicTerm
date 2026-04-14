@@ -55,6 +55,7 @@ export const IPC_CHANNELS = {
 
   PROXY_GET: 'proxy:get',
   PROXY_SET: 'proxy:set',
+  PROXY_TEST: 'proxy:test',
 } as const;
 
 export const STORAGE_KEYS = {

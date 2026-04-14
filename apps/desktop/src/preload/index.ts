@@ -133,6 +133,7 @@ const api = {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.PROXY_GET),
     set: (config: { enabled: boolean; type: string; host: string; port: number; username?: string; password?: string }) =>
       ipcRenderer.invoke(IPC_CHANNELS.PROXY_SET, config),
+    test: () => ipcRenderer.invoke(IPC_CHANNELS.PROXY_TEST),
   },
 };
 

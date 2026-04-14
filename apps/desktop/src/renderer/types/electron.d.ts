@@ -64,6 +64,7 @@ export interface ElectronAPI {
   proxy: {
     get: () => Promise<{ success: boolean; config: { enabled: boolean; type: string; host: string; port: number; username?: string; password?: string } | null }>;
     set: (config: { enabled: boolean; type: string; host: string; port: number; username?: string; password?: string }) => Promise<{ success: boolean }>;
+    test: () => Promise<{ success: boolean; ip?: string; error?: string }>;
   };
   sftp: {
     connect: (
