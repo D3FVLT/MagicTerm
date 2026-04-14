@@ -10,7 +10,7 @@ import { useServers } from '../contexts/ServersContext';
 
 export function MainLayout() {
   const [isAddServerOpen, setIsAddServerOpen] = useState(false);
-  const { sessions, activeSessionId } = useTerminal();
+  const { sessions, activeSessionId, reconnect } = useTerminal();
   const { servers } = useServers();
 
   const getServerName = (serverId: string) => {
@@ -42,6 +42,7 @@ export function MainLayout() {
                   sessionId={session.id}
                   serverName={getServerName(session.serverId)}
                   isActive={session.id === activeSessionId}
+                  onReconnect={reconnect}
                 />
               ) : session.config ? (
                 <SFTPView

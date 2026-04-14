@@ -1,4 +1,4 @@
-import { IpcMain, BrowserWindow } from 'electron';
+import { IpcMain } from 'electron';
 import { Client, SFTPWrapper } from 'ssh2';
 import { createWriteStream, createReadStream } from 'fs';
 import { stat } from 'fs/promises';
@@ -18,12 +18,42 @@ interface SFTPSession {
 const sessions = new Map<string, SFTPSession>();
 const activeTransfers = new Map<string, { abort: () => void }>();
 
+function safeSend(sender: Electron.WebContents, channel: string, ...args: unknown[]): void {
+  try {
+    if (!sender.isDestroyed()) {
+      sender.send(channel, ...args);
+    }
+  } catch {
+    // Window already destroyed during shutdown
+  }
+}
+
 function parsePermissions(mode: number): string {
   const perms = ['---', '--x', '-w-', '-wx', 'r--', 'r-x', 'rw-', 'rwx'];
   const owner = perms[(mode >> 6) & 7];
   const group = perms[(mode >> 3) & 7];
   const other = perms[mode & 7];
   return owner + group + other;
+}
+
+export function cleanupAllSFTPSessions(): void {
+  for (const [id, session] of sessions) {
+    try {
+      session.sftp.end();
+      session.client.end();
+    } catch {
+      // Ignore errors during cleanup
+    }
+    sessions.delete(id);
+  }
+  for (const [id, transfer] of activeTransfers) {
+    try {
+      transfer.abort();
+    } catch {
+      // Ignore
+    }
+    activeTransfers.delete(id);
+  }
 }
 
 export function setupSFTPHandlers(ipcMain: IpcMain): void {
@@ -39,10 +69,14 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           username: string;
           password?: string;
           privateKey?: string;
+          keepaliveInterval?: number;
+          keepaliveCountMax?: number;
         } = {
           host: config.host,
           port: config.port,
           username: config.username,
+          keepaliveInterval: 10000,
+          keepaliveCountMax: 3,
         };
 
         if (config.authType === 'password' && config.password) {
@@ -58,20 +92,20 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
               return;
             }
 
-            sessions.set(sessionId, { client, sftp });
-            resolve({ success: true });
+            sftp.realpath('.', (realpathErr, absPath) => {
+              const homePath = realpathErr ? '/' : absPath;
+              sessions.set(sessionId, { client, sftp });
+              resolve({ success: true, homePath });
+            });
           });
         });
 
         client.on('error', (err) => {
-          const window = BrowserWindow.fromWebContents(event.sender);
-          if (window) {
-            window.webContents.send(IPC_CHANNELS.SFTP_PROGRESS, {
-              sessionId,
-              status: 'error',
-              error: err.message,
-            });
-          }
+          safeSend(event.sender, IPC_CHANNELS.SFTP_PROGRESS, {
+            sessionId,
+            status: 'error',
+            error: err.message,
+          });
           reject(err);
         });
 
@@ -177,8 +211,6 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
         return { success: false, error: 'Session not found' };
       }
 
-      const window = BrowserWindow.fromWebContents(event.sender);
-
       return new Promise((resolve) => {
         session.sftp.stat(remotePath, (statErr, stats) => {
           if (statErr) {
@@ -189,7 +221,7 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           const total = stats.size;
           let transferred = 0;
           let aborted = false;
-        let settled = false;
+          let settled = false;
 
           const readStream = session.sftp.createReadStream(remotePath);
           const writeStream = createWriteStream(localPath);
@@ -203,19 +235,17 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           });
 
           const sendProgress = (status: TransferProgress['status']) => {
-            if (window && !window.isDestroyed()) {
-              window.webContents.send(IPC_CHANNELS.SFTP_PROGRESS, {
-                id: transferId,
-                sessionId,
-                filename: basename(remotePath),
-                localPath,
-                remotePath,
-                transferred,
-                total,
-                direction: 'download',
-                status,
-              } as TransferProgress);
-            }
+            safeSend(event.sender, IPC_CHANNELS.SFTP_PROGRESS, {
+              id: transferId,
+              sessionId,
+              filename: basename(remotePath),
+              localPath,
+              remotePath,
+              transferred,
+              total,
+              direction: 'download',
+              status,
+            } as TransferProgress);
           };
 
           sendProgress('transferring');
@@ -282,8 +312,6 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
         return { success: false, error: 'Session not found' };
       }
 
-      const window = BrowserWindow.fromWebContents(event.sender);
-
       try {
         const localStats = await stat(localPath);
         const total = localStats.size;
@@ -303,19 +331,17 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
         });
 
         const sendProgress = (status: TransferProgress['status']) => {
-          if (window && !window.isDestroyed()) {
-            window.webContents.send(IPC_CHANNELS.SFTP_PROGRESS, {
-              id: transferId,
-              sessionId,
-              filename: basename(localPath),
-              localPath,
-              remotePath,
-              transferred,
-              total,
-              direction: 'upload',
-              status,
-            } as TransferProgress);
-          }
+          safeSend(event.sender, IPC_CHANNELS.SFTP_PROGRESS, {
+            id: transferId,
+            sessionId,
+            filename: basename(localPath),
+            localPath,
+            remotePath,
+            transferred,
+            total,
+            direction: 'upload',
+            status,
+          } as TransferProgress);
         };
 
         sendProgress('transferring');

@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, clipboard } from 'electron';
 import {
   IPC_CHANNELS,
   type SSHConnectionConfig,
@@ -116,6 +116,23 @@ const api = {
     list: (dirPath: string) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_LIST, dirPath),
     openFile: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_OPEN_FILE, filePath),
     reveal: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_REVEAL, filePath),
+  },
+  clipboard: {
+    writeText: (text: string) => clipboard.writeText(text),
+    readText: () => clipboard.readText(),
+  },
+  masterPassword: {
+    save: (password: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_SAVE_MASTER_PASSWORD, password),
+    get: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_GET_SAVED_MASTER_PASSWORD),
+    clear: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_CLEAR_SAVED_MASTER_PASSWORD),
+  },
+  proxy: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.PROXY_GET),
+    set: (config: { enabled: boolean; type: string; host: string; port: number; username?: string; password?: string }) =>
+      ipcRenderer.invoke(IPC_CHANNELS.PROXY_SET, config),
   },
 };
 

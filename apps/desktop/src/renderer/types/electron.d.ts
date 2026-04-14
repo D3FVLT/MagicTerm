@@ -52,11 +52,24 @@ export interface ElectronAPI {
     openReleasePage: () => Promise<void>;
     onStatus: (callback: UpdateStatusCallback) => () => void;
   };
+  clipboard: {
+    writeText: (text: string) => void;
+    readText: () => string;
+  };
+  masterPassword: {
+    save: (password: string) => Promise<{ success: boolean; error?: string }>;
+    get: () => Promise<{ success: boolean; password?: string }>;
+    clear: () => Promise<{ success: boolean }>;
+  };
+  proxy: {
+    get: () => Promise<{ success: boolean; config: { enabled: boolean; type: string; host: string; port: number; username?: string; password?: string } | null }>;
+    set: (config: { enabled: boolean; type: string; host: string; port: number; username?: string; password?: string }) => Promise<{ success: boolean }>;
+  };
   sftp: {
     connect: (
       sessionId: string,
       config: SSHConnectionConfig
-    ) => Promise<{ success: boolean; error?: string }>;
+    ) => Promise<{ success: boolean; error?: string; homePath?: string }>;
     disconnect: (sessionId: string) => Promise<{ success: boolean }>;
     list: (
       sessionId: string,
@@ -121,4 +134,4 @@ declare global {
   const __APP_VERSION__: string;
 }
 
-export {};
+export { };

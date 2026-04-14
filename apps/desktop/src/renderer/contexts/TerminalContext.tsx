@@ -12,6 +12,7 @@ interface TerminalContextValue {
   activeSessionId: string | null;
   connect: (server: Server, type?: SessionType) => Promise<string>;
   disconnect: (sessionId: string) => Promise<void>;
+  reconnect: (sessionId: string) => Promise<void>;
   setActiveSession: (sessionId: string | null) => void;
   getSession: (sessionId: string) => ExtendedSession | undefined;
 }
@@ -89,6 +90,23 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     }
   }, [decryptServerHost, decryptServerUsername, decryptServerCredentials, updateSessionStatus]);
 
+  const reconnect = useCallback(async (sessionId: string): Promise<void> => {
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session?.config) {
+      throw new Error('No config available for reconnect');
+    }
+
+    updateSessionStatus(sessionId, 'connecting');
+    try {
+      await window.electronAPI.ssh.connect(sessionId, session.config);
+      updateSessionStatus(sessionId, 'connected');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Reconnect failed';
+      updateSessionStatus(sessionId, 'error', errorMessage);
+      throw error;
+    }
+  }, [sessions, updateSessionStatus]);
+
   const disconnect = useCallback(async (sessionId: string): Promise<void> => {
     const session = sessions.find((s) => s.id === sessionId);
     if (session?.type === 'terminal') {
@@ -120,6 +138,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     activeSessionId,
     connect,
     disconnect,
+    reconnect,
     setActiveSession,
     getSession,
   };
