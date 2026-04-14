@@ -7,19 +7,16 @@ import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { SnippetsPanel } from './SnippetsPanel';
 import { TERMINAL_THEMES, DEFAULT_TERMINAL_SETTINGS, type TerminalSettings } from '../lib/terminal-themes';
+import { useTerminal } from '../contexts/TerminalContext';
 import '@xterm/xterm/css/xterm.css';
 
-interface TerminalViewProps {
+interface TerminalPaneProps {
   sessionId: string;
-  serverName?: string;
-  isActive?: boolean;
+  isFocused: boolean;
+  tabId: string;
 }
 
-interface ReconnectHandler {
-  (sessionId: string): Promise<void>;
-}
-
-export function TerminalView({ sessionId, serverName, isActive = true, onReconnect }: TerminalViewProps & { onReconnect?: ReconnectHandler }) {
+export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -31,6 +28,12 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [termSettings, setTermSettings] = useState<TerminalSettings>(DEFAULT_TERMINAL_SETTINGS);
   const settingsLoadedRef = useRef(false);
+  const [showContextMenu, setShowContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  const { reconnect, splitPane, closePane, setFocusedPane, getSession, tabs } = useTerminal();
+  const session = getSession(sessionId);
+  const tab = tabs.find((t) => t.rootSessionId === tabId);
+  const hasMultiplePanes = tab && tab.splitTree.type === 'split';
 
   const syncPtySize = useCallback(() => {
     if (fitAddonRef.current && terminalRef.current && containerRef.current) {
@@ -59,56 +62,11 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
     }
   }, [searchQuery]);
 
-  const toggleSearch = useCallback(() => {
-    setShowSearch((prev) => {
-      if (!prev) {
-        setTimeout(() => searchInputRef.current?.focus(), 50);
-      }
-      return !prev;
-    });
-  }, []);
-
   const handlePasteToTerminal = useCallback((text: string) => {
     if (terminalRef.current) {
       window.electronAPI.ssh.sendData(sessionId, text);
     }
   }, [sessionId]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault();
-        toggleSearch();
-      }
-      if (e.key === 'Escape' && showSearch) {
-        setShowSearch(false);
-        terminalRef.current?.focus();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch, toggleSearch]);
-
-  useEffect(() => {
-    if (isActive && fitAddonRef.current && terminalRef.current) {
-      // Re-sync terminal dimensions a few times after activation.
-      // Some layouts/fonts settle asynchronously and bash/zsh history redraw
-      // can glitch if PTY width is stale.
-      const timers = [
-        setTimeout(() => {
-          syncPtySize();
-          terminalRef.current?.focus();
-        }, 20),
-        setTimeout(() => {
-          syncPtySize();
-        }, 120),
-        setTimeout(() => {
-          syncPtySize();
-        }, 300),
-      ];
-      return () => timers.forEach((t) => clearTimeout(t));
-    }
-  }, [isActive, syncPtySize]);
 
   useEffect(() => {
     const loadSettings = () => {
@@ -137,6 +95,28 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       setTimeout(() => syncPtySize(), 50);
     }
   }, [termSettings, syncPtySize]);
+
+  useEffect(() => {
+    if (isFocused && terminalRef.current) {
+      const timers = [
+        setTimeout(() => {
+          syncPtySize();
+          terminalRef.current?.focus();
+        }, 20),
+        setTimeout(() => syncPtySize(), 120),
+        setTimeout(() => syncPtySize(), 300),
+      ];
+      return () => timers.forEach((t) => clearTimeout(t));
+    }
+  }, [isFocused, syncPtySize]);
+
+  useEffect(() => {
+    const onSplitResize = () => {
+      setTimeout(() => syncPtySize(), 50);
+    };
+    window.addEventListener('split-resize', onSplitResize);
+    return () => window.removeEventListener('split-resize', onSplitResize);
+  }, [syncPtySize]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -180,22 +160,16 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
 
     terminal.open(containerRef.current);
 
-    // Try WebGL renderer for better performance
     try {
       const webglAddon = new WebglAddon();
-      webglAddon.onContextLoss(() => {
-        webglAddon.dispose();
-      });
+      webglAddon.onContextLoss(() => webglAddon.dispose());
       terminal.loadAddon(webglAddon);
     } catch {
-      console.warn('WebGL addon failed to load, using canvas renderer');
+      // WebGL not available
     }
 
-    // Initial PTY sync (with a delayed second pass after layout settles).
     syncPtySize();
-    requestAnimationFrame(() => {
-      syncPtySize();
-    });
+    requestAnimationFrame(() => syncPtySize());
 
     terminal.attachCustomKeyEventHandler((ev) => {
       if (ev.type === 'keydown') {
@@ -225,8 +199,16 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
           ev.preventDefault();
           return false;
         }
-      }
 
+        if (hasCtrl && key === 'f') {
+          setShowSearch((prev) => {
+            if (!prev) setTimeout(() => searchInputRef.current?.focus(), 50);
+            return !prev;
+          });
+          ev.preventDefault();
+          return false;
+        }
+      }
       return true;
     });
 
@@ -278,93 +260,99 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
   const activeTheme = TERMINAL_THEMES[termSettings.themeId] || TERMINAL_THEMES['tokyo-night'];
 
   return (
-    <div className="flex h-full flex-col" style={{ backgroundColor: activeTheme.background }}>
-      {/* Terminal Header */}
-      <div className="drag-region flex h-10 items-center border-b border-[#292e42] bg-[#1f2335] px-4">
-        <div className="flex items-center gap-2">
+    <div
+      className={`flex h-full w-full flex-col ${isFocused ? 'ring-1 ring-[#7aa2f7]/30 ring-inset' : ''}`}
+      style={{ backgroundColor: activeTheme.background }}
+      onClick={() => {
+        setFocusedPane(tabId, sessionId);
+        terminalRef.current?.focus();
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setShowContextMenu({ x: e.clientX, y: e.clientY });
+      }}
+    >
+      {/* Pane header */}
+      <div className="flex h-7 flex-shrink-0 items-center justify-between border-b border-[#292e42] bg-[#1f2335] px-2">
+        <div className="flex items-center gap-1.5">
           {connectionStatus === 'connected' && (
-            <div className="flex h-3 w-3 items-center justify-center rounded-full bg-green-500">
-              <div className="h-1.5 w-1.5 rounded-full bg-green-300 animate-pulse" />
-            </div>
+            <div className="h-2 w-2 rounded-full bg-green-500" />
           )}
           {connectionStatus === 'reconnecting' && (
-            <div className="flex h-3 w-3 items-center justify-center rounded-full bg-yellow-500">
-              <div className="h-1.5 w-1.5 rounded-full bg-yellow-300 animate-pulse" />
-            </div>
+            <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
           )}
           {connectionStatus === 'disconnected' && (
-            <div className="h-3 w-3 rounded-full bg-red-500" />
+            <div className="h-2 w-2 rounded-full bg-red-500" />
           )}
-          <span className="text-sm font-medium text-[#c0caf5]">
-            {serverName || 'Terminal'}
+          <span className="text-xs text-[#565f89] truncate max-w-[150px]">
+            {session?.serverId ? `pane` : 'terminal'}
           </span>
+        </div>
+        <div className="flex items-center gap-0.5">
+          {/* Snippets toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowSnippets((prev) => !prev);
+            }}
+            className={`rounded p-1 transition-colors ${
+              showSnippets
+                ? 'bg-[#3d59a1] text-white'
+                : 'text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]'
+            }`}
+            title="Snippets"
+          >
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+          </button>
+          {hasMultiplePanes && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                closePane(sessionId);
+              }}
+              className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-red-400"
+              title="Close pane"
+            >
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Terminal Container with floating toolbar */}
+      {/* Terminal content */}
       <div className="relative flex-1">
-        <div 
-          ref={containerRef} 
-          className="terminal-container absolute inset-0" 
+        <div
+          ref={containerRef}
+          className="terminal-container absolute inset-0"
           style={{ backgroundColor: activeTheme.background }}
         />
 
-        {/* Floating Toolbar - bottom right */}
-        <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-[#292e42] bg-[#1f2335]/95 p-1 shadow-lg backdrop-blur-sm">
-          {/* Snippets Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowSnippets((prev) => !prev)}
-              className={`rounded-md p-2 transition-colors ${
-                showSnippets 
-                  ? 'bg-[#3d59a1] text-white' 
-                  : 'text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]'
-              }`}
-              title="Snippets (tokens, secrets)"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
-            </button>
-            {/* Snippets panel opens upward */}
-            <div className="absolute bottom-full right-0 mb-2">
-              <SnippetsPanel
-                isOpen={showSnippets}
-                onClose={() => setShowSnippets(false)}
-                onPaste={handlePasteToTerminal}
-              />
-            </div>
+        {/* Snippets panel */}
+        {showSnippets && (
+          <div className="absolute right-2 top-2 z-30">
+            <SnippetsPanel
+              isOpen={showSnippets}
+              onClose={() => setShowSnippets(false)}
+              onPaste={handlePasteToTerminal}
+            />
           </div>
+        )}
 
-          {/* Divider */}
-          <div className="h-5 w-px bg-[#292e42]" />
-
-          {/* Search Button */}
-          <button
-            onClick={toggleSearch}
-            className={`rounded-md p-2 transition-colors ${
-              showSearch 
-                ? 'bg-[#3d59a1] text-white' 
-                : 'text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]'
-            }`}
-            title="Search (Cmd/Ctrl+F)"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Reconnect Toast */}
-        {connectionStatus === 'disconnected' && onReconnect && (
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+        {/* Reconnect toast */}
+        {connectionStatus === 'disconnected' && (
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2 shadow-lg backdrop-blur-sm">
             <div className="h-2 w-2 rounded-full bg-red-500" />
-            <span className="text-sm text-[#c0caf5]">Connection lost</span>
+            <span className="text-xs text-[#c0caf5]">Disconnected</span>
             <button
-              onClick={async () => {
+              onClick={async (e) => {
+                e.stopPropagation();
                 setConnectionStatus('reconnecting');
                 try {
-                  await onReconnect(sessionId);
+                  await reconnect(sessionId);
                   setConnectionStatus('connected');
                   terminalRef.current?.write('\r\n\x1b[38;5;114m⚡ Reconnected.\x1b[0m\r\n');
                 } catch {
@@ -372,22 +360,22 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                   terminalRef.current?.write('\r\n\x1b[38;5;203m✖ Reconnect failed.\x1b[0m\r\n');
                 }
               }}
-              className="rounded-md bg-[#7aa2f7] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[#6b8fd6]"
+              className="rounded bg-[#7aa2f7] px-2 py-0.5 text-xs font-medium text-white hover:bg-[#6b8fd6]"
             >
               Reconnect
             </button>
           </div>
         )}
         {connectionStatus === 'reconnecting' && (
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
-            <span className="text-sm text-[#c0caf5]">Reconnecting...</span>
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-2 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+            <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
+            <span className="text-xs text-[#c0caf5]">Reconnecting...</span>
           </div>
         )}
 
-        {/* Search Bar - floating above toolbar */}
+        {/* Search */}
         {showSearch && (
-          <div className="absolute bottom-16 right-4 z-10 flex w-80 items-center gap-2 rounded-lg border border-[#292e42] bg-[#1f2335]/95 p-2 shadow-lg backdrop-blur-sm">
+          <div className="absolute bottom-2 right-2 z-10 flex w-64 items-center gap-1 rounded-lg border border-[#292e42] bg-[#1f2335]/95 p-1.5 shadow-lg backdrop-blur-sm">
             <input
               ref={searchInputRef}
               type="text"
@@ -399,28 +387,29 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                 }
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch(e.shiftKey ? 'prev' : 'next');
+                if (e.key === 'Enter') handleSearch(e.shiftKey ? 'prev' : 'next');
+                if (e.key === 'Escape') {
+                  setShowSearch(false);
+                  setSearchQuery('');
+                  terminalRef.current?.focus();
                 }
               }}
               placeholder="Search..."
-              className="flex-1 rounded bg-[#292e42] px-3 py-1.5 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none"
+              className="flex-1 rounded bg-[#292e42] px-2 py-1 text-xs text-[#c0caf5] placeholder-[#565f89] outline-none"
             />
             <button
               onClick={() => handleSearch('prev')}
-              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
-              title="Previous"
+              className="rounded p-1 text-[#565f89] hover:text-[#c0caf5]"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
               </svg>
             </button>
             <button
               onClick={() => handleSearch('next')}
-              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
-              title="Next"
+              className="rounded p-1 text-[#565f89] hover:text-[#c0caf5]"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -430,16 +419,70 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                 setSearchQuery('');
                 terminalRef.current?.focus();
               }}
-              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
-              title="Close (Esc)"
+              className="rounded p-1 text-[#565f89] hover:text-[#c0caf5]"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         )}
       </div>
+
+      {/* Context menu */}
+      {showContextMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowContextMenu(null)} />
+          <div
+            className="fixed z-50 min-w-[160px] rounded-lg border border-[#292e42] bg-[#1f2335] py-1 shadow-xl"
+            style={{ left: showContextMenu.x, top: showContextMenu.y }}
+          >
+            <button
+              onClick={() => {
+                setShowContextMenu(null);
+                splitPane(sessionId, 'horizontal');
+              }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[#c0caf5] hover:bg-[#292e42]"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m0-8h8m-8 0H4" />
+              </svg>
+              Split Right
+              <span className="ml-auto text-[#565f89]">⌘D</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowContextMenu(null);
+                splitPane(sessionId, 'vertical');
+              }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[#c0caf5] hover:bg-[#292e42]"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m0-8h8m-8 0H4" />
+              </svg>
+              Split Down
+              <span className="ml-auto text-[#565f89]">⇧⌘D</span>
+            </button>
+            {hasMultiplePanes && (
+              <>
+                <div className="my-1 border-t border-[#292e42]" />
+                <button
+                  onClick={() => {
+                    setShowContextMenu(null);
+                    closePane(sessionId);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-[#292e42]"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Close Pane
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

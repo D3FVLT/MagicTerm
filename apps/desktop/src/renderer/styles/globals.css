@@ -25,30 +25,30 @@ body {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background-color: #1a1b26;
+  background-color: inherit;
 }
 
 .terminal-container .xterm {
   height: 100%;
   padding: 8px 12px;
-  background-color: #1a1b26;
+  background-color: inherit;
 }
 
 .terminal-container .xterm-viewport {
-  background-color: #1a1b26 !important;
+  background-color: inherit !important;
 }
 
 .terminal-container .xterm-screen {
-  background-color: #1a1b26;
+  background-color: inherit;
 }
 
 .xterm-viewport::-webkit-scrollbar {
   width: 8px;
-  background-color: #1a1b26;
+  background-color: transparent;
 }
 
 .xterm-viewport::-webkit-scrollbar-track {
-  background: #1a1b26;
+  background: transparent;
 }
 
 .xterm-viewport::-webkit-scrollbar-thumb {
@@ -66,4 +66,81 @@ body {
 
 .xterm-cursor-layer {
   z-index: 2;
+}
+
+.release-notes h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+  color: #c0caf5;
+}
+.release-notes h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.75rem 0 0.4rem;
+  color: #7aa2f7;
+}
+.release-notes ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0.25rem 0;
+}
+.release-notes li {
+  margin: 0.15rem 0;
+}
+.release-notes p {
+  margin: 0.4rem 0;
+}
+.release-notes a {
+  color: #7aa2f7;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.release-notes a:hover {
+  color: #89b4fa;
+}
+.release-notes code {
+  background: #292e42;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+.release-notes pre {
+  background: #292e42;
+  padding: 0.75rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+.release-notes blockquote {
+  border-left: 3px solid #414868;
+  padding-left: 0.75rem;
+  color: #565f89;
+  margin: 0.5rem 0;
+}
+.release-notes hr {
+  border-color: #292e42;
+  margin: 0.75rem 0;
+}
+.release-notes table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+.release-notes th,
+.release-notes td {
+  border: 1px solid #292e42;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+}
+.release-notes th {
+  background: #292e42;
+  font-weight: 600;
+}
+.release-notes details {
+  margin: 0.5rem 0;
+}
+.release-notes summary {
+  cursor: pointer;
+  color: #7aa2f7;
 }

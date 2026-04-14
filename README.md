@@ -2,40 +2,38 @@
 
 Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
-![Magic Term](https://img.shields.io/badge/version-0.3.19-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Magic Term](https://img.shields.io/badge/version-0.4.0-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
-- **SSH Terminal** — full color support, search (Cmd/Ctrl+F)
-- **SFTP File Manager** — dual-panel UI, drag-and-drop transfers
+- **SSH Terminal** — full 256-color & truecolor support, search (Cmd/Ctrl+F)
+- **Split Panes** — horizontal (Cmd+D) and vertical (Cmd+Shift+D) terminal splits
+- **10 Built-in Themes** — Tokyo Night, Dracula, Monokai, Nord, Catppuccin and more
+- **Customizable Terminal** — font, size, cursor style, scrollback, line height
+- **SFTP File Manager** — dual-panel UI, drag-and-drop transfers, path copy
 - **Built-in Text Editor** — edit remote files directly
 - **Session Tabs** — multiple connections with persistent state
 - **Personal Snippets** — encrypted storage for tokens/secrets, paste to terminal
+- **SSH Config Import** — import hosts from ~/.ssh/config
 - **Organizations** — team collaboration with role management (owner/admin/member/viewer)
 - **E2E Encryption** — credentials encrypted client-side with AES-256-GCM
 - **Cloud Sync** — via Supabase, works across devices
+- **Proxy Support** — HTTP/SOCKS5 proxy for app traffic with connection testing
+- **Master Password Remember** — secure device-level storage via OS keychain
 - **Cross-platform** — macOS, Windows, Linux
 - **Auto-updates** — Windows (silent), macOS (notification with download link)
 
 ## Known Issues
 
-**Registration flow** is functional but visually unpolished:
+**Registration:**
 
-- After registration, the confirmation email redirects to `localhost` or `google.com` — this is expected behavior
-- Clicking the confirmation link in your email verifies your account
-- The registration dialog doesn't auto-close — after confirming your email, go back to the app and click "Login"
+- After registration, the confirmation email may redirect to `localhost` — this is expected
+- After confirming your email, go back to the app and click "Login"
 
 **Organizations:**
 
 - Inviting members does not send an email — the invite appears in the app UI only
 - Invited users need to re-login (restart the app) to see pending invites
-- Nickname changes don't reflect in organization member lists (shows email instead)
-
-**UI quirks:**
-
-- Some UI elements may jump/flicker, especially when changing member roles in organizations
-
-These will be improved in future releases.
 
 ## Installation
 
@@ -163,8 +161,8 @@ Add these secrets to your GitHub repository:
 Create a tag to trigger a release:
 
 ```bash
-git tag v0.4.0
-git push origin v0.4.0
+git tag v0.x.x
+git push origin v0.x.x
 ```
 
 The workflow builds all platforms in parallel, then creates a release with all artifacts.

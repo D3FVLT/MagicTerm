@@ -56,6 +56,11 @@ export const IPC_CHANNELS = {
   PROXY_GET: 'proxy:get',
   PROXY_SET: 'proxy:set',
   PROXY_TEST: 'proxy:test',
+
+  TERMINAL_SETTINGS_GET: 'terminalSettings:get',
+  TERMINAL_SETTINGS_SET: 'terminalSettings:set',
+
+  SSH_CONFIG_IMPORT: 'sshConfig:import',
 } as const;
 
 export const STORAGE_KEYS = {
@@ -63,4 +68,5 @@ export const STORAGE_KEYS = {
   SUPABASE_SESSION: 'supabaseSession',
   SAVED_MASTER_PASSWORD: 'savedMasterPassword',
   PROXY_CONFIG: 'proxyConfig',
+  TERMINAL_SETTINGS: 'terminalSettings',
 } as const;

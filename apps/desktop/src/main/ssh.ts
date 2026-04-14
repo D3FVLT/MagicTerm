@@ -20,6 +20,10 @@ function safeSend(sender: Electron.WebContents, channel: string, ...args: unknow
   }
 }
 
+export function getActiveSessionCount(): number {
+  return sessions.size;
+}
+
 export function cleanupAllSSHSessions(): void {
   for (const [id, session] of sessions) {
     try {
@@ -94,6 +98,12 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
               term: 'xterm-256color',
               cols: 120,
               rows: 40,
+            },
+            {
+              env: {
+                COLORTERM: 'truecolor',
+                LANG: 'en_US.UTF-8',
+              },
             },
             (err, stream) => {
             if (err) {
