@@ -30,6 +30,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   const [showMembers, setShowMembers] = useState(false);
   const [memberMenuId, setMemberMenuId] = useState<string | null>(null);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
+  const [serverMenuId, setServerMenuId] = useState<string | null>(null);
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -50,6 +51,13 @@ export function Sidebar({ onAddServer }: SidebarProps) {
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showUserMenu, memberMenuId]);
+
+  useEffect(() => {
+    if (!serverMenuId) return;
+    const handleClick = () => setServerMenuId(null);
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [serverMenuId]);
 
   const canManageMembers = currentOrg?.role === 'owner' || currentOrg?.role === 'admin';
 
@@ -210,8 +218,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-1">
-                      {/* Terminal button */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {/* Terminal */}
                       <span
                         role="button"
                         tabIndex={0}
@@ -229,18 +237,13 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             ? 'text-green-400 hover:bg-gray-700'
                             : 'text-gray-400 hover:bg-gray-700 hover:text-white'
                         }`}
-                        title={terminalSession ? 'Open Terminal (connected)' : 'Connect Terminal'}
+                        title={terminalSession ? 'Switch to Terminal' : 'Connect Terminal'}
                       >
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </span>
-                      {/* SFTP button */}
+                      {/* SFTP */}
                       <span
                         role="button"
                         tabIndex={0}
@@ -258,74 +261,69 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             ? 'text-green-400 hover:bg-gray-700'
                             : 'text-gray-400 hover:bg-gray-700 hover:text-white'
                         }`}
-                        title={sftpSession ? 'Open SFTP (connected)' : 'Connect SFTP'}
+                        title={sftpSession ? 'Switch to SFTP' : 'Connect SFTP'}
                       >
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
-                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                         </svg>
                       </span>
-                      {/* Edit button - show on hover */}
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingServer(server);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.stopPropagation();
-                            setEditingServer(server);
-                          }
-                        }}
-                        className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white cursor-pointer opacity-0 group-hover/item:opacity-100 transition-opacity"
-                        title="Edit server"
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                      </span>
-                      {/* Disconnect button - show if any session exists */}
-                      {serverSessions.length > 0 && (
+                      {/* More menu */}
+                      <div className="relative">
                         <span
                           role="button"
                           tabIndex={0}
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-                            for (const session of serverSessions) {
-                              await disconnect(session.id);
-                            }
+                            setServerMenuId(serverMenuId === server.id ? null : server.id);
                           }}
-                          onKeyDown={async (e) => {
-                            if (e.key === 'Enter') {
-                              for (const session of serverSessions) {
-                                await disconnect(session.id);
-                              }
-                            }
-                          }}
-                          className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-red-400 cursor-pointer opacity-0 group-hover/item:opacity-100 transition-opacity"
-                          title="Disconnect all"
+                          className="rounded p-1 cursor-pointer transition-all text-gray-500 hover:bg-gray-700 hover:text-gray-300 opacity-0 group-hover/item:opacity-100"
+                          title="More actions"
                         >
-                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                           </svg>
                         </span>
-                      )}
+                        {serverMenuId === server.id && (
+                          <div
+                            className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg border border-gray-700 bg-[#1f2335] py-1 shadow-xl"
+                            onMouseDown={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setServerMenuId(null);
+                                setEditingServer(server);
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700/50"
+                            >
+                              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              Edit
+                            </button>
+                            {serverSessions.length > 0 && (
+                              <>
+                                <div className="my-1 border-t border-gray-700/50" />
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    setServerMenuId(null);
+                                    for (const session of serverSessions) {
+                                      await disconnect(session.id);
+                                    }
+                                  }}
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-gray-700/50"
+                                >
+                                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                  </svg>
+                                  Disconnect
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </li>

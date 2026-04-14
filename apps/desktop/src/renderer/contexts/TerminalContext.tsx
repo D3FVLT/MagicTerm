@@ -18,16 +18,21 @@ interface TabState {
   focusedPaneId: string;
 }
 
+type ActiveView = 'vaults' | string;
+
 interface TerminalContextValue {
   sessions: ExtendedSession[];
   tabs: TabState[];
   activeTabId: string | null;
   activeSessionId: string | null;
+  activeView: ActiveView;
+  setActiveView: (view: ActiveView) => void;
   connect: (server: Server, type?: SessionType) => Promise<string>;
   disconnect: (sessionId: string) => Promise<void>;
   reconnect: (sessionId: string) => Promise<void>;
   setActiveSession: (sessionId: string | null) => void;
   getSession: (sessionId: string) => ExtendedSession | undefined;
+  getServerSessions: (serverId: string) => ExtendedSession[];
   splitPane: (paneSessionId: string, direction: 'horizontal' | 'vertical') => Promise<void>;
   closePane: (paneSessionId: string) => Promise<void>;
   setFocusedPane: (tabId: string, paneSessionId: string) => void;
@@ -93,8 +98,16 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
   const [sessions, setSessions] = useState<ExtendedSession[]>([]);
   const [tabs, setTabs] = useState<TabState[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [activeView, setActiveViewState] = useState<ActiveView>('vaults');
 
   const activeSessionId = activeTabId;
+
+  const setActiveView = useCallback((view: ActiveView) => {
+    setActiveViewState(view);
+    if (view !== 'vaults') {
+      setActiveTabId(view);
+    }
+  }, []);
 
   const updateSessionStatus = useCallback(
     (sessionId: string, status: ConnectionStatus, error?: string) => {
@@ -144,6 +157,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
       };
       setTabs((prev) => [...prev, newTab]);
       setActiveTabId(sessionId);
+      setActiveViewState(sessionId);
 
       if (type === 'terminal') {
         await window.electronAPI.ssh.connect(sessionId, config);
@@ -192,7 +206,13 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
 
       if (activeTabId === sessionId) {
         const remaining = tabs.filter((t) => t.rootSessionId !== sessionId);
-        setActiveTabId(remaining.length > 0 ? remaining[0].rootSessionId : null);
+        if (remaining.length > 0) {
+          setActiveTabId(remaining[0].rootSessionId);
+          setActiveViewState(remaining[0].rootSessionId);
+        } else {
+          setActiveTabId(null);
+          setActiveViewState('vaults');
+        }
       }
     } else {
       const session = sessions.find((s) => s.id === sessionId);
@@ -205,7 +225,13 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
 
       if (activeTabId === sessionId) {
         const remaining = tabs.filter((t) => t.rootSessionId !== sessionId);
-        setActiveTabId(remaining.length > 0 ? remaining[0].rootSessionId : null);
+        if (remaining.length > 0) {
+          setActiveTabId(remaining[0].rootSessionId);
+          setActiveViewState(remaining[0].rootSessionId);
+        } else {
+          setActiveTabId(null);
+          setActiveViewState('vaults');
+        }
       }
     }
   }, [activeTabId, sessions, tabs]);
@@ -289,7 +315,12 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
 
   const setActiveSession = useCallback((sessionId: string | null) => {
     setActiveTabId(sessionId);
+    setActiveViewState(sessionId || 'vaults');
   }, []);
+
+  const getServerSessions = useCallback((serverId: string): ExtendedSession[] => {
+    return sessions.filter((s) => s.serverId === serverId);
+  }, [sessions]);
 
   const setFocusedPane = useCallback((tabId: string, paneSessionId: string) => {
     setTabs((prev) =>
@@ -311,11 +342,14 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     tabs,
     activeTabId,
     activeSessionId,
+    activeView,
+    setActiveView,
     connect,
     disconnect,
     reconnect,
     setActiveSession,
     getSession,
+    getServerSessions,
     splitPane,
     closePane,
     setFocusedPane,

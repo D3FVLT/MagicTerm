@@ -46,6 +46,8 @@ export interface Server {
   connectionType: ConnectionType;
   credentials?: string;
   comment?: string;
+  isPinned: boolean;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -74,6 +76,8 @@ export interface EncryptedServer {
   connection_type: ConnectionType;
   credentials: string | null;
   comment: string | null;
+  is_pinned: boolean;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }

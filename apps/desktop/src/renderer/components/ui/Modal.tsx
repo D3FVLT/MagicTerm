@@ -30,13 +30,13 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-md flex-col rounded-xl bg-gray-900 shadow-2xl">
+      <div className="animate-fade-in absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="animate-scale-in relative z-10 flex max-h-[90vh] w-full max-w-md flex-col rounded-xl bg-gray-900 shadow-2xl">
         <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-800 px-6 py-4">
           <h2 className="text-lg font-semibold text-white">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-400 hover:bg-gray-800 hover:text-white"
+            className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-800 hover:text-white"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path

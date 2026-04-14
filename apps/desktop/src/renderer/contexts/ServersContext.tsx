@@ -1,12 +1,13 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { Server, ServerInput, ConnectionType } from '@magicterm/shared';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
+import type { Server, ServerInput } from '@magicterm/shared';
 import {
   listServers,
-  listAllServers,
   createServer,
   updateServer,
   deleteServer,
   subscribeToServers,
+  toggleServerPin,
+  updateServerOrders,
 } from '@magicterm/supabase-client';
 import { cryptoManager } from '@magicterm/crypto';
 import { useOrganizations } from './OrganizationsContext';
@@ -22,6 +23,8 @@ interface ServersContextValue {
   decryptServerCredentials: (server: Server) => Promise<string | undefined>;
   decryptServerHost: (server: Server) => Promise<string>;
   decryptServerUsername: (server: Server) => Promise<string>;
+  pinServer: (id: string, isPinned: boolean) => Promise<void>;
+  reorderServers: (orderedIds: string[]) => Promise<void>;
 }
 
 const ServersContext = createContext<ServersContextValue | null>(null);
@@ -43,6 +46,8 @@ export function ServersProvider({ children }: ServersProviderProps) {
   const [servers, setServers] = useState<Server[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const reorderLockUntil = useRef(0);
+  const realtimeDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshServers = async () => {
     try {
@@ -63,14 +68,19 @@ export function ServersProvider({ children }: ServersProviderProps) {
     refreshServers();
 
     const unsubscribe = subscribeToServers((updatedServers) => {
-      const filtered = currentOrg
-        ? updatedServers.filter((s) => s.orgId === currentOrg.id)
-        : updatedServers.filter((s) => s.orgId === null);
-      setServers(filtered);
+      if (realtimeDebounce.current) clearTimeout(realtimeDebounce.current);
+      realtimeDebounce.current = setTimeout(() => {
+        if (Date.now() < reorderLockUntil.current) return;
+        const filtered = currentOrg
+          ? updatedServers.filter((s) => s.orgId === currentOrg.id)
+          : updatedServers.filter((s) => s.orgId === null);
+        setServers(filtered);
+      }, 500);
     }, currentOrg?.id);
 
     return () => {
       unsubscribe();
+      if (realtimeDebounce.current) clearTimeout(realtimeDebounce.current);
     };
   }, [currentOrg]);
 
@@ -163,6 +173,35 @@ export function ServersProvider({ children }: ServersProviderProps) {
     return cryptoManager.decrypt(server.username);
   };
 
+  const pinServer = async (id: string, isPinned: boolean): Promise<void> => {
+    setServers((prev) => {
+      const updated = prev.map((s) => (s.id === id ? { ...s, isPinned } : s));
+      return [...updated].sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return a.name.localeCompare(b.name);
+      });
+    });
+    reorderLockUntil.current = Date.now() + 3000;
+    await toggleServerPin(id, isPinned);
+  };
+
+  const reorderServers = async (orderedIds: string[]): Promise<void> => {
+    const orders = orderedIds.map((id, index) => ({ id, sort_order: index }));
+    setServers((prev) => {
+      const map = new Map(prev.map((s) => [s.id, s]));
+      return orderedIds
+        .map((id, index) => {
+          const server = map.get(id);
+          return server ? { ...server, sortOrder: index } : null;
+        })
+        .filter((s): s is Server => s !== null);
+    });
+    reorderLockUntil.current = Date.now() + 5000;
+    await updateServerOrders(orders);
+    reorderLockUntil.current = Date.now() + 1000;
+  };
+
   const value: ServersContextValue = {
     servers,
     isLoading,
@@ -174,6 +213,8 @@ export function ServersProvider({ children }: ServersProviderProps) {
     decryptServerCredentials,
     decryptServerHost,
     decryptServerUsername,
+    pinServer,
+    reorderServers,
   };
 
   return <ServersContext.Provider value={value}>{children}</ServersContext.Provider>;
