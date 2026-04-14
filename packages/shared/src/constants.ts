@@ -46,9 +46,20 @@ export const IPC_CHANNELS = {
   CRYPTO_SET_MASTER_KEY: 'crypto:setMasterKey',
   CRYPTO_ENCRYPT: 'crypto:encrypt',
   CRYPTO_DECRYPT: 'crypto:decrypt',
+  CRYPTO_SAVE_MASTER_PASSWORD: 'crypto:saveMasterPassword',
+  CRYPTO_GET_SAVED_MASTER_PASSWORD: 'crypto:getSavedMasterPassword',
+  CRYPTO_CLEAR_SAVED_MASTER_PASSWORD: 'crypto:clearSavedMasterPassword',
+
+  CLIPBOARD_WRITE: 'clipboard:write',
+  CLIPBOARD_READ: 'clipboard:read',
+
+  PROXY_GET: 'proxy:get',
+  PROXY_SET: 'proxy:set',
 } as const;
 
 export const STORAGE_KEYS = {
   MASTER_KEY_HASH: 'masterKeyHash',
   SUPABASE_SESSION: 'supabaseSession',
+  SAVED_MASTER_PASSWORD: 'savedMasterPassword',
+  PROXY_CONFIG: 'proxyConfig',
 } as const;

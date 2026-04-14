@@ -1,12 +1,13 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, powerMonitor } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { setupSSHHandlers } from './ssh';
-import { setupSFTPHandlers } from './sftp';
+import { setupSSHHandlers, cleanupAllSSHSessions, checkSSHSessions } from './ssh';
+import { setupSFTPHandlers, cleanupAllSFTPSessions } from './sftp';
 import { setupLocalFsHandlers } from './local-fs';
 import { setupAuthHandlers } from './auth';
 import { setupServerHandlers } from './servers';
 import { setupAutoUpdater, setupUpdaterHandlers } from './updater';
+import { applyProxySettings } from './proxy';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -56,6 +57,8 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  applyProxySettings();
+
   setupSSHHandlers(ipcMain);
   setupSFTPHandlers(ipcMain);
   setupLocalFsHandlers(ipcMain);
@@ -65,11 +68,22 @@ app.whenReady().then(() => {
 
   createWindow();
 
+  powerMonitor.on('resume', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      checkSSHSessions(mainWindow.webContents);
+    }
+  });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
+});
+
+app.on('before-quit', () => {
+  cleanupAllSSHSessions();
+  cleanupAllSFTPSessions();
 });
 
 app.on('window-all-closed', () => {

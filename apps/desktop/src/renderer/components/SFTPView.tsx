@@ -68,7 +68,9 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
       try {
         const result = await window.electronAPI.sftp.connect(sessionId, config);
         if (result.success) {
-          loadRemoteDir('/');
+          const initialPath = result.homePath || '/';
+          setRemotePath(initialPath);
+          loadRemoteDir(initialPath);
         } else {
           setConnectionError(result.error || 'Failed to connect');
         }

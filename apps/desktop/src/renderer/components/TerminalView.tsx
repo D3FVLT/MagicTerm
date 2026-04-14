@@ -40,7 +40,11 @@ const TERMIUS_THEME = {
   brightWhite: '#c0caf5',
 };
 
-export function TerminalView({ sessionId, serverName, isActive = true }: TerminalViewProps) {
+interface ReconnectHandler {
+  (sessionId: string): Promise<void>;
+}
+
+export function TerminalView({ sessionId, serverName, isActive = true, onReconnect }: TerminalViewProps & { onReconnect?: ReconnectHandler }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -48,6 +52,7 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSnippets, setShowSnippets] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const syncPtySize = useCallback(() => {
@@ -187,10 +192,6 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
     });
 
     terminal.attachCustomKeyEventHandler((ev) => {
-      // Windows copy/paste ergonomics:
-      // - Ctrl+Shift+C copies selection
-      // - Ctrl+C copies if there is selection (otherwise sends SIGINT to shell)
-      // - Ctrl+Shift+V pastes clipboard text
       if (ev.type === 'keydown') {
         const key = ev.key.toLowerCase();
         const hasCtrl = ev.ctrlKey || ev.metaKey;
@@ -198,24 +199,23 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
 
         if (hasCtrl && ev.shiftKey && key === 'c') {
           if (hasSelection) {
-            void navigator.clipboard.writeText(terminal.getSelection());
+            window.electronAPI.clipboard.writeText(terminal.getSelection());
           }
           ev.preventDefault();
           return false;
         }
 
         if (hasCtrl && !ev.shiftKey && key === 'c' && hasSelection) {
-          void navigator.clipboard.writeText(terminal.getSelection());
+          window.electronAPI.clipboard.writeText(terminal.getSelection());
           ev.preventDefault();
           return false;
         }
 
         if (hasCtrl && ev.shiftKey && key === 'v') {
-          void navigator.clipboard.readText().then((text) => {
-            if (text) {
-              window.electronAPI.ssh.sendData(sessionId, text);
-            }
-          });
+          const text = window.electronAPI.clipboard.readText();
+          if (text) {
+            window.electronAPI.ssh.sendData(sessionId, text);
+          }
           ev.preventDefault();
           return false;
         }
@@ -241,8 +241,12 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
         if (incomingSessionId === sessionId) {
           if (status === 'disconnected') {
             terminal.write('\r\n\x1b[38;5;221m⚡ Connection closed.\x1b[0m\r\n');
+            setConnectionStatus('disconnected');
           } else if (status === 'error') {
             terminal.write(`\r\n\x1b[38;5;203m✖ Error: ${error}\x1b[0m\r\n`);
+            setConnectionStatus('disconnected');
+          } else if (status === 'connected') {
+            setConnectionStatus('connected');
           }
         }
       }
@@ -270,9 +274,19 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
       {/* Terminal Header - minimal, just for drag and status */}
       <div className="drag-region flex h-10 items-center border-b border-[#292e42] bg-[#1f2335] px-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-3 w-3 items-center justify-center rounded-full bg-green-500">
-            <div className="h-1.5 w-1.5 rounded-full bg-green-300 animate-pulse" />
-          </div>
+          {connectionStatus === 'connected' && (
+            <div className="flex h-3 w-3 items-center justify-center rounded-full bg-green-500">
+              <div className="h-1.5 w-1.5 rounded-full bg-green-300 animate-pulse" />
+            </div>
+          )}
+          {connectionStatus === 'reconnecting' && (
+            <div className="flex h-3 w-3 items-center justify-center rounded-full bg-yellow-500">
+              <div className="h-1.5 w-1.5 rounded-full bg-yellow-300 animate-pulse" />
+            </div>
+          )}
+          {connectionStatus === 'disconnected' && (
+            <div className="h-3 w-3 rounded-full bg-red-500" />
+          )}
           <span className="text-sm font-medium text-[#c0caf5]">
             {serverName || 'Terminal'}
           </span>
@@ -332,6 +346,36 @@ export function TerminalView({ sessionId, serverName, isActive = true }: Termina
             </svg>
           </button>
         </div>
+
+        {/* Reconnect Toast */}
+        {connectionStatus === 'disconnected' && onReconnect && (
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+            <div className="h-2 w-2 rounded-full bg-red-500" />
+            <span className="text-sm text-[#c0caf5]">Connection lost</span>
+            <button
+              onClick={async () => {
+                setConnectionStatus('reconnecting');
+                try {
+                  await onReconnect(sessionId);
+                  setConnectionStatus('connected');
+                  terminalRef.current?.write('\r\n\x1b[38;5;114m⚡ Reconnected.\x1b[0m\r\n');
+                } catch {
+                  setConnectionStatus('disconnected');
+                  terminalRef.current?.write('\r\n\x1b[38;5;203m✖ Reconnect failed.\x1b[0m\r\n');
+                }
+              }}
+              className="rounded-md bg-[#7aa2f7] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[#6b8fd6]"
+            >
+              Reconnect
+            </button>
+          </div>
+        )}
+        {connectionStatus === 'reconnecting' && (
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
+            <span className="text-sm text-[#c0caf5]">Reconnecting...</span>
+          </div>
+        )}
 
         {/* Search Bar - floating above toolbar */}
         {showSearch && (
