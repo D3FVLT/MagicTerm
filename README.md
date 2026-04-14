@@ -6,6 +6,9 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
 ## Features
 
+- **Vaults UI** — Termius-style top-tab navigation with server card grid
+- **Server Search** — instant filter by name, IP address, or comment
+- **Pin & Reorder** — pin servers to top, drag-and-drop reorder (syncs across org)
 - **SSH Terminal** — full 256-color & truecolor support, search (Cmd/Ctrl+F)
 - **Split Panes** — horizontal (Cmd+D) and vertical (Cmd+Shift+D) terminal splits
 - **10 Built-in Themes** — Tokyo Night, Dracula, Monokai, Nord, Catppuccin and more
@@ -14,12 +17,14 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 - **Built-in Text Editor** — edit remote files directly
 - **Session Tabs** — multiple connections with persistent state
 - **Personal Snippets** — encrypted storage for tokens/secrets, paste to terminal
+- **Credential Viewer** — view/copy saved server passwords from Edit Server modal
 - **SSH Config Import** — import hosts from ~/.ssh/config
 - **Organizations** — team collaboration with role management (owner/admin/member/viewer)
 - **E2E Encryption** — credentials encrypted client-side with AES-256-GCM
 - **Cloud Sync** — via Supabase, works across devices
 - **Proxy Support** — HTTP/SOCKS5 proxy for app traffic with connection testing
 - **Master Password Remember** — secure device-level storage via OS keychain
+- **Smooth Animations** — modals, dropdowns, server cards with staggered transitions
 - **Cross-platform** — macOS, Windows, Linux
 - **Auto-updates** — Windows (silent), macOS (notification with download link)
 
