@@ -66,6 +66,13 @@ export interface ElectronAPI {
     set: (config: { enabled: boolean; type: string; host: string; port: number; username?: string; password?: string }) => Promise<{ success: boolean }>;
     test: () => Promise<{ success: boolean; ip?: string; error?: string }>;
   };
+  terminalSettings: {
+    get: () => Promise<{ success: boolean; settings: Record<string, unknown> | null }>;
+    set: (settings: Record<string, unknown>) => Promise<{ success: boolean }>;
+  };
+  sshConfig: {
+    import: () => Promise<{ success: boolean; hosts: { name: string; host: string; port: number; username: string; identityFile?: string }[]; error?: string }>;
+  };
   sftp: {
     connect: (
       sessionId: string,

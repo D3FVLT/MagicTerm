@@ -1,5 +1,8 @@
 import { IpcMain, safeStorage, net } from 'electron';
 import Store from 'electron-store';
+import { readFile } from 'fs/promises';
+import { homedir } from 'os';
+import { join } from 'path';
 import { IPC_CHANNELS, STORAGE_KEYS } from '@magicterm/shared';
 import { applyProxySettings } from './proxy';
 
@@ -77,6 +80,66 @@ export function setupAuthHandlers(ipcMain: IpcMain): void {
       return { success: false, error: `HTTP ${response.status}` };
     } catch (err) {
       return { success: false, error: (err as Error).message };
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.TERMINAL_SETTINGS_GET, async () => {
+    const settings = store.get(STORAGE_KEYS.TERMINAL_SETTINGS) as Record<string, unknown> | undefined;
+    return { success: true, settings: settings || null };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.TERMINAL_SETTINGS_SET, async (_event, settings: Record<string, unknown>) => {
+    store.set(STORAGE_KEYS.TERMINAL_SETTINGS, settings);
+    return { success: true };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.SSH_CONFIG_IMPORT, async () => {
+    try {
+      const configPath = join(homedir(), '.ssh', 'config');
+      const content = await readFile(configPath, 'utf-8');
+      const hosts: { name: string; host: string; port: number; username: string; identityFile?: string }[] = [];
+      let current: Record<string, string> | null = null;
+
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+
+        const match = trimmed.match(/^(\S+)\s+(.+)$/);
+        if (!match) continue;
+
+        const [, key, value] = match;
+        if (key.toLowerCase() === 'host') {
+          if (current && current['hostname']) {
+            hosts.push({
+              name: current['_name'],
+              host: current['hostname'],
+              port: parseInt(current['port'] || '22', 10),
+              username: current['user'] || '',
+              identityFile: current['identityfile'],
+            });
+          }
+          if (value.includes('*') || value.includes('?')) {
+            current = null;
+          } else {
+            current = { _name: value };
+          }
+        } else if (current) {
+          current[key.toLowerCase()] = value;
+        }
+      }
+      if (current && current['hostname']) {
+        hosts.push({
+          name: current['_name'],
+          host: current['hostname'],
+          port: parseInt(current['port'] || '22', 10),
+          username: current['user'] || '',
+          identityFile: current['identityfile'],
+        });
+      }
+
+      return { success: true, hosts };
+    } catch (err) {
+      return { success: false, error: (err as Error).message, hosts: [] };
     }
   });
 }

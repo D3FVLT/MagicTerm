@@ -34,6 +34,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   const [isResizing, setIsResizing] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const memberMenuRef = useRef<HTMLDivElement>(null);
+  const currentUserNickname = members.find((m) => m.userId === user?.id)?.nickname;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -468,10 +469,10 @@ export function Sidebar({ onAddServer }: SidebarProps) {
           className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-800"
         >
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-white uppercase">
-            {user?.email?.[0] || '?'}
+            {(currentUserNickname || user?.email)?.[0] || '?'}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="truncate text-sm text-gray-200">{user?.email || 'Unknown'}</div>
+            <div className="truncate text-sm text-gray-200">{currentUserNickname || user?.email || 'Unknown'}</div>
             <div className="text-xs text-gray-500">v{__APP_VERSION__}</div>
           </div>
           <svg

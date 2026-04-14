@@ -135,6 +135,14 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.PROXY_SET, config),
     test: () => ipcRenderer.invoke(IPC_CHANNELS.PROXY_TEST),
   },
+  terminalSettings: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_SETTINGS_GET),
+    set: (settings: Record<string, unknown>) =>
+      ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_SETTINGS_SET, settings),
+  },
+  sshConfig: {
+    import: () => ipcRenderer.invoke(IPC_CHANNELS.SSH_CONFIG_IMPORT),
+  },
 };
 
 contextBridge.exposeInMainWorld('electronAPI', api);

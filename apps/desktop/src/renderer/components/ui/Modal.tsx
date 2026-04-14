@@ -29,10 +29,10 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div className="relative z-10 w-full max-w-md rounded-xl bg-gray-900 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-md flex-col rounded-xl bg-gray-900 shadow-2xl">
+        <div className="flex flex-shrink-0 items-center justify-between border-b border-gray-800 px-6 py-4">
           <h2 className="text-lg font-semibold text-white">{title}</h2>
           <button
             onClick={onClose}
@@ -48,7 +48,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             </svg>
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="overflow-y-auto p-6">{children}</div>
       </div>
     </div>
   );

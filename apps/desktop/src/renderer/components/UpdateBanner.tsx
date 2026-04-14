@@ -193,9 +193,14 @@ export function UpdateBanner() {
               </button>
             </div>
             <div className="overflow-y-auto px-4 py-3">
-              <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-[#c0caf5]">
-                {updateStatus.info?.releaseNotes?.trim() || 'Changelog is not available for this release.'}
-              </pre>
+              {updateStatus.info?.releaseNotes?.trim() ? (
+                <div
+                  className="release-notes prose-sm text-sm leading-relaxed text-[#c0caf5]"
+                  dangerouslySetInnerHTML={{ __html: updateStatus.info.releaseNotes.trim() }}
+                />
+              ) : (
+                <p className="text-sm text-[#565f89]">Changelog is not available for this release.</p>
+              )}
             </div>
             <div className="flex justify-end border-t border-[#292e42] px-4 py-3">
               <Button size="sm" onClick={() => setShowChangelog(false)}>

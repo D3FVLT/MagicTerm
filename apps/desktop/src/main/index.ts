@@ -1,8 +1,8 @@
-import { app, BrowserWindow, shell, ipcMain, powerMonitor } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, powerMonitor, dialog } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import { setupSSHHandlers, cleanupAllSSHSessions, checkSSHSessions } from './ssh';
-import { setupSFTPHandlers, cleanupAllSFTPSessions } from './sftp';
+import { setupSSHHandlers, cleanupAllSSHSessions, checkSSHSessions, getActiveSessionCount as getSSHCount } from './ssh';
+import { setupSFTPHandlers, cleanupAllSFTPSessions, getActiveSessionCount as getSFTPCount } from './sftp';
 import { setupLocalFsHandlers } from './local-fs';
 import { setupAuthHandlers } from './auth';
 import { setupServerHandlers } from './servers';
@@ -31,6 +31,29 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show();
+  });
+
+  let forceQuit = false;
+  mainWindow.on('close', (e) => {
+    if (forceQuit) return;
+    const total = getSSHCount() + getSFTPCount();
+    if (total > 0) {
+      e.preventDefault();
+      dialog
+        .showMessageBox(mainWindow!, {
+          type: 'question',
+          buttons: ['Close', 'Cancel'],
+          defaultId: 1,
+          title: 'Active Connections',
+          message: `You have ${total} active connection${total > 1 ? 's' : ''}. Close anyway?`,
+        })
+        .then(({ response }) => {
+          if (response === 0) {
+            forceQuit = true;
+            mainWindow?.close();
+          }
+        });
+    }
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {

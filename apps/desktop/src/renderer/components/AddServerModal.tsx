@@ -77,9 +77,74 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
     }
   };
 
+  const [showImport, setShowImport] = useState(false);
+  const [importHosts, setImportHosts] = useState<{ name: string; host: string; port: number; username: string; identityFile?: string }[]>([]);
+  const [importLoading, setImportLoading] = useState(false);
+
+  const handleImport = async () => {
+    setImportLoading(true);
+    try {
+      const result = await window.electronAPI.sshConfig.import();
+      if (result.success && result.hosts.length > 0) {
+        setImportHosts(result.hosts);
+        setShowImport(true);
+      } else if (result.hosts.length === 0) {
+        setError('No hosts found in ~/.ssh/config');
+      } else {
+        setError(result.error || 'Failed to read SSH config');
+      }
+    } catch {
+      setError('Failed to read SSH config');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const fillFromImport = (h: typeof importHosts[0]) => {
+    setName(h.name);
+    setHost(h.host);
+    setPort(String(h.port));
+    setUsername(h.username);
+    if (h.identityFile) {
+      setAuthType('key');
+      setComment(`Key: ${h.identityFile}`);
+    }
+    setShowImport(false);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Add Server">
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={handleImport}
+            disabled={importLoading}
+            className="flex items-center gap-1.5 rounded-lg border border-[#414868] px-2.5 py-1.5 text-xs text-[#7aa2f7] transition-colors hover:bg-[#292e42] disabled:opacity-50"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            {importLoading ? 'Reading...' : 'Import from ~/.ssh/config'}
+          </button>
+        </div>
+
+        {showImport && importHosts.length > 0 && (
+          <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-[#292e42] bg-[#1a1b26] p-2">
+            {importHosts.map((h, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => fillFromImport(h)}
+                className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs text-[#c0caf5] hover:bg-[#292e42]"
+              >
+                <span className="font-medium">{h.name}</span>
+                <span className="text-[#565f89]">{h.username}@{h.host}:{h.port}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <Input
           label="Name"
           value={name}

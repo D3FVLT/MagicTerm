@@ -36,6 +36,10 @@ function parsePermissions(mode: number): string {
   return owner + group + other;
 }
 
+export function getActiveSessionCount(): number {
+  return sessions.size;
+}
+
 export function cleanupAllSFTPSessions(): void {
   for (const [id, session] of sessions) {
     try {

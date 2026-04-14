@@ -55,12 +55,12 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       <div className="fixed inset-0 z-50 bg-black/60" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="w-full max-w-md rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl"
+          className="flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border border-gray-700 bg-gray-900 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <h3 className="mb-4 text-lg font-semibold text-white">Proxy Settings</h3>
+          <h3 className="flex-shrink-0 px-6 pt-6 text-lg font-semibold text-white">Proxy Settings</h3>
 
-          <div className="space-y-4">
+          <div className="overflow-y-auto px-6 py-4 space-y-4">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -156,7 +156,7 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end gap-3">
+          <div className="flex flex-shrink-0 justify-end gap-3 border-t border-gray-700 px-6 py-4">
             <button
               onClick={onClose}
               className="rounded-lg border border-gray-700 bg-transparent px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800"

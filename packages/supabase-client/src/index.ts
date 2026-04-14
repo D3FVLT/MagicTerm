@@ -339,7 +339,26 @@ export async function listOrgMembers(orgId: string): Promise<OrgMember[]> {
     .order('joined_at', { nullsFirst: false });
 
   if (error) throw error;
-  return (data as EncryptedOrgMember[]).map(mapToOrgMember);
+  const members = (data as EncryptedOrgMember[]).map(mapToOrgMember);
+
+  const userIds = members.map((m) => m.userId).filter((id): id is string => !!id);
+  if (userIds.length > 0) {
+    const { data: profiles } = await getSupabase()
+      .from('user_profiles')
+      .select('id, nickname')
+      .in('id', userIds);
+
+    if (profiles) {
+      const nicknameMap = new Map(profiles.map((p) => [p.id, p.nickname]));
+      for (const member of members) {
+        if (member.userId) {
+          member.nickname = nicknameMap.get(member.userId) || undefined;
+        }
+      }
+    }
+  }
+
+  return members;
 }
 
 export async function inviteMember(input: InviteMemberInput): Promise<OrgMember> {
