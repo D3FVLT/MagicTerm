@@ -3,6 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Content Security Policy: app shell loads only same-origin assets, talks
+      to Supabase over HTTPS/WSS, and pulls Google Fonts. Inline styles are
+      allowed because Tailwind, xterm.js and several modal libs inject style
+      attributes; inline scripts are forbidden so a renderer XSS cannot
+      execute attacker-controlled JS via injected <script> tags or event
+      handlers. 'connect-src' is also restricted to Supabase to stop a
+      compromised renderer from beaconing tokens to a third-party origin.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self';"
+    />
     <title>Magic Term</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

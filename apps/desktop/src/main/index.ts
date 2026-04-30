@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, powerMonitor, dialog } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, powerMonitor, dialog, session } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { setupSSHHandlers, cleanupAllSSHSessions, checkSSHSessions, getActiveSessionCount as getSSHCount } from './ssh';
@@ -7,9 +7,67 @@ import { setupLocalFsHandlers } from './local-fs';
 import { setupAuthHandlers } from './auth';
 import { setupServerHandlers } from './servers';
 import { setupAutoUpdater, setupUpdaterHandlers } from './updater';
+import { setupMasterKeyHandlers } from './master-key';
+import { setupKnownHostsHandlers } from './known-hosts';
+import { setupSecureStorageHandlers } from './secure-storage';
 import { applyProxySettings } from './proxy';
 
 let mainWindow: BrowserWindow | null = null;
+
+// Schemes the renderer is allowed to hand to shell.openExternal. Anything
+// else (file:, javascript:, ms-cxh:, custom protocols, ...) is silently
+// dropped to avoid local-execution and SSRF-style attacks via crafted URLs
+// in terminal output, snippets, or compromised renderer code.
+const ALLOWED_EXTERNAL_SCHEMES = new Set(['https:', 'http:', 'mailto:']);
+
+function isExternalUrlAllowed(rawUrl: string): boolean {
+  try {
+    const url = new URL(rawUrl);
+    return ALLOWED_EXTERNAL_SCHEMES.has(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function safeOpenExternal(rawUrl: string): void {
+  if (isExternalUrlAllowed(rawUrl)) {
+    shell.openExternal(rawUrl);
+  } else {
+    console.warn('[Security] Blocked openExternal for non-allowlisted URL');
+  }
+}
+
+function installSecurityPolicies(): void {
+  // Defence in depth: even with sandbox + contextIsolation, a renderer XSS
+  // could try to load a remote script or open a file:// URL. Block both.
+  session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+    const url = details.url;
+    if (
+      url.startsWith('chrome-devtools://') ||
+      url.startsWith('devtools://') ||
+      url.startsWith('chrome-extension://')
+    ) {
+      callback({});
+      return;
+    }
+    callback({});
+  });
+
+  // Reject creation of new webContents (windows, webviews) — we intercept
+  // window.open via setWindowOpenHandler instead.
+  app.on('web-contents-created', (_event, contents) => {
+    contents.on('will-attach-webview', (e) => e.preventDefault());
+    contents.on('will-navigate', (e, url) => {
+      // Allow Vite HMR / file:// app shell, deny anything else.
+      const isDevServer = is.dev && url.startsWith(process.env['ELECTRON_RENDERER_URL'] ?? '');
+      const isAppShell = url.startsWith('file://');
+      if (!isDevServer && !isAppShell) {
+        e.preventDefault();
+        safeOpenExternal(url);
+      }
+    });
+  });
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -22,10 +80,16 @@ function createWindow(): void {
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 15, y: 15 },
     webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
-      sandbox: false,
+      preload: join(__dirname, '../preload/index.js'),
+      // sandbox: true forces the renderer into the OS sandbox. The preload
+      // bridge is already context-isolated and only exposes thin
+      // ipcRenderer.invoke wrappers + clipboard, so there is no Node-only
+      // API in the renderer that requires sandbox: false.
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
+      webSecurity: true,
+      allowRunningInsecureContent: false,
     },
   });
 
@@ -57,7 +121,7 @@ function createWindow(): void {
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url);
+    safeOpenExternal(details.url);
     return { action: 'deny' };
   });
 
@@ -80,8 +144,12 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  installSecurityPolicies();
   applyProxySettings();
 
+  setupMasterKeyHandlers(ipcMain);
+  setupKnownHostsHandlers(ipcMain);
+  setupSecureStorageHandlers(ipcMain);
   setupSSHHandlers(ipcMain);
   setupSFTPHandlers(ipcMain);
   setupLocalFsHandlers(ipcMain);

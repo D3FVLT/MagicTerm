@@ -9,6 +9,22 @@ export const PBKDF2_ITERATIONS = 100000;
 export const PBKDF2_KEY_LENGTH = 256;
 export const ENCRYPTION_ALGORITHM = 'AES-GCM';
 
+// Master password policy (UI gates submission; server cannot enforce since it
+// only sees the salted scrypt verifier, never the plaintext password).
+export const MASTER_PASSWORD_MIN_LENGTH = 12;
+
+// scrypt parameters for the master-password verifier. These run in the main
+// process via Node's `crypto.scrypt` and govern how expensive an offline
+// brute-force on a leaked verifier becomes. N must be a power of two.
+//   N=2^15 (32768), r=8, p=1 — ~32 MiB of RAM and ~80–150 ms per attempt
+//   on a modern desktop.
+export const SCRYPT_N = 32768;
+export const SCRYPT_R = 8;
+export const SCRYPT_P = 1;
+export const SCRYPT_SALT_LENGTH = 16;
+export const SCRYPT_KEY_LENGTH = 32;
+export const SCRYPT_MAX_MEM = 64 * 1024 * 1024; // upper bound passed to crypto.scrypt
+
 export const IPC_CHANNELS = {
   SSH_CONNECT: 'ssh:connect',
   SSH_DISCONNECT: 'ssh:disconnect',
@@ -49,6 +65,13 @@ export const IPC_CHANNELS = {
   CRYPTO_SAVE_MASTER_PASSWORD: 'crypto:saveMasterPassword',
   CRYPTO_GET_SAVED_MASTER_PASSWORD: 'crypto:getSavedMasterPassword',
   CRYPTO_CLEAR_SAVED_MASTER_PASSWORD: 'crypto:clearSavedMasterPassword',
+  CRYPTO_CREATE_VERIFIER: 'crypto:createVerifier',
+  CRYPTO_VERIFY_MASTER_PASSWORD: 'crypto:verifyMasterPassword',
+  CRYPTO_SET_VERIFIER: 'crypto:setVerifier',
+
+  SECURE_STORAGE_GET: 'secureStorage:get',
+  SECURE_STORAGE_SET: 'secureStorage:set',
+  SECURE_STORAGE_REMOVE: 'secureStorage:remove',
 
   CLIPBOARD_WRITE: 'clipboard:write',
   CLIPBOARD_READ: 'clipboard:read',
@@ -65,8 +88,11 @@ export const IPC_CHANNELS = {
 
 export const STORAGE_KEYS = {
   MASTER_KEY_HASH: 'masterKeyHash',
+  MASTER_KEY_VERIFIER: 'masterKeyVerifier',
   SUPABASE_SESSION: 'supabaseSession',
   SAVED_MASTER_PASSWORD: 'savedMasterPassword',
   PROXY_CONFIG: 'proxyConfig',
+  PROXY_CONFIG_ENCRYPTED: 'proxyConfigEncrypted',
   TERMINAL_SETTINGS: 'terminalSettings',
+  SSH_KNOWN_HOSTS: 'sshKnownHosts',
 } as const;

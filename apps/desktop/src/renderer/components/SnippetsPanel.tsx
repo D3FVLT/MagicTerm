@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSnippets } from '../contexts/SnippetsContext';
+import { copySecretToClipboard } from '../lib/secret-clipboard';
 import type { Snippet } from '@magicterm/shared';
 
 interface SnippetsPanelProps {
@@ -40,10 +41,13 @@ export function SnippetsPanel({ isOpen, onClose, onPaste }: SnippetsPanelProps) 
   const handleCopy = async (snippet: Snippet) => {
     try {
       const decrypted = await decryptSnippetValue(snippet);
-      await navigator.clipboard.writeText(decrypted);
+      // Snippets contain the user's tokens/passwords by definition. Use the
+      // auto-clearing helper so the value is wiped from the clipboard 30s
+      // after copy unless the user re-copied something else in the meantime.
+      copySecretToClipboard(decrypted);
       setCopiedId(snippet.id);
       setTimeout(() => setCopiedId(null), 1500);
-    } catch (err) {
+    } catch {
       setError('Failed to copy');
     }
   };

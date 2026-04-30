@@ -61,11 +61,22 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_Q4DGz...
 
 ### Дополнительные миграции
 
-После основной схемы, выполни дополнительные SQL файлы в том же порядке:
+После основной схемы, выполни дополнительные SQL файлы **строго в этом порядке**:
 
 1. `supabase/add-user-profiles.sql` — профили пользователей
 2. `supabase/add-user-settings.sql` — настройки пользователей (ник, дефолтная орга)
 3. `supabase/add-snippets.sql` — персональные зашифрованные сниппеты
+4. `supabase/add-server-comment.sql` — поле `comment` в `servers`
+5. `supabase/add-server-pinning.sql` — `is_pinned` + `sort_order` в `servers` для пинов и ручной сортировки
+6. `supabase/fix-member-email.sql` — корректный email для owner-членов
+7. `supabase/fix-rls.sql` — переписанные RLS-политики (использование SECURITY DEFINER хелперов)
+8. `supabase/security-hardening.sql` — **обязательная миграция безопасности**:
+   - блокирует self-escalation в `org_members` (роль теперь меняет только админ через RPC)
+   - добавляет колонку `master_key_verifier` под scrypt-верификатор мастер-пароля
+   - регистрирует RPC `create_organization`, `delete_organization`, `change_member_role`
+   - сужает `get_user_display_name` так, чтобы email чужих пользователей не утекал
+
+> Если ты пропустишь `fix-rls.sql` или `security-hardening.sql`, в проде останутся уязвимости с эскалацией ролей и/или утечкой PII через `get_user_display_name`.
 
 ### Проверка таблиц
 
@@ -184,12 +195,18 @@ SQL схема не выполнена. Перейди в SQL Editor и запу
 
 RLS блокирует доступ. Проверь что:
 1. Пользователь авторизован
-2. RLS политики созданы правильно
+2. RLS политики созданы правильно (`supabase/fix-rls.sql` и `supabase/security-hardening.sql` выполнены)
+3. У пользователя нужная роль в `org_members` для требуемой операции
 
-Для дебага временно отключи RLS:
-```sql
-alter table servers disable row level security;
-```
+> ⚠️ **Не отключай RLS** на боевой базе ради дебага — это снимает изоляцию данных
+> между пользователями и организациями. Если нужно посмотреть строки целиком,
+> используй сервисный ключ (`sb_secret_...`) только в SQL Editor:
+>
+> ```sql
+> select * from public.servers;
+> ```
+>
+> и не пиши такой код в клиентском приложении.
 
 ### Данные не синхронизируются
 

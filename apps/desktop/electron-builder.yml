@@ -23,6 +23,17 @@ mac:
       arch:
         - x64
         - arm64
+  # SECURITY KNOWN GAP: identity is currently null which means builds are
+  # **unsigned and unnotarized**. Auto-update integrity therefore relies
+  # solely on the GitHub release URL + electron-updater's blockmap hash.
+  # To sign + notarize for production, set environment variables and switch
+  # to:
+  #   identity: "Developer ID Application: Your Name (TEAMID)"
+  #   notarize:
+  #     teamId: "TEAMID"
+  # and provide APPLE_ID / APPLE_APP_SPECIFIC_PASSWORD / APPLE_TEAM_ID
+  # via the build environment. See electron-builder docs:
+  # https://www.electron.build/code-signing-mac
   identity: null
 win:
   target:

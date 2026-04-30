@@ -107,6 +107,15 @@ export async function decrypt(
   return decoder.decode(decrypted);
 }
 
+/**
+ * @deprecated Legacy verifier — single SHA-256 round, no salt. Brute-forceable
+ * offline if the hash leaks (cloud sync row, electron-store file, IPC payload).
+ * Kept only so the renderer can detect old verifiers and trigger a transparent
+ * upgrade to the scrypt-based verifier owned by the main process.
+ *
+ * Detect with `isLegacyVerifier(value)`. Verification of new-format strings
+ * MUST go through the main process (see CRYPTO_VERIFY_MASTER_PASSWORD IPC).
+ */
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
@@ -114,12 +123,13 @@ export async function hashPassword(password: string): Promise<string> {
   return arrayBufferToBase64(hash);
 }
 
-export async function verifyPasswordHash(
-  password: string,
-  hash: string
-): Promise<boolean> {
-  const computedHash = await hashPassword(password);
-  return computedHash === hash;
+/**
+ * Returns true when the value looks like the legacy SHA-256 base64 verifier
+ * (no `$` separators). New-format scrypt verifiers always start with `scrypt$`.
+ */
+export function isLegacyVerifier(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return !value.includes('$');
 }
 
 export class CryptoManager {
@@ -149,13 +159,6 @@ export class CryptoManager {
       throw new Error('Master password not set');
     }
     return decrypt(encryptedData, this.masterPassword);
-  }
-
-  async getMasterPasswordHash(): Promise<string> {
-    if (!this.masterPassword) {
-      throw new Error('Master password not set');
-    }
-    return hashPassword(this.masterPassword);
   }
 }
 

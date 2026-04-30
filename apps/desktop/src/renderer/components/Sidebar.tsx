@@ -60,6 +60,10 @@ export function Sidebar({ onAddServer }: SidebarProps) {
   }, [serverMenuId]);
 
   const canManageMembers = currentOrg?.role === 'owner' || currentOrg?.role === 'admin';
+  // viewer can only see existing servers; member/admin/owner can add new ones.
+  // When in personal scope (no currentOrg) the user is implicitly the owner
+  // of their personal vault, so the action is allowed.
+  const canAddServer = !currentOrg || currentOrg.role !== 'viewer';
 
   const handleChangeRole = async (memberId: string, newRole: MemberRole) => {
     try {
@@ -155,16 +159,18 @@ export function Sidebar({ onAddServer }: SidebarProps) {
           <h2 className="text-sm font-medium text-gray-400">
             {currentOrg ? 'Team Servers' : 'Personal Servers'}
           </h2>
-          <Button variant="ghost" size="sm" onClick={onAddServer}>
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </Button>
+          {canAddServer && (
+            <Button variant="ghost" size="sm" onClick={onAddServer}>
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </Button>
+          )}
         </div>
 
         {isLoading ? (
@@ -174,9 +180,11 @@ export function Sidebar({ onAddServer }: SidebarProps) {
         ) : servers.length === 0 ? (
           <div className="rounded-lg bg-gray-800/50 p-4 text-center">
             <p className="text-sm text-gray-400">No servers yet</p>
-            <Button variant="ghost" size="sm" className="mt-2" onClick={onAddServer}>
-              Add your first server
-            </Button>
+            {canAddServer && (
+              <Button variant="ghost" size="sm" className="mt-2" onClick={onAddServer}>
+                Add your first server
+              </Button>
+            )}
           </div>
         ) : (
           <ul className="space-y-1">
