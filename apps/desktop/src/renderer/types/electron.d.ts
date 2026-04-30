@@ -34,8 +34,9 @@ export interface ElectronAPI {
     onStatus: (callback: SSHStatusCallback) => () => void;
   };
   auth: {
+    /** @deprecated Legacy SHA-256 hash channel. Prefer masterKey.createVerifier. */
     setMasterKeyHash: (hash: string) => Promise<{ success: boolean }>;
-    getStatus: () => Promise<{ hasMasterKey: boolean; masterKeyHash?: string }>;
+    getStatus: () => Promise<{ hasMasterKey: boolean }>;
     logout: () => Promise<{ success: boolean }>;
   };
   servers: {
@@ -60,6 +61,29 @@ export interface ElectronAPI {
     save: (password: string) => Promise<{ success: boolean; error?: string }>;
     get: () => Promise<{ success: boolean; password?: string }>;
     clear: () => Promise<{ success: boolean }>;
+  };
+  masterKey: {
+    setVerifier: (verifier: string | null) => Promise<{ success: boolean; error?: string }>;
+    createVerifier: (password: string) => Promise<{ success: boolean; verifier?: string; error?: string }>;
+    verify: (
+      password: string
+    ) => Promise<{
+      success: boolean;
+      valid?: boolean;
+      upgraded?: boolean;
+      verifier?: string;
+      error?: string;
+    }>;
+  };
+  sshHostKeys: {
+    list: () => Promise<{ hostPort: string; fingerprint: string; addedAt: string }[]>;
+    trust: (host: string, port: number, fingerprint: string) => Promise<{ success: boolean; error?: string }>;
+    forget: (host: string, port: number) => Promise<{ success: boolean; error?: string }>;
+  };
+  secureStorage: {
+    get: (key: string) => Promise<{ success: boolean; value: string | null; error?: string }>;
+    set: (key: string, value: string) => Promise<{ success: boolean; error?: string }>;
+    remove: (key: string) => Promise<{ success: boolean; error?: string }>;
   };
   proxy: {
     get: () => Promise<{ success: boolean; config: { enabled: boolean; type: string; host: string; port: number; username?: string; password?: string } | null }>;
@@ -122,6 +146,10 @@ export interface ElectronAPI {
       remotePath: string,
       content: string
     ) => Promise<{ success: boolean; error?: string }>;
+    pickUploadFiles: () => Promise<{ success: boolean; canceled?: boolean; files: string[] }>;
+    pickDownloadDestination: (
+      suggestedName: string
+    ) => Promise<{ success: boolean; canceled?: boolean; filePath?: string }>;
     onProgress: (callback: TransferProgressCallback) => () => void;
   };
   localFs: {

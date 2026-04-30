@@ -107,7 +107,10 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
     setUsername(h.username);
     if (h.identityFile) {
       setAuthType('key');
-      setComment(`Key: ${h.identityFile}`);
+      // Don't leak the local IdentityFile path into the cloud-synced
+      // (but plaintext) `comment` column. The path is private to the
+      // local machine; storing it in plaintext on Supabase exposes the
+      // user's directory layout / username without adding any value.
     }
     setShowImport(false);
   };

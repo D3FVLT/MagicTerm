@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { MASTER_PASSWORD_MIN_LENGTH } from '@magicterm/shared';
 
 export function SetupMasterKeyPage() {
   const { setupMasterKey, unlockWithMasterKey, needsMasterKeySetup } = useAuth();
@@ -44,8 +45,11 @@ export function SetupMasterKeyPage() {
       return;
     }
 
-    if (masterPassword.length < 8) {
-      setError('Master password must be at least 8 characters');
+    // Length policy only applies when CREATING a new master password. Existing
+    // users from before the policy bump may still have shorter passwords; the
+    // verifier check is what actually gates them in.
+    if (isSetup && masterPassword.length < MASTER_PASSWORD_MIN_LENGTH) {
+      setError(`Master password must be at least ${MASTER_PASSWORD_MIN_LENGTH} characters`);
       return;
     }
 
@@ -118,9 +122,9 @@ export function SetupMasterKeyPage() {
               label="Master Password"
               value={masterPassword}
               onChange={(e) => setMasterPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="••••••••••••"
               required
-              minLength={8}
+              minLength={isSetup ? MASTER_PASSWORD_MIN_LENGTH : 1}
               autoFocus
             />
 
@@ -130,9 +134,9 @@ export function SetupMasterKeyPage() {
                 label="Confirm Master Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="••••••••••••"
                 required
-                minLength={8}
+                minLength={MASTER_PASSWORD_MIN_LENGTH}
               />
             )}
 

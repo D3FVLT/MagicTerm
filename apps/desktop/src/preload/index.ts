@@ -103,6 +103,9 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.SFTP_READ_FILE, sessionId, remotePath),
     writeFile: (sessionId: string, remotePath: string, content: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.SFTP_WRITE_FILE, sessionId, remotePath, content),
+    pickUploadFiles: () => ipcRenderer.invoke('sftp:pickUploadFiles'),
+    pickDownloadDestination: (suggestedName: string) =>
+      ipcRenderer.invoke('sftp:pickDownloadDestination', suggestedName),
     onProgress: (callback: TransferProgressCallback) => {
       const handler = (_event: Electron.IpcRendererEvent, progress: TransferProgress) => {
         callback(progress);
@@ -128,6 +131,27 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_GET_SAVED_MASTER_PASSWORD),
     clear: () =>
       ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_CLEAR_SAVED_MASTER_PASSWORD),
+  },
+  masterKey: {
+    setVerifier: (verifier: string | null) =>
+      ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_SET_VERIFIER, verifier),
+    createVerifier: (password: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_CREATE_VERIFIER, password),
+    verify: (password: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_VERIFY_MASTER_PASSWORD, password),
+  },
+  sshHostKeys: {
+    list: () => ipcRenderer.invoke('sshHostKeys:list'),
+    trust: (host: string, port: number, fingerprint: string) =>
+      ipcRenderer.invoke('sshHostKeys:trust', host, port, fingerprint),
+    forget: (host: string, port: number) =>
+      ipcRenderer.invoke('sshHostKeys:forget', host, port),
+  },
+  secureStorage: {
+    get: (key: string) => ipcRenderer.invoke(IPC_CHANNELS.SECURE_STORAGE_GET, key),
+    set: (key: string, value: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.SECURE_STORAGE_SET, key, value),
+    remove: (key: string) => ipcRenderer.invoke(IPC_CHANNELS.SECURE_STORAGE_REMOVE, key),
   },
   proxy: {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.PROXY_GET),

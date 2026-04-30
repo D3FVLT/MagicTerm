@@ -4,7 +4,10 @@ import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
+import { copySecretToClipboard } from '../lib/secret-clipboard';
 import type { Server, AuthType } from '@magicterm/shared';
+
+const SECRET_FIELDS = new Set(['password', 'key']);
 
 interface EditServerModalProps {
   isOpen: boolean;
@@ -69,7 +72,14 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
   };
 
   const copyToClipboard = (text: string, field: string) => {
-    window.electronAPI.clipboard.writeText(text);
+    if (SECRET_FIELDS.has(field)) {
+      // Auto-clear the system clipboard after 30s so the credential does not
+      // sit there for any pasteboard scraper to grab. Plain identifiers
+      // (host, username) get the regular non-clearing copy.
+      copySecretToClipboard(text);
+    } else {
+      window.electronAPI.clipboard.writeText(text);
+    }
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };

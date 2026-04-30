@@ -21,6 +21,14 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, 'src/preload/index.ts'),
         },
+        // sandbox: true requires the preload script to be CommonJS — Electron
+        // does not support ESM preload in sandboxed renderers. Without this,
+        // the preload silently fails to load and window.electronAPI is
+        // undefined in the renderer.
+        output: {
+          format: 'cjs',
+          entryFileNames: '[name].js',
+        },
       },
     },
   },

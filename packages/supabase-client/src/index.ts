@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, Session, User, RealtimeChannel } from '@supabase/supabase-js';
 import type {
   EncryptedServer,
   EncryptedOrganization,
@@ -20,17 +20,40 @@ export type { Session, User } from '@supabase/supabase-js';
 
 let supabaseClient: SupabaseClient | null = null;
 
-export function initSupabase(url: string, anonKey: string): SupabaseClient {
+/**
+ * Optional storage adapter for Supabase auth. The desktop renderer normally
+ * passes one that proxies through Electron's `safeStorage` via IPC so the
+ * refresh token is encrypted at rest instead of sitting in localStorage as
+ * plain JSON. Falls back to the SDK default (localStorage) if not provided.
+ */
+export interface SupabaseAuthStorage {
+  getItem: (key: string) => Promise<string | null> | string | null;
+  setItem: (key: string, value: string) => Promise<void> | void;
+  removeItem: (key: string) => Promise<void> | void;
+}
+
+export interface InitSupabaseOptions {
+  storage?: SupabaseAuthStorage;
+  storageKey?: string;
+}
+
+export function initSupabase(
+  url: string,
+  anonKey: string,
+  options: InitSupabaseOptions = {}
+): SupabaseClient {
   // Prevent creating multiple instances
   if (supabaseClient) {
     return supabaseClient;
   }
-  
+
   supabaseClient = createClient(url, anonKey, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      ...(options.storage ? { storage: options.storage } : {}),
+      ...(options.storageKey ? { storageKey: options.storageKey } : {}),
     },
   });
   return supabaseClient;
@@ -102,6 +125,10 @@ export function onAuthStateChange(
 
 export interface UserProfile {
   id: string;
+  /** Salted scrypt verifier (`scrypt$N$r$p$salt$hash`). Source of truth. */
+  masterKeyVerifier: string | null;
+  /** Legacy SHA-256 base64 hash. Kept only for clients that have not yet
+   *  migrated. New clients should treat this as read-only fallback. */
   masterKeyHash: string | null;
   nickname: string | null;
   defaultOrgId: string | null;
@@ -117,6 +144,7 @@ export interface UserSettings {
 interface EncryptedUserProfile {
   id: string;
   master_key_hash: string | null;
+  master_key_verifier: string | null;
   nickname: string | null;
   default_org_id: string | null;
   created_at: string;
@@ -126,6 +154,7 @@ interface EncryptedUserProfile {
 function mapToUserProfile(row: EncryptedUserProfile): UserProfile {
   return {
     id: row.id,
+    masterKeyVerifier: row.master_key_verifier,
     masterKeyHash: row.master_key_hash,
     nickname: row.nickname,
     defaultOrgId: row.default_org_id,
@@ -162,12 +191,26 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   return mapToUserProfile(data as EncryptedUserProfile);
 }
 
-export async function getMasterKeyHash(): Promise<string | null> {
+/**
+ * Returns the canonical master-password verifier for the current user.
+ *
+ * Prefers the new scrypt-based `master_key_verifier` column. Falls back to the
+ * legacy `master_key_hash` (single-round SHA-256 base64) so users on the old
+ * format can still unlock and trigger the transparent upgrade path on the main
+ * process side.
+ */
+export async function getMasterKeyVerifier(): Promise<string | null> {
   const profile = await getUserProfile();
-  return profile?.masterKeyHash ?? null;
+  return profile?.masterKeyVerifier ?? profile?.masterKeyHash ?? null;
 }
 
-export async function setMasterKeyHash(hash: string): Promise<void> {
+/**
+ * Persists the strong scrypt verifier into `master_key_verifier` and clears
+ * the legacy `master_key_hash` column so a future leaked DB snapshot does not
+ * still expose the brute-forceable digest. The renderer only ever calls this
+ * with the salted scrypt format produced by the main process.
+ */
+export async function setMasterKeyVerifier(verifier: string): Promise<void> {
   const user = await getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -175,11 +218,17 @@ export async function setMasterKeyHash(hash: string): Promise<void> {
     .from('user_profiles')
     .upsert({
       id: user.id,
-      master_key_hash: hash,
+      master_key_verifier: verifier,
+      master_key_hash: null,
     });
 
   if (error) throw error;
 }
+
+/** @deprecated Use `getMasterKeyVerifier` instead. Kept for backwards compat. */
+export const getMasterKeyHash = getMasterKeyVerifier;
+/** @deprecated Use `setMasterKeyVerifier` instead. Kept for backwards compat. */
+export const setMasterKeyHash = setMasterKeyVerifier;
 
 export async function getUserSettings(): Promise<UserSettings> {
   const profile = await getUserProfile();
@@ -410,12 +459,15 @@ export async function declineInvite(memberId: string): Promise<void> {
 }
 
 export async function updateMemberRole(memberId: string, role: MemberRole): Promise<OrgMember> {
-  const { data, error } = await getSupabase()
-    .from('org_members')
-    .update({ role })
-    .eq('id', memberId)
-    .select()
-    .single();
+  // Role changes go through the SECURITY DEFINER RPC `change_member_role`,
+  // which (a) verifies the caller is admin/owner of the target organization,
+  // (b) refuses to assign 'owner' (only the creator trigger can do that),
+  // and (c) is the only supported path now that the BEFORE UPDATE trigger
+  // blocks direct role mutations from non-admin callers.
+  const { data, error } = await getSupabase().rpc('change_member_role', {
+    member_id: memberId,
+    new_role: role,
+  });
 
   if (error) throw error;
   return mapToOrgMember(data as EncryptedOrgMember);
@@ -612,24 +664,51 @@ export function subscribeToServers(
   callback: (servers: Server[]) => void,
   orgId?: string
 ) {
-  const channel = getSupabase()
-    .channel('servers-changes')
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'servers',
-      },
-      async () => {
-        const servers = orgId ? await listServers(orgId) : await listAllServers();
-        callback(servers);
-      }
-    )
-    .subscribe();
+  // Defence in depth: scope the postgres_changes subscription to the user's
+  // own slice of the table. Without a filter the channel listens to the
+  // entire `servers` table and security falls back to RLS-on-Realtime —
+  // which is correct, but a single broker misconfiguration would let
+  // foreign rows reach the renderer. The server-side filter rejects them.
+  let activeChannel: RealtimeChannel | null = null;
+  let cancelled = false;
+
+  const setup = async () => {
+    let filter: string | undefined;
+    if (orgId) {
+      filter = `org_id=eq.${orgId}`;
+    } else {
+      const user = await getUser();
+      if (!user) return;
+      filter = `user_id=eq.${user.id}`;
+    }
+    if (cancelled) return;
+
+    const channelName = orgId ? `servers-org-${orgId}` : 'servers-personal';
+    const channel = getSupabase()
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'servers',
+          filter,
+        },
+        async () => {
+          const servers = orgId ? await listServers(orgId) : await listServers();
+          callback(servers);
+        }
+      )
+      .subscribe();
+
+    activeChannel = channel;
+  };
+
+  void setup();
 
   return () => {
-    channel.unsubscribe();
+    cancelled = true;
+    activeChannel?.unsubscribe();
   };
 }
 
