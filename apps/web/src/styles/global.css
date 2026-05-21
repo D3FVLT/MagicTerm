@@ -1,0 +1,160 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-bg: var(--bg);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-edge: var(--border);
+  --color-edge-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+}
+
+:root,
+[data-theme='midnight'] {
+  --bg: #0a0b14;
+  --surface-1: #11121d;
+  --surface-2: #1a1b26;
+  --surface-3: #24283b;
+  --border: #292e42;
+  --border-strong: #414868;
+  --fg: #c0caf5;
+  --fg-muted: #a9b1d6;
+  --fg-subtle: #565f89;
+  --accent: #7aa2f7;
+  --accent-hover: #6991ec;
+  --accent-fg: #0a0b14;
+  --success: #9ece6a;
+  --warning: #e0af68;
+  --danger: #f7768e;
+}
+
+[data-theme='onyx'] {
+  --bg: #000000;
+  --surface-1: #0d0d10;
+  --surface-2: #15151a;
+  --surface-3: #1f1f26;
+  --border: #1f1f26;
+  --border-strong: #2a2a33;
+  --fg: #e6edf3;
+  --fg-muted: #b1bac4;
+  --fg-subtle: #6e7681;
+  --accent: #79c0ff;
+  --accent-hover: #58a6ff;
+  --accent-fg: #000000;
+  --success: #56d364;
+  --warning: #e3b341;
+  --danger: #ff7b72;
+}
+
+[data-theme='daylight'] {
+  --bg: #ffffff;
+  --surface-1: #f5f6f8;
+  --surface-2: #eaecef;
+  --surface-3: #d8dde2;
+  --border: #d0d7de;
+  --border-strong: #afb8c1;
+  --fg: #1f2328;
+  --fg-muted: #57606a;
+  --fg-subtle: #7d8590;
+  --accent: #0969da;
+  --accent-hover: #0550ae;
+  --accent-fg: #ffffff;
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --danger: #cf222e;
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-fade-up { animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+.gradient-mesh {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in oklab, var(--accent) 25%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 20% 30%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 90% 50%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%);
+}
+
+.text-gradient {
+  background: linear-gradient(180deg, var(--fg) 0%, color-mix(in oklab, var(--fg) 70%, transparent) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-accent {
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in oklab, var(--accent) 60%, var(--fg)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glass {
+  background: color-mix(in oklab, var(--surface-1) 60%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent);
+}
+
+.product-shadow {
+  box-shadow:
+    0 10px 30px -10px color-mix(in oklab, var(--accent) 30%, transparent),
+    0 30px 80px -20px color-mix(in oklab, #000 60%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--fg) 5%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,289 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+import { SITE } from '~/data/site';
+
+const VERSION = SITE.version;
+const REPO = SITE.githubRepo;
+const RELEASE_BASE = `https://github.com/${REPO}/releases/download/v${VERSION}`;
+
+const downloads = [
+  {
+    os: 'macOS',
+    icon: 'apple',
+    description: 'Apple Silicon (M-series) and Intel Macs.',
+    primary: {
+      label: 'Apple Silicon (.dmg)',
+      href: `${RELEASE_BASE}/MagicTerm-${VERSION}-arm64.dmg`,
+    },
+    secondary: [
+      { label: 'Intel (.dmg)', href: `${RELEASE_BASE}/MagicTerm-${VERSION}-x64.dmg` },
+    ],
+    note: `First launch is gatekeeper-blocked because the app isn't code-signed yet. After installing, run:`,
+    code: 'xattr -cr "/Applications/Magic Term.app"',
+  },
+  {
+    os: 'Windows',
+    icon: 'windows',
+    description: 'Windows 10 and 11 (x64). Auto-updates after first install.',
+    primary: {
+      label: 'Installer (.exe)',
+      href: `${RELEASE_BASE}/MagicTerm-${VERSION}-x64.exe`,
+    },
+    secondary: [],
+  },
+  {
+    os: 'Linux',
+    icon: 'linux',
+    description: 'Universal AppImage, .deb for Debian/Ubuntu, and AUR package for Arch.',
+    primary: {
+      label: 'AppImage (x64)',
+      href: `${RELEASE_BASE}/MagicTerm-${VERSION}-x86_64.AppImage`,
+    },
+    secondary: [
+      { label: '.deb (Debian/Ubuntu)', href: `${RELEASE_BASE}/magicterm_${VERSION}_amd64.deb` },
+      { label: 'AUR (Arch Linux)', href: 'https://aur.archlinux.org/packages/magicterm-bin', external: true },
+    ],
+    note: 'For Arch Linux:',
+    code: 'yay -S magicterm-bin',
+  },
+];
+---
+
+<Base
+  title="Download"
+  description="Download Magic Term for macOS, Windows or Linux. Free, open-source, end-to-end encrypted SSH/SFTP client."
+>
+  <Header />
+  <main class="download-page">
+    <header class="download-page__header">
+      <h1>Download Magic Term</h1>
+      <p>Version {VERSION} — released for macOS, Windows and Linux. Always free, always open-source.</p>
+    </header>
+
+    <div class="download-grid">
+      {downloads.map((d) => (
+        <article class="download-card">
+          <header class="download-card__head">
+            <div class={`download-card__icon download-card__icon--${d.icon}`} aria-hidden="true">
+              {d.icon === 'apple' && (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+              )}
+              {d.icon === 'windows' && (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+              )}
+              {d.icon === 'linux' && (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.278.832-.41 1.684-.287 2.489a.954.954 0 00-.111.115c-.265.302-.443.64-.594.985-.213.335-.553.563-.928.65-.318.082-.66.044-.987.137-.328.092-.659.27-.946.499-.279.215-.594.378-.787.531-.257.187-.418.394-.418.624 0 .187.097.371.248.499.343.282.74.486 1.118.593.397.117.832.157 1.23.121.467-.043.748-.198.972-.412.243-.234.378-.514.483-.832.103-.317.213-.576.357-.671.182-.123.435-.143.713-.085.279.058.554.196.798.422.16.147.355.392.604.673.249.282.557.561.94.717.766.314 1.738.378 2.748.21 1.011-.166 2.062-.578 3.043-1.196.87-.547 1.52-1.222 1.83-1.985.39-.957.27-1.916-.276-2.795-.547-.879-1.557-1.685-3.028-2.262-.52-.207-.92-.456-1.232-.769-.32-.32-.532-.722-.532-1.146 0-.36.116-.715.36-1.034.252-.327.626-.59 1.066-.71.46-.13.946-.123 1.388.014.435.137.834.395 1.155.726.32.331.598.722.852 1.111.255.39.456.815.643 1.111.376.595.748.94 1.067 1.034.32.087.566 0 .795-.137.46-.276.65-.794.65-1.388 0-.46-.117-.96-.276-1.388-.16-.428-.32-.794-.36-1.034-.276-1.74-1.388-3.474-2.578-4.668-.595-.598-1.213-1.034-1.804-1.213-.59-.18-1.155-.117-1.694.044-.539.16-1.067.376-1.567.456-.16.025-.32.044-.456.044-.32 0-.595-.087-.794-.16-.207-.087-.36-.16-.456-.207-.043-.025-.078-.04-.117-.064-.04-.025-.08-.04-.117-.06-.04-.024-.08-.043-.117-.063l-.087-.044-.04-.025c-.04-.025-.068-.044-.092-.044a.13.13 0 00-.04-.025v-.02c-.04-.024-.064-.04-.087-.064-.04-.024-.064-.04-.087-.064a.234.234 0 00-.04-.04c-.078-.044-.156-.087-.234-.13-.078-.04-.156-.064-.234-.087a3.49 3.49 0 00-.456-.117 3.485 3.485 0 00-1.094.014.485.485 0 00-.156.044z"/></svg>
+              )}
+            </div>
+            <div>
+              <h2>{d.os}</h2>
+              <p>{d.description}</p>
+            </div>
+          </header>
+
+          <a href={d.primary.href} class="download-card__primary" target="_blank" rel="noopener">
+            <span>{d.primary.label}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+          </a>
+
+          {d.secondary.length > 0 && (
+            <div class="download-card__secondary">
+              {d.secondary.map((s) => (
+                <a href={s.href} target="_blank" rel="noopener">
+                  {s.label}
+                </a>
+              ))}
+            </div>
+          )}
+
+          {d.note && (
+            <div class="download-card__note">
+              <p>{d.note}</p>
+              {d.code && (
+                <pre><code>{d.code}</code></pre>
+              )}
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+
+    <footer class="download-page__footer">
+      <p>
+        Looking for older versions? See <a href={SITE.releasesUrl} target="_blank" rel="noopener">all releases on GitHub</a>.
+      </p>
+      <p>
+        Want to build from source? <a href={SITE.githubUrl} target="_blank" rel="noopener">README has the instructions</a>.
+      </p>
+    </footer>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .download-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 80px 24px 0;
+  }
+
+  .download-page__header {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 64px;
+  }
+
+  .download-page__header h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: var(--fg);
+    margin: 0 0 16px;
+  }
+
+  .download-page__header p {
+    color: var(--fg-muted);
+    font-size: clamp(16px, 2vw, 19px);
+    margin: 0;
+  }
+
+  .download-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  @media (min-width: 900px) {
+    .download-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .download-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .download-card__head {
+    display: flex;
+    gap: 16px;
+  }
+
+  .download-card__icon {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in oklab, var(--accent) 15%, transparent);
+    color: var(--accent);
+  }
+
+  .download-card__head h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0 0 4px;
+  }
+
+  .download-card__head p {
+    color: var(--fg-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .download-card__primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--accent);
+    color: var(--accent-fg);
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .download-card__primary:hover {
+    background: var(--accent-hover);
+  }
+
+  .download-card__secondary {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .download-card__secondary a {
+    color: var(--fg-muted);
+    font-size: 13px;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+  }
+
+  .download-card__secondary a:hover {
+    color: var(--fg);
+    background: var(--surface-2);
+  }
+
+  .download-card__note {
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  .download-card__note p {
+    color: var(--fg-muted);
+    font-size: 13px;
+    margin: 0 0 8px;
+  }
+
+  .download-card__note pre {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 0;
+    overflow-x: auto;
+  }
+
+  .download-card__note code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--fg);
+  }
+
+  .download-page__footer {
+    margin-top: 80px;
+    text-align: center;
+    color: var(--fg-muted);
+    font-size: 14px;
+  }
+
+  .download-page__footer p {
+    margin: 0 0 8px;
+  }
+
+  .download-page__footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .download-page__footer a:hover {
+    color: var(--accent-hover);
+  }
+</style>

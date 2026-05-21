@@ -1,0 +1,148 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+import { SITE } from '~/data/site';
+---
+
+<Base title="Privacy" description="Privacy policy for Magic Term — what we collect (almost nothing) and what we never share.">
+  <Header />
+  <main class="legal">
+    <header class="legal__head">
+      <h1>Privacy</h1>
+      <p>What we collect (almost nothing) and what we never share.</p>
+    </header>
+
+    <section>
+      <h2>The desktop app</h2>
+      <p>
+        Magic Term has <strong>zero telemetry</strong>. The app does not phone home, does not collect
+        analytics, does not report errors automatically. The only outgoing traffic is:
+      </p>
+      <ul>
+        <li><strong>Your own SSH/SFTP servers</strong> — encrypted with the SSH protocol.</li>
+        <li><strong>Supabase</strong> — Magic Term currently requires an account, and your encrypted
+          vault is synced through Supabase. Your credentials are end-to-end encrypted on your device
+          before they're sent. Supabase only ever sees ciphertext, a salted scrypt verifier of your
+          master password, and metadata you choose to share with your team. A fully-local mode
+          (no account, no sync) is on the roadmap.</li>
+        <li><strong>GitHub Releases</strong> — the auto-updater pings the public releases endpoint
+          to check for new versions. No identifiers are sent.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>This website</h2>
+      <p>
+        We use <strong>Cloudflare Web Analytics</strong> on this site. It's a privacy-friendly,
+        cookie-free analytics product that aggregates anonymous traffic statistics — page views,
+        referrers, and country codes — without setting any cookies or persisting individual
+        identifiers.
+      </p>
+      <p>
+        We do not use Google Analytics. We do not load tracking pixels. We do not sell, share,
+        or correlate visitor data with any third party.
+      </p>
+    </section>
+
+    <section>
+      <h2>What's stored in the cloud</h2>
+      <p>
+        When you create an account, the following is stored on Supabase:
+      </p>
+      <ul>
+        <li>Your email and a Supabase auth token.</li>
+        <li>An <strong>encrypted</strong> blob containing your servers, snippets, and settings. We can't
+          decrypt it — that requires your master password, which never leaves your machine.</li>
+        <li>A <strong>scrypt verifier</strong> of your master password. We can't reverse it to your password.</li>
+      </ul>
+      <p>
+        Sign out at any time to wipe local credentials. Delete your account in Settings to remove
+        all server-side data.
+      </p>
+    </section>
+
+    <section>
+      <h2>Open source</h2>
+      <p>
+        Don't take our word for it. The entire client and server schema are public:
+      </p>
+      <p>
+        <a href={SITE.githubUrl} target="_blank" rel="noopener">{SITE.githubUrl}</a>
+      </p>
+    </section>
+
+    <p class="legal__date">Last updated: May 2026</p>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .legal {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 80px 24px 0;
+  }
+
+  .legal__head {
+    margin-bottom: 48px;
+  }
+
+  .legal__head h1 {
+    font-size: clamp(36px, 6vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--fg);
+    margin: 0 0 12px;
+  }
+
+  .legal__head p {
+    color: var(--fg-muted);
+    font-size: 18px;
+    margin: 0;
+  }
+
+  section { margin-bottom: 32px; }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0 0 12px;
+  }
+
+  p {
+    color: var(--fg-muted);
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0 0 12px;
+  }
+
+  ul {
+    color: var(--fg-muted);
+    font-size: 16px;
+    line-height: 1.65;
+    padding-left: 20px;
+    margin: 0 0 12px;
+  }
+
+  li { margin-bottom: 6px; }
+
+  strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  a:hover { color: var(--accent-hover); }
+
+  .legal__date {
+    color: var(--fg-subtle);
+    font-size: 13px;
+    margin-top: 64px;
+  }
+</style>

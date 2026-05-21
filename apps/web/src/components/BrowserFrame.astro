@@ -1,0 +1,157 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+  /** Title shown next to the traffic lights. */
+  title?: string;
+  /** Optional badge (e.g. "Vaults", "Terminal") shown like a tab. */
+  tab?: string;
+  /** Tailwind classes for outer wrapper sizing. */
+  class?: string;
+  /** Whether to render an outer glow under the frame. */
+  glow?: boolean;
+  /** Eager-load (e.g. for hero) or lazy-load (default). */
+  loading?: 'eager' | 'lazy';
+}
+
+const {
+  src,
+  alt,
+  title = 'Magic Term',
+  tab,
+  class: className = '',
+  glow = false,
+  loading = 'lazy',
+} = Astro.props;
+---
+
+<div class={`browser-frame ${glow ? 'browser-frame--glow' : ''} ${className}`}>
+  <div class="browser-frame__chrome">
+    <div class="browser-frame__lights" aria-hidden="true">
+      <span class="browser-frame__light browser-frame__light--red"></span>
+      <span class="browser-frame__light browser-frame__light--yellow"></span>
+      <span class="browser-frame__light browser-frame__light--green"></span>
+    </div>
+    {tab && (
+      <div class="browser-frame__tab">
+        <span class="browser-frame__tab-dot"></span>
+        <span>{tab}</span>
+      </div>
+    )}
+    <div class="browser-frame__title">{title}</div>
+    <div class="browser-frame__avatar" aria-hidden="true">W</div>
+  </div>
+  <div class="browser-frame__content">
+    <img src={src} alt={alt} loading={loading} decoding="async" />
+  </div>
+</div>
+
+<style>
+  .browser-frame {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface-2);
+    border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent);
+    box-shadow:
+      0 30px 80px -20px color-mix(in oklab, #000 60%, transparent),
+      0 0 0 1px color-mix(in oklab, var(--fg) 5%, transparent);
+  }
+
+  .browser-frame--glow::before {
+    content: '';
+    position: absolute;
+    inset: -40% -10%;
+    background: radial-gradient(
+      ellipse at center,
+      color-mix(in oklab, var(--accent) 35%, transparent),
+      transparent 60%
+    );
+    z-index: -1;
+    filter: blur(60px);
+    pointer-events: none;
+  }
+
+  .browser-frame__chrome {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 0.8rem;
+    background: color-mix(in oklab, var(--surface-1) 95%, transparent);
+    border-bottom: 1px solid var(--border);
+    height: 38px;
+    position: relative;
+  }
+
+  .browser-frame__lights {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .browser-frame__light {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: block;
+  }
+
+  .browser-frame__light--red { background: #ff5f57; }
+  .browser-frame__light--yellow { background: #febc2e; }
+  .browser-frame__light--green { background: #28c840; }
+
+  .browser-frame__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: color-mix(in oklab, var(--accent) 10%, transparent);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+  }
+
+  .browser-frame__tab-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .browser-frame__title {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    color: var(--fg-subtle);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .browser-frame__avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .browser-frame__content {
+    display: block;
+    background: var(--bg);
+  }
+
+  .browser-frame__content img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+</style>

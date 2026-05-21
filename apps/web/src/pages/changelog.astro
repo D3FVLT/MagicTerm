@@ -1,0 +1,212 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+import { SITE } from '~/data/site';
+---
+
+<Base
+  title="Changelog"
+  description="Release notes and version history for Magic Term."
+>
+  <Header />
+  <main class="changelog-page">
+    <header class="changelog-page__header">
+      <h1>Changelog</h1>
+      <p>
+        Curated release notes live on <a href={SITE.releasesUrl} target="_blank" rel="noopener">GitHub Releases</a>.
+        Quick highlights below — full details (with download artefacts) are one click away.
+      </p>
+    </header>
+
+    <section class="release">
+      <header class="release__head">
+        <h2>v0.5.2</h2>
+        <span class="release__date">May 2026</span>
+        <span class="release__tag">Latest</span>
+      </header>
+      <ul>
+        <li><strong>Fixed:</strong> selected app theme now persists across restarts.</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <header class="release__head">
+        <h2>v0.5.1</h2>
+        <span class="release__date">May 2026</span>
+      </header>
+      <ul>
+        <li><strong>Themes:</strong> three app themes (Midnight, Onyx, Daylight) with paired terminal palettes.</li>
+        <li><strong>Fixed:</strong> snippet copy and server password copy after the security audit refactor.</li>
+        <li><strong>Fixed:</strong> proxy configuration now stored encrypted via OS keychain.</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <header class="release__head">
+        <h2>v0.5.0</h2>
+        <span class="release__date">April 2026</span>
+        <span class="release__tag release__tag--security">Security</span>
+      </header>
+      <ul>
+        <li><strong>Security audit:</strong> KDF upgraded to scrypt, master password verifier, RLS hardened.</li>
+        <li><strong>Renderer sandbox</strong> enabled, IPC surface minimised, CSP tightened.</li>
+        <li><strong>SSH host key pinning</strong> (TOFU) — manual confirmation on fingerprint change.</li>
+        <li><strong>Auto-clear clipboard</strong> for sensitive copies (30s).</li>
+      </ul>
+    </section>
+
+    <footer class="changelog-page__footer">
+      <a href={SITE.releasesUrl} target="_blank" rel="noopener" class="btn-cta btn-cta--ghost">
+        See full release history on GitHub →
+      </a>
+    </footer>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .changelog-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 80px 24px 0;
+  }
+
+  .changelog-page__header {
+    margin-bottom: 64px;
+  }
+
+  .changelog-page__header h1 {
+    font-size: clamp(36px, 6vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: var(--fg);
+    margin: 0 0 16px;
+  }
+
+  .changelog-page__header p {
+    color: var(--fg-muted);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .changelog-page__header a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .release {
+    border-left: 2px solid var(--border);
+    padding: 0 0 40px 24px;
+    position: relative;
+  }
+
+  .release::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 8px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+
+  .release__head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .release__head h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--fg);
+    margin: 0;
+  }
+
+  .release__date {
+    color: var(--fg-subtle);
+    font-size: 14px;
+  }
+
+  .release__tag {
+    background: color-mix(in oklab, var(--accent) 15%, transparent);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .release__tag--security {
+    background: color-mix(in oklab, var(--warning) 15%, transparent);
+    color: var(--warning);
+  }
+
+  .release ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .release li {
+    color: var(--fg-muted);
+    font-size: 15px;
+    line-height: 1.55;
+    padding-left: 16px;
+    position: relative;
+  }
+
+  .release li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .release strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .changelog-page__footer {
+    text-align: center;
+    margin-top: 80px;
+  }
+
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 50px;
+    padding: 0 24px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-cta--ghost {
+    background: var(--surface-2);
+    color: var(--fg);
+    border: 1px solid var(--border);
+  }
+
+  .btn-cta--ghost:hover {
+    background: var(--surface-3);
+    transform: translateY(-1px);
+  }
+</style>

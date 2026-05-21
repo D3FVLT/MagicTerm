@@ -1,0 +1,55 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+---
+
+<Base title="Not found" description="The page you're looking for doesn't exist." noindex>
+  <Header />
+  <main class="notfound">
+    <h1>404</h1>
+    <p>That page doesn't exist. It may have moved, or never existed.</p>
+    <a href="/" class="btn-cta">Back home</a>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .notfound {
+    text-align: center;
+    padding: 160px 24px 80px;
+  }
+
+  .notfound h1 {
+    font-size: clamp(80px, 15vw, 160px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--fg);
+    margin: 0 0 16px;
+    line-height: 1;
+  }
+
+  .notfound p {
+    color: var(--fg-muted);
+    font-size: 18px;
+    margin: 0 0 32px;
+  }
+
+  .btn-cta {
+    display: inline-flex;
+    align-items: center;
+    height: 50px;
+    padding: 0 24px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .btn-cta:hover {
+    background: var(--accent-hover);
+  }
+</style>

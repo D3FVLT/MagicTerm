@@ -1,0 +1,153 @@
+---
+import { SITE } from '~/data/site';
+---
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <div class="site-footer__brand">
+      <img src="/brand/logo.png" alt="" width="32" height="32" />
+      <div>
+        <div class="site-footer__name">{SITE.name}</div>
+        <div class="site-footer__tagline">{SITE.tagline}</div>
+      </div>
+    </div>
+
+    <div class="site-footer__cols">
+      <div>
+        <h4>Product</h4>
+        <a href="/#features">Features</a>
+        <a href="/#themes">Themes</a>
+        <a href="/#security">Security</a>
+        <a href="/download">Download</a>
+        <a href="/changelog">Changelog</a>
+      </div>
+      <div>
+        <h4>Project</h4>
+        <a href={SITE.githubUrl} target="_blank" rel="noopener">GitHub</a>
+        <a href={`${SITE.githubUrl}/issues`} target="_blank" rel="noopener">Issues</a>
+        <a href={`${SITE.githubUrl}/blob/main/ROADMAP.md`} target="_blank" rel="noopener">Roadmap</a>
+        <a href={SITE.releasesUrl} target="_blank" rel="noopener">Releases</a>
+        <a href={`${SITE.githubUrl}/blob/main/LICENSE`} target="_blank" rel="noopener">License (MIT)</a>
+      </div>
+      <div>
+        <h4>Support the project</h4>
+        <a href={SITE.donateUrl} target="_blank" rel="noopener" class="site-footer__donate">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          <span>Donate</span>
+        </a>
+        <a href="/privacy">Privacy</a>
+        <span class="site-footer__note">No telemetry. No tracking.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-footer__bottom">
+    <span>© {new Date().getFullYear()} {SITE.author}. {SITE.license} licensed.</span>
+    <span>v{SITE.version}</span>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: 120px;
+    padding: 64px 24px 32px;
+    border-top: 1px solid color-mix(in oklab, var(--fg) 6%, transparent);
+    background: var(--surface-1);
+  }
+
+  .site-footer__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    gap: 48px;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .site-footer__inner {
+      grid-template-columns: 1fr 2fr;
+    }
+  }
+
+  .site-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .site-footer__brand img { border-radius: 8px; }
+
+  .site-footer__name {
+    color: var(--fg);
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  .site-footer__tagline {
+    color: var(--fg-subtle);
+    font-size: 13px;
+    margin-top: 2px;
+  }
+
+  .site-footer__cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .site-footer__cols h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+
+  .site-footer__cols a {
+    display: block;
+    color: var(--fg-muted);
+    font-size: 14px;
+    margin-bottom: 8px;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .site-footer__cols a:hover {
+    color: var(--fg);
+  }
+
+  .site-footer__note {
+    color: var(--fg-subtle);
+    font-size: 13px;
+  }
+
+  .site-footer__donate {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent) !important;
+    font-weight: 500;
+  }
+
+  .site-footer__donate:hover {
+    color: var(--accent-hover) !important;
+  }
+
+  .site-footer__donate svg {
+    flex-shrink: 0;
+  }
+
+  .site-footer__bottom {
+    max-width: 1200px;
+    margin: 48px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid color-mix(in oklab, var(--fg) 6%, transparent);
+    display: flex;
+    justify-content: space-between;
+    color: var(--fg-subtle);
+    font-size: 13px;
+  }
+</style>

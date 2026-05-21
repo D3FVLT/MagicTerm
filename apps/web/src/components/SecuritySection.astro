@@ -1,0 +1,253 @@
+---
+import { SITE } from '~/data/site';
+---
+
+<section id="security" class="security">
+  <div class="security__inner">
+    <div class="security__copy">
+      <div class="security__eyebrow">Security</div>
+      <h2 class="security__title">
+        Your credentials never<br />leave your device unencrypted.
+      </h2>
+      <p class="security__lead">
+        Magic Term is built around a simple promise: only you should be able to read your secrets.
+        Every credential is encrypted on your machine before it ever touches the network.
+      </p>
+
+      <div class="security__principles">
+        <div class="principle">
+          <div class="principle__icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+          </div>
+          <h3>End-to-end encryption</h3>
+          <p>Server credentials and snippets are encrypted with AES-256-GCM using a key derived from your master password. The server only ever sees the ciphertext.</p>
+        </div>
+
+        <div class="principle">
+          <div class="principle__icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6l-8-4z"/>
+            </svg>
+          </div>
+          <h3>scrypt master password</h3>
+          <p>Verifier hashed with scrypt (N=32768, r=8, p=1) so a leaked database is useless without the original password — and offline brute-force is prohibitively expensive.</p>
+        </div>
+
+        <div class="principle">
+          <div class="principle__icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 12l2 2 4-4"/>
+              <path d="M21 12c0 4.97-9 10-9 10s-9-5.03-9-10a9 9 0 1118 0z"/>
+            </svg>
+          </div>
+          <h3>SSH host verification</h3>
+          <p>Trust-on-first-use known_hosts pinning. Manual confirmation if a host fingerprint changes — no silent man-in-the-middle.</p>
+        </div>
+
+        <div class="principle">
+          <div class="principle__icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M2 12h20M12 2a15.3 15.3 0 010 20"/>
+            </svg>
+          </div>
+          <h3>No telemetry</h3>
+          <p>Zero analytics, no usage tracking, no error reporting that phones home. The only network traffic is to your servers and to Supabase for cloud sync.</p>
+        </div>
+
+        <div class="principle">
+          <div class="principle__icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+          </div>
+          <h3>Open source. Audit yourself.</h3>
+          <p>Every line is on GitHub under MIT. The codebase recently went through a full self-audit — RLS policies tightened, KDF upgraded, IPC surface minimised.</p>
+        </div>
+
+        <div class="principle">
+          <div class="principle__icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <line x1="2" y1="9" x2="22" y2="9"/>
+            </svg>
+          </div>
+          <h3>Sandboxed renderer</h3>
+          <p>Electron sandbox enabled, contextIsolation on, strict CSP, preload IPC limited to a hand-chosen surface. A compromised renderer can't reach the file system or the keychain.</p>
+        </div>
+      </div>
+
+      <div class="security__honesty">
+        <h4>Honest disclosure</h4>
+        <p>
+          We don't claim to be bulletproof. Magic Term is currently <strong>not code-signed</strong> on macOS or Windows
+          (it's on the roadmap before v1.0). That means the auto-updater integrity relies on the
+          GitHub release URL plus electron-updater's blockmap hash — strong, but not as strong as a
+          signed binary. If you require the highest level of supply-chain assurance today,
+          build from source. The README has instructions.
+        </p>
+      </div>
+
+      <div class="security__links">
+        <a href={`${SITE.githubUrl}/blob/main/packages/crypto/src/index.ts`} target="_blank" rel="noopener">
+          Crypto module →
+        </a>
+        <a href={`${SITE.githubUrl}/blob/main/supabase/security-hardening.sql`} target="_blank" rel="noopener">
+          Server-side hardening →
+        </a>
+        <a href={`${SITE.githubUrl}/commits/main`} target="_blank" rel="noopener">
+          Audit history →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .security {
+    margin-top: 160px;
+    padding: 80px 24px;
+    background:
+      radial-gradient(ellipse 60% 80% at 50% 0%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%),
+      var(--surface-1);
+    border-top: 1px solid color-mix(in oklab, var(--fg) 6%, transparent);
+    border-bottom: 1px solid color-mix(in oklab, var(--fg) 6%, transparent);
+  }
+
+  .security__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .security__eyebrow {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .security__title {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: var(--fg);
+    margin: 0 0 24px;
+  }
+
+  .security__lead {
+    color: var(--fg-muted);
+    font-size: clamp(16px, 2vw, 19px);
+    line-height: 1.6;
+    max-width: 700px;
+    margin: 0 0 64px;
+  }
+
+  .security__principles {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+    margin-bottom: 64px;
+  }
+
+  @media (min-width: 700px) {
+    .security__principles { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (min-width: 1000px) {
+    .security__principles { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .principle {
+    background: color-mix(in oklab, var(--surface-2) 60%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    transition: all 0.2s ease;
+  }
+
+  .principle:hover {
+    border-color: color-mix(in oklab, var(--accent) 50%, var(--border));
+    transform: translateY(-2px);
+  }
+
+  .principle__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: color-mix(in oklab, var(--accent) 15%, transparent);
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .principle h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .principle p {
+    color: var(--fg-muted);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  .security__honesty {
+    background: color-mix(in oklab, var(--warning) 8%, transparent);
+    border: 1px solid color-mix(in oklab, var(--warning) 30%, transparent);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+  }
+
+  .security__honesty h4 {
+    color: var(--warning);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+
+  .security__honesty p {
+    color: var(--fg-muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .security__honesty strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .security__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .security__links a {
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .security__links a:hover {
+    color: var(--accent-hover);
+  }
+</style>
