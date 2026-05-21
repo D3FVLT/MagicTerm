@@ -63,10 +63,21 @@ export function getSupabase(): SupabaseClient {
 // AUTH
 // ============================================
 
-export async function signUp(email: string, password: string) {
+export interface SignUpOptions {
+  /** URL the user is sent to from the confirmation email. Overrides the
+   *  Supabase project's default Site URL — important so confirmation links
+   *  land on our site instead of whatever placeholder is configured in the
+   *  dashboard. */
+  emailRedirectTo?: string;
+}
+
+export async function signUp(email: string, password: string, options: SignUpOptions = {}) {
   const { data, error } = await getSupabase().auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: options.emailRedirectTo,
+    },
   });
   if (error) throw error;
   return data;
@@ -79,6 +90,58 @@ export async function signIn(email: string, password: string) {
   });
   if (error) throw error;
   return data;
+}
+
+export async function requestPasswordReset(email: string, redirectTo: string) {
+  const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+  if (error) throw error;
+}
+
+export interface AccountDeletionPreview {
+  personalServers: number;
+  snippets: number;
+  orgMemberships: number;
+  orgsToDelete: Array<{ id: string; name: string; serverCount: number }>;
+  orgsToTransfer: Array<{
+    id: string;
+    name: string;
+    newOwnerEmail: string;
+    newOwnerRoleWas: string;
+  }>;
+}
+
+export async function getAccountDeletionPreview(): Promise<AccountDeletionPreview> {
+  const { data, error } = await getSupabase().rpc('account_deletion_preview');
+  if (error) throw error;
+  const row = (data ?? {}) as Record<string, unknown>;
+
+  const orgsToDelete = ((row.orgs_to_delete ?? []) as Array<Record<string, unknown>>).map((o) => ({
+    id: String(o.id),
+    name: String(o.name),
+    serverCount: Number(o.server_count ?? 0),
+  }));
+
+  const orgsToTransfer = ((row.orgs_to_transfer ?? []) as Array<Record<string, unknown>>).map((o) => ({
+    id: String(o.id),
+    name: String(o.name),
+    newOwnerEmail: String(o.new_owner_email ?? ''),
+    newOwnerRoleWas: String(o.new_owner_role_was ?? ''),
+  }));
+
+  return {
+    personalServers: Number(row.personal_servers ?? 0),
+    snippets: Number(row.snippets ?? 0),
+    orgMemberships: Number(row.org_memberships ?? 0),
+    orgsToDelete,
+    orgsToTransfer,
+  };
+}
+
+export async function deleteCurrentAccount(): Promise<void> {
+  const { error } = await getSupabase().rpc('delete_my_account');
+  if (error) throw error;
 }
 
 export async function signInWithGitHub() {

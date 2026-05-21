@@ -1,0 +1,162 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+---
+
+<Base
+  title="Email confirmed"
+  description="Your Magic Term account email has been confirmed. You can now sign in from the desktop app."
+  noindex
+>
+  <Header />
+  <main class="auth">
+    <div class="auth__card">
+      <div class="auth__icon" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+      </div>
+
+      <h1>You're all set.</h1>
+      <p>
+        Your email has been confirmed. Open the Magic Term desktop app and sign in with the
+        password you chose during registration.
+      </p>
+
+      <div class="auth__steps">
+        <div class="auth__step">
+          <span class="auth__step-num">1</span>
+          <span>Open <strong>Magic Term</strong> on your computer.</span>
+        </div>
+        <div class="auth__step">
+          <span class="auth__step-num">2</span>
+          <span>Click <strong>Sign In</strong> and enter your email and password.</span>
+        </div>
+        <div class="auth__step">
+          <span class="auth__step-num">3</span>
+          <span>Set up your <strong>master password</strong> — this is what encrypts your vault locally.</span>
+        </div>
+      </div>
+
+      <div class="auth__actions">
+        <a href="/download" class="auth__primary">Don't have the app yet? Download</a>
+        <a href="/" class="auth__secondary">Back to homepage</a>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .auth {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 80px 24px 0;
+  }
+
+  .auth__card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    text-align: center;
+  }
+
+  .auth__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: color-mix(in oklab, var(--success) 15%, transparent);
+    color: var(--success);
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+    margin: 0 0 16px;
+  }
+
+  p {
+    color: var(--fg-muted);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0 0 32px;
+  }
+
+  .auth__steps {
+    text-align: left;
+    background: color-mix(in oklab, var(--surface-2) 60%, transparent);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 0 0 32px;
+  }
+
+  .auth__step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 8px 0;
+    color: var(--fg-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .auth__step-num {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .auth__step strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  .auth__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .auth__primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 20px;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--accent-fg);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .auth__primary:hover { background: var(--accent-hover); }
+
+  .auth__secondary {
+    color: var(--fg-subtle);
+    font-size: 13px;
+    text-decoration: none;
+    padding: 8px;
+  }
+
+  .auth__secondary:hover { color: var(--fg-muted); }
+</style>

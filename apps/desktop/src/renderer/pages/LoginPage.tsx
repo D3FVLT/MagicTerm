@@ -177,15 +177,27 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   );
 }
 
+type Mode = 'signin' | 'signup' | 'forgot';
+
 export function LoginPage() {
-  const { login, register, isConfigured, configError } = useAuth();
-  const [isRegistering, setIsRegistering] = useState(false);
+  const { login, register, requestPasswordReset, isConfigured, configError } = useAuth();
+  const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showProxy, setShowProxy] = useState(false);
+  const [pendingConfirmation, setPendingConfirmation] = useState<string | null>(null);
+  const [resetSentTo, setResetSentTo] = useState<string | null>(null);
+
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setError('');
+    setConfirmPassword('');
+    setPendingConfirmation(null);
+    setResetSentTo(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,15 +208,23 @@ export function LoginPage() {
       return;
     }
 
-    if (isRegistering && password !== confirmPassword) {
+    if (mode === 'signup' && password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
 
     setIsLoading(true);
     try {
-      if (isRegistering) {
-        await register(email, password);
+      if (mode === 'signup') {
+        const result = await register(email, password);
+        if (result.needsConfirmation) {
+          setPendingConfirmation(result.email);
+          setPassword('');
+          setConfirmPassword('');
+        }
+      } else if (mode === 'forgot') {
+        await requestPasswordReset(email);
+        setResetSentTo(email);
       } else {
         await login(email, password);
       }
@@ -214,6 +234,9 @@ export function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const title =
+    mode === 'signup' ? 'Create Account' : mode === 'forgot' ? 'Reset Password' : 'Sign In';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-app p-4">
@@ -233,10 +256,47 @@ export function LoginPage() {
           </div>
         )}
 
+        {pendingConfirmation && (
+          <div className="mb-6 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 p-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/20">
+                <svg className="h-4 w-4 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-fg">Check your inbox</h3>
+                <p className="mt-1 text-sm text-fg-muted">
+                  We sent a confirmation link to <span className="font-medium text-fg break-all">{pendingConfirmation}</span>.
+                  Open it, then come back here to sign in.
+                </p>
+                <p className="mt-2 text-xs text-fg-subtle">
+                  Didn't get it? Check your spam folder, or{' '}
+                  <button
+                    type="button"
+                    onClick={() => switchMode('signup')}
+                    className="text-[var(--accent)] hover:underline"
+                  >
+                    try again with a different email
+                  </button>.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {resetSentTo && (
+          <div className="mb-6 rounded-xl border border-[var(--accent)]/30 bg-[var(--accent)]/10 p-4">
+            <h3 className="font-medium text-fg">Reset email sent</h3>
+            <p className="mt-1 text-sm text-fg-muted">
+              If an account exists for <span className="font-medium text-fg break-all">{resetSentTo}</span>,
+              we've sent a password reset link. Open it in your browser and follow the steps.
+            </p>
+          </div>
+        )}
+
         <div className="rounded-xl bg-surface-1 p-6 shadow-xl">
-          <h2 className="mb-6 text-xl font-semibold text-fg">
-            {isRegistering ? 'Create Account' : 'Sign In'}
-          </h2>
+          <h2 className="mb-6 text-xl font-semibold text-fg">{title}</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -249,18 +309,20 @@ export function LoginPage() {
               disabled={!isConfigured}
             />
 
-            <Input
-              type="password"
-              label="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              minLength={6}
-              disabled={!isConfigured}
-            />
+            {mode !== 'forgot' && (
+              <Input
+                type="password"
+                label="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                minLength={6}
+                disabled={!isConfigured}
+              />
+            )}
 
-            {isRegistering && (
+            {mode === 'signup' && (
               <Input
                 type="password"
                 label="Confirm Password"
@@ -273,6 +335,19 @@ export function LoginPage() {
               />
             )}
 
+            {mode === 'signin' && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => switchMode('forgot')}
+                  className="text-xs text-fg-subtle hover:text-[var(--accent)] transition-colors"
+                  disabled={!isConfigured}
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
+
             {error && (
               <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
                 {error}
@@ -282,26 +357,45 @@ export function LoginPage() {
             <Button type="submit" className="w-full" disabled={isLoading || !isConfigured}>
               {isLoading
                 ? 'Loading...'
-                : isRegistering
+                : mode === 'signup'
                 ? 'Create Account'
+                : mode === 'forgot'
+                ? 'Send reset link'
                 : 'Sign In'}
             </Button>
           </form>
 
           <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setIsRegistering(!isRegistering);
-                setError('');
-              }}
-              className="text-sm text-primary-400 hover:text-primary-300"
-              disabled={!isConfigured}
-            >
-              {isRegistering
-                ? 'Already have an account? Sign in'
-                : "Don't have an account? Register"}
-            </button>
+            {mode === 'signin' && (
+              <button
+                type="button"
+                onClick={() => switchMode('signup')}
+                className="text-sm text-[var(--accent)] hover:opacity-80"
+                disabled={!isConfigured}
+              >
+                Don't have an account? Register
+              </button>
+            )}
+            {mode === 'signup' && (
+              <button
+                type="button"
+                onClick={() => switchMode('signin')}
+                className="text-sm text-[var(--accent)] hover:opacity-80"
+                disabled={!isConfigured}
+              >
+                Already have an account? Sign in
+              </button>
+            )}
+            {mode === 'forgot' && (
+              <button
+                type="button"
+                onClick={() => switchMode('signin')}
+                className="text-sm text-[var(--accent)] hover:opacity-80"
+                disabled={!isConfigured}
+              >
+                Back to sign in
+              </button>
+            )}
           </div>
         </div>
 

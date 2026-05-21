@@ -10,10 +10,16 @@ import {
   getMasterKeyVerifier,
   setMasterKeyVerifier as setMasterKeyVerifierInSupabase,
   getUserProfile,
+  requestPasswordReset as requestPasswordResetApi,
+  deleteCurrentAccount,
   type User,
   type Session,
 } from '@magicterm/supabase-client';
 import { cryptoManager } from '@magicterm/crypto';
+
+const WEB_BASE_URL = 'https://magicterm.app';
+const EMAIL_CONFIRM_REDIRECT = `${WEB_BASE_URL}/auth/confirmed`;
+const PASSWORD_RESET_REDIRECT = `${WEB_BASE_URL}/auth/reset-password`;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -56,6 +62,11 @@ if (isSupabaseConfigured && !supabaseInitialized) {
   }
 }
 
+export interface RegisterResult {
+  needsConfirmation: boolean;
+  email: string;
+}
+
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
@@ -66,10 +77,12 @@ interface AuthContextValue {
   isConfigured: boolean;
   configError: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   setupMasterKey: (masterPassword: string) => Promise<void>;
   unlockWithMasterKey: (masterPassword: string) => Promise<boolean>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -195,13 +208,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const register = async (email: string, password: string) => {
+  const register = async (email: string, password: string): Promise<RegisterResult> => {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase is not configured');
     }
-    const { session: newSession, user: newUser } = await signUp(email, password);
+    const { session: newSession, user: newUser } = await signUp(email, password, {
+      emailRedirectTo: EMAIL_CONFIRM_REDIRECT,
+    });
     setSession(newSession);
     setUser(newUser ?? null);
+    return {
+      needsConfirmation: !newSession,
+      email,
+    };
   };
 
   const logout = async () => {
@@ -209,6 +228,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await signOut();
     }
     await window.electronAPI.auth.logout();
+    await window.electronAPI.masterKey.setVerifier(null).catch(() => {});
+    cryptoManager.clearMasterPassword();
+    setSession(null);
+    setUser(null);
+    setHasMasterKey(false);
+    setHasVerifier(false);
+  };
+
+  const requestPasswordReset = async (email: string) => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase is not configured');
+    }
+    await requestPasswordResetApi(email, PASSWORD_RESET_REDIRECT);
+  };
+
+  const deleteAccount = async () => {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase is not configured');
+    }
+    await deleteCurrentAccount();
+    await window.electronAPI.auth.logout().catch(() => {});
     await window.electronAPI.masterKey.setVerifier(null).catch(() => {});
     cryptoManager.clearMasterPassword();
     setSession(null);
@@ -278,6 +318,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     setupMasterKey,
     unlockWithMasterKey,
+    requestPasswordReset,
+    deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
