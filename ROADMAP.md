@@ -75,6 +75,7 @@ about **supply-chain trust**, not the runtime security model.
 
 ## Recently shipped
 
+- ✅ **v0.5.3** — auth-flow polish: registration confirmation banner, password reset, account deletion with org ownership transfer, donate link, branded email templates, recovery from stale/deleted-account sessions.
 - ✅ **v0.5.2** — theme persistence fix.
 - ✅ **v0.5.1** — three app themes (Midnight / Onyx / Daylight) with paired terminal palettes; clipboard + proxy fixes after the security audit.
 - ✅ **v0.5.0** — full security audit: scrypt KDF, master-password verifier, server-side RLS hardening, sandboxed renderer, TOFU host verification, auto-clear clipboard.

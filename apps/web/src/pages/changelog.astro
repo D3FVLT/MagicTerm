@@ -21,9 +21,24 @@ import { SITE } from '~/data/site';
 
     <section class="release">
       <header class="release__head">
-        <h2>v0.5.2</h2>
+        <h2>v0.5.3</h2>
         <span class="release__date">May 2026</span>
         <span class="release__tag">Latest</span>
+      </header>
+      <ul>
+        <li><strong>Auth flow:</strong> proper "check your inbox" banner after sign-up, working password reset, and an account-deletion flow with org ownership transfer / safe dissolution.</li>
+        <li><strong>Email templates:</strong> branded sign-up confirmation, password reset and invite emails.</li>
+        <li><strong>Settings:</strong> new <em>Account</em> tab with version, links to website / GitHub / bug report, and a donate link.</li>
+        <li><strong>Fixed:</strong> recover gracefully when the cached session belongs to a user that no longer exists on the server (no more being trapped on the master-password screen).</li>
+        <li><strong>Fixed:</strong> password-reset page on the website now actually applies the new password and shows a clear success state.</li>
+        <li><strong>Fixed:</strong> sign-up confirmation links now point to magicterm.app instead of <code>localhost</code>.</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <header class="release__head">
+        <h2>v0.5.2</h2>
+        <span class="release__date">May 2026</span>
       </header>
       <ul>
         <li><strong>Fixed:</strong> selected app theme now persists across restarts.</li>
