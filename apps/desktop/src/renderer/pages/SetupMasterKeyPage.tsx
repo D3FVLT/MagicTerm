@@ -5,7 +5,7 @@ import { Input } from '../components/ui/Input';
 import { MASTER_PASSWORD_MIN_LENGTH } from '@magicterm/shared';
 
 export function SetupMasterKeyPage() {
-  const { setupMasterKey, unlockWithMasterKey, needsMasterKeySetup } = useAuth();
+  const { setupMasterKey, unlockWithMasterKey, needsMasterKeySetup, logout, user } = useAuth();
   const [masterPassword, setMasterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberPassword, setRememberPassword] = useState(false);
@@ -45,9 +45,6 @@ export function SetupMasterKeyPage() {
       return;
     }
 
-    // Length policy only applies when CREATING a new master password. Existing
-    // users from before the policy bump may still have shorter passwords; the
-    // verifier check is what actually gates them in.
     if (isSetup && masterPassword.length < MASTER_PASSWORD_MIN_LENGTH) {
       setError(`Master password must be at least ${MASTER_PASSWORD_MIN_LENGTH} characters`);
       return;
@@ -77,17 +74,17 @@ export function SetupMasterKeyPage() {
 
   if (isAutoUnlocking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-app p-4">
+      <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-          <span className="text-fg-muted">Unlocking vault...</span>
+          <span className="text-gray-400">Unlocking vault...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-app p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-500/10">
@@ -105,17 +102,17 @@ export function SetupMasterKeyPage() {
               />
             </svg>
           </div>
-          <h1 className="mb-2 text-2xl font-bold text-fg">
+          <h1 className="mb-2 text-2xl font-bold text-white">
             {isSetup ? 'Set Master Password' : 'Unlock Vault'}
           </h1>
-          <p className="text-fg-muted">
+          <p className="text-gray-400">
             {isSetup
               ? 'This password encrypts your server credentials locally'
               : 'Enter your master password to decrypt your credentials'}
           </p>
         </div>
 
-        <div className="rounded-xl bg-surface-1 p-6 shadow-xl">
+        <div className="rounded-xl bg-gray-900 p-6 shadow-xl">
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="password"
@@ -145,9 +142,9 @@ export function SetupMasterKeyPage() {
                 type="checkbox"
                 checked={rememberPassword}
                 onChange={(e) => setRememberPassword(e.target.checked)}
-                className="h-4 w-4 rounded border-edge-strong bg-surface-2 text-primary-500 focus:ring-primary-500 focus:ring-offset-0"
+                className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500 focus:ring-offset-0"
               />
-              <span className="text-sm text-fg-muted">Remember on this device</span>
+              <span className="text-sm text-gray-400">Remember on this device</span>
             </label>
 
             {error && (
@@ -168,6 +165,25 @@ export function SetupMasterKeyPage() {
             it, you will need to re-add all your servers.
           </div>
         )}
+
+        <div className="mt-4 flex items-center justify-between text-xs text-fg-subtle">
+          {user?.email ? (
+            <span className="truncate">
+              Signed in as <span className="text-fg-muted">{user.email}</span>
+            </span>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              void logout();
+            }}
+            className="text-fg-subtle hover:text-fg transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -21,6 +21,25 @@ const WEB_BASE_URL = 'https://magicterm.app';
 const EMAIL_CONFIRM_REDIRECT = `${WEB_BASE_URL}/auth/confirmed`;
 const PASSWORD_RESET_REDIRECT = `${WEB_BASE_URL}/auth/reset-password`;
 
+/** Detects auth errors that mean "your stored session is no longer valid" —
+ *  e.g. the user was deleted from Supabase, or the JWT was rotated/revoked.
+ *  In that case we don't want to silently sit on a useless session: we wipe
+ *  it locally and bounce the user back to the login screen. */
+function isStaleSessionError(error: unknown): boolean {
+  if (!error) return false;
+  const err = error as { code?: string; status?: number; message?: string };
+  if (err.code === 'user_not_found') return true;
+  if (err.status === 401 || err.status === 403) return true;
+  const msg = (err.message ?? '').toLowerCase();
+  return (
+    msg.includes('user from sub claim') ||
+    msg.includes('user not found') ||
+    msg.includes('jwt expired') ||
+    msg.includes('invalid refresh token') ||
+    msg.includes('refresh token not found')
+  );
+}
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
@@ -117,12 +136,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     let cancelled = false;
 
+    async function clearLocalSession() {
+      try { await signOut(); } catch { /* server may already be gone */ }
+      try { await window.electronAPI.auth.logout(); } catch {}
+      try { await window.electronAPI.masterKey.setVerifier(null); } catch {}
+      try { await window.electronAPI.masterPassword.clear(); } catch {}
+      cryptoManager.clearMasterPassword();
+      setSession(null);
+      setUser(null);
+      setHasVerifier(false);
+      setHasMasterKey(false);
+    }
+
     async function initialize() {
       try {
         const currentSession = await getSession();
         if (cancelled) return;
-        
-        const currentUser = await getUser();
+
+        let currentUser: User | null = null;
+        try {
+          currentUser = await getUser();
+        } catch (error) {
+          if (isStaleSessionError(error)) {
+            console.warn('[auth] Stored session is invalid (user deleted or JWT revoked); clearing.');
+            await clearLocalSession();
+            return;
+          }
+          throw error;
+        }
         if (cancelled) return;
 
         setSession(currentSession);
@@ -145,12 +186,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
               await window.electronAPI.masterKey.setVerifier(cloudVerifier);
               setHasVerifier(true);
             }
-          } catch {
+          } catch (error) {
+            if (isStaleSessionError(error)) {
+              console.warn('[auth] Profile fetch returned user_not_found; clearing local session.');
+              await clearLocalSession();
+              return;
+            }
           }
         }
       } catch (error) {
-        console.error('Failed to initialize auth');
-        void error;
+        console.error('Failed to initialize auth', error);
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -225,10 +270,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     if (isSupabaseConfigured) {
-      await signOut();
+      // signOut may fail if the server-side session is already gone
+      // (e.g. user was deleted). We still want to wipe local state.
+      try { await signOut(); } catch (err) {
+        console.warn('[auth] signOut failed; proceeding with local logout', err);
+      }
     }
-    await window.electronAPI.auth.logout();
+    await window.electronAPI.auth.logout().catch(() => {});
     await window.electronAPI.masterKey.setVerifier(null).catch(() => {});
+    await window.electronAPI.masterPassword.clear().catch(() => {});
     cryptoManager.clearMasterPassword();
     setSession(null);
     setUser(null);
@@ -248,8 +298,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       throw new Error('Supabase is not configured');
     }
     await deleteCurrentAccount();
+    // After the RPC succeeds the auth row is gone; the supabase client may
+    // still hold a refresh token that's now invalid, so we tear it all down
+    // locally and don't trust signOut() to succeed.
+    try { await signOut(); } catch { /* expected to fail */ }
     await window.electronAPI.auth.logout().catch(() => {});
     await window.electronAPI.masterKey.setVerifier(null).catch(() => {});
+    await window.electronAPI.masterPassword.clear().catch(() => {});
     cryptoManager.clearMasterPassword();
     setSession(null);
     setUser(null);
@@ -263,7 +318,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       throw new Error(result.error || 'Failed to derive master key verifier');
     }
 
-    await setMasterKeyVerifierInSupabase(result.verifier);
+    try {
+      await setMasterKeyVerifierInSupabase(result.verifier);
+    } catch (error) {
+      if (isStaleSessionError(error)) {
+        // Account was deleted (or JWT revoked) while we still had a stored
+        // session. Don't leave the user trapped on this screen — wipe
+        // everything and send them back to the login page.
+        await logout();
+        throw new Error(
+          'Your account is no longer available on the server. Please sign in again or register a new one.'
+        );
+      }
+      throw error;
+    }
 
     cryptoManager.setMasterPassword(masterPassword);
     setHasVerifier(true);
