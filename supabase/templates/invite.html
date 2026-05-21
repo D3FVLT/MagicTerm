@@ -22,7 +22,7 @@
                   You've been invited to join a Magic Term workspace. Accept the invite below to set up your
                   account and start collaborating.
                 </p>
-                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#7aa2f7;color:#0a0b14;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:600;font-size:14px;">
+                <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite" style="display:inline-block;background:#7aa2f7;color:#0a0b14;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:600;font-size:14px;">
                   Accept invite
                 </a>
               </td>
