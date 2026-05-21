@@ -22,7 +22,7 @@
                   Welcome to Magic Term. Click the button below to confirm <strong style="color:#c0caf5;">{{ .Email }}</strong>
                   so you can finish setting up your account.
                 </p>
-                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#7aa2f7;color:#0a0b14;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:600;font-size:14px;">
+                <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup" style="display:inline-block;background:#7aa2f7;color:#0a0b14;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:600;font-size:14px;">
                   Confirm email
                 </a>
                 <p style="margin:24px 0 0;color:#565f89;font-size:12px;line-height:1.6;">

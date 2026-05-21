@@ -1,0 +1,232 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+
+// Supabase env vars are read at build time (Astro inlines anything prefixed
+// with PUBLIC_). They're public-safe — the anon key only allows operations
+// permitted by Row Level Security.
+const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+const isConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+---
+
+<Base
+  title="Confirm email"
+  description="Confirm your Magic Term account email."
+  noindex
+>
+  <Header />
+  <main class="auth">
+    <div
+      class="auth__card"
+      id="confirm-root"
+      data-supabase-url={SUPABASE_URL}
+      data-supabase-anon-key={SUPABASE_ANON_KEY}
+      data-configured={isConfigured ? 'true' : 'false'}
+    >
+      <div id="confirm-loading" class="auth__state">
+        <div class="auth__spinner-wrap" aria-hidden="true">
+          <span class="auth__spinner"></span>
+        </div>
+        <h1>Confirming your email…</h1>
+        <p>Hold on a moment.</p>
+      </div>
+
+      <div id="confirm-error" class="auth__state" hidden>
+        <div class="auth__icon auth__icon--error" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          </svg>
+        </div>
+        <h1>Couldn't confirm your email</h1>
+        <p id="confirm-error-msg">This link is invalid or has expired. Open the Magic Term app and request a new confirmation email.</p>
+        <div class="auth__actions">
+          <a href="/" class="auth__secondary">Back to homepage</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+
+  type OtpType = 'signup' | 'email' | 'invite' | 'magiclink' | 'recovery' | 'email_change';
+
+  const root = document.getElementById('confirm-root') as HTMLElement | null;
+  const loadingEl = document.getElementById('confirm-loading') as HTMLElement | null;
+  const errorEl = document.getElementById('confirm-error') as HTMLElement | null;
+  const errorMsgEl = document.getElementById('confirm-error-msg') as HTMLElement | null;
+
+  const showError = (msg: string) => {
+    console.warn('[auth/confirm]', msg);
+    if (loadingEl) loadingEl.hidden = true;
+    if (errorEl) errorEl.hidden = false;
+    if (errorMsgEl) errorMsgEl.textContent = msg;
+  };
+
+  if (!root) {
+    /* nothing to do */
+  } else if (root.dataset.configured !== 'true') {
+    showError(
+      'Email confirmation is not configured for this deployment. Open the Magic Term app and try signing in directly.'
+    );
+  } else {
+    const SUPABASE_URL = root.dataset.supabaseUrl ?? '';
+    const SUPABASE_ANON_KEY = root.dataset.supabaseAnonKey ?? '';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        detectSessionInUrl: false,
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    const url = new URL(window.location.href);
+    const tokenHash = url.searchParams.get('token_hash') ?? url.searchParams.get('token');
+    const rawType = url.searchParams.get('type');
+    const errorDescription =
+      url.searchParams.get('error_description') ?? url.searchParams.get('error');
+
+    const type: OtpType =
+      rawType === 'signup' ||
+      rawType === 'email' ||
+      rawType === 'invite' ||
+      rawType === 'magiclink' ||
+      rawType === 'email_change' ||
+      rawType === 'recovery'
+        ? (rawType as OtpType)
+        : 'email';
+
+    if (errorDescription) {
+      showError(decodeURIComponent(errorDescription));
+    } else if (!tokenHash) {
+      showError('No confirmation token in the URL. Please use the original link from your email.');
+    } else {
+      void supabase.auth
+        .verifyOtp({ token_hash: tokenHash, type })
+        .then(({ error }) => {
+          if (error) {
+            showError(
+              error.message ||
+                'This link is invalid or has expired. Request a new confirmation email from the app.'
+            );
+            return;
+          }
+          // Recovery links go through their own flow — never end here, but if
+          // they do (because the email template chose this URL), forward to
+          // the reset-password page so the user can set a new password.
+          if (type === 'recovery') {
+            window.location.replace('/auth/reset-password');
+            return;
+          }
+          // Success — redirect to the friendly landing page.
+          window.location.replace('/auth/confirmed');
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          showError(`Could not confirm email: ${msg}`);
+        });
+    }
+  }
+</script>
+
+<style>
+  .auth {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 80px 24px 0;
+  }
+
+  .auth__card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 48px 40px;
+    text-align: center;
+  }
+
+  .auth__state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .auth__spinner-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: color-mix(in oklab, var(--accent) 12%, transparent);
+    margin-bottom: 24px;
+  }
+
+  .auth__spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid var(--border-strong);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .auth__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin-bottom: 24px;
+  }
+
+  .auth__icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .auth__icon--error {
+    background: color-mix(in oklab, var(--danger) 14%, transparent);
+    color: var(--danger);
+    border: 1px solid color-mix(in oklab, var(--danger) 35%, transparent);
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+    margin: 0 0 12px;
+  }
+
+  p {
+    color: var(--fg-muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 24px;
+    max-width: 420px;
+  }
+
+  .auth__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .auth__secondary {
+    color: var(--fg-subtle);
+    font-size: 13px;
+    text-decoration: none;
+    padding: 8px;
+  }
+
+  .auth__secondary:hover { color: var(--fg-muted); }
+</style>
