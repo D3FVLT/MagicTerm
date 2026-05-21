@@ -88,7 +88,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       await Promise.all([
         updateUserSettings(settings),
         window.electronAPI.proxy.set(proxyConfig),
-        window.electronAPI.terminalSettings.set(termSettings as unknown as Record<string, unknown>),
+        window.electronAPI.terminalSettings.set({
+          ...(termSettings as unknown as Record<string, unknown>),
+          appThemeId,
+        }),
       ]);
       window.dispatchEvent(new Event('terminal-settings-changed'));
       setSuccess(true);
@@ -186,14 +189,15 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                           onClick={() => {
                             setAppTheme(t.id);
                             const previousAppTheme = APP_THEMES[appThemeId];
-                            if (
+                            const shouldFollowTerminal =
                               previousAppTheme &&
-                              termSettings.themeId === previousAppTheme.defaultTerminalThemeId
-                            ) {
-                              setTermSettings({
-                                ...termSettings,
-                                themeId: t.defaultTerminalThemeId,
-                              });
+                              termSettings.themeId === previousAppTheme.defaultTerminalThemeId;
+                            setTermSettings((prev) => ({
+                              ...prev,
+                              appThemeId: t.id,
+                              themeId: shouldFollowTerminal ? t.defaultTerminalThemeId : prev.themeId,
+                            }));
+                            if (shouldFollowTerminal) {
                               window.dispatchEvent(new Event('terminal-settings-changed'));
                             }
                           }}
