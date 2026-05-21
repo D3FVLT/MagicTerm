@@ -136,7 +136,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
 
   return (
     <aside 
-      className="relative flex flex-col border-r border-gray-800 bg-gray-900"
+      className="relative flex flex-col border-r border-edge bg-surface-1"
       style={{ width: sidebarWidth }}
     >
       {/* Resize handle */}
@@ -146,7 +146,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
       />
       
       {/* Draggable header with organization switcher */}
-      <div className="drag-region flex h-14 items-center border-b border-gray-800 pl-20 pr-4">
+      <div className="drag-region flex h-14 items-center border-b border-edge pl-20 pr-4">
         <div className="no-drag flex-1">
           <OrganizationSwitcher />
         </div>
@@ -156,7 +156,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
 
       <div className="flex-1 overflow-y-auto p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-gray-400">
+          <h2 className="text-sm font-medium text-fg-muted">
             {currentOrg ? 'Team Servers' : 'Personal Servers'}
           </h2>
           {canAddServer && (
@@ -178,8 +178,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
           </div>
         ) : servers.length === 0 ? (
-          <div className="rounded-lg bg-gray-800/50 p-4 text-center">
-            <p className="text-sm text-gray-400">No servers yet</p>
+          <div className="rounded-lg bg-surface-2/50 p-4 text-center">
+            <p className="text-sm text-fg-muted">No servers yet</p>
             {canAddServer && (
               <Button variant="ghost" size="sm" className="mt-2" onClick={onAddServer}>
                 Add your first server
@@ -201,27 +201,27 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                   <div
                     className={`
                       group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors
-                      ${hasActiveSession ? 'bg-primary-500/20 text-primary-400' : 'text-gray-300 hover:bg-gray-800'}
+                      ${hasActiveSession ? 'bg-primary-500/20 text-primary-400' : 'text-fg-muted hover:bg-surface-2'}
                     `}
                     title={server.comment || undefined}
                   >
                     <div
                       className={`
                         h-2 w-2 rounded-full flex-shrink-0
-                        ${isAnyConnected ? 'bg-green-500' : isAnyConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-gray-600'}
+                        ${isAnyConnected ? 'bg-green-500' : isAnyConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-fg-subtle'}
                       `}
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="truncate text-sm font-medium">{server.name}</span>
                         {server.port !== 22 && (
-                          <span className="text-xs text-gray-500 flex-shrink-0">
+                          <span className="text-xs text-fg-subtle flex-shrink-0">
                             :{server.port}
                           </span>
                         )}
                       </div>
                       {server.comment && (
-                        <div className="truncate text-xs text-gray-500 italic">
+                        <div className="truncate text-xs text-fg-subtle italic">
                           {server.comment}
                         </div>
                       )}
@@ -242,8 +242,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                         onKeyDown={(e) => e.key === 'Enter' && handleConnect(server, 'terminal')}
                         className={`rounded p-1 cursor-pointer transition-colors ${
                           terminalSession
-                            ? 'text-green-400 hover:bg-gray-700'
-                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                            ? 'text-green-400 hover:bg-surface-3'
+                            : 'text-fg-muted hover:bg-surface-3 hover:text-fg'
                         }`}
                         title={terminalSession ? 'Switch to Terminal' : 'Connect Terminal'}
                       >
@@ -266,8 +266,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                         onKeyDown={(e) => e.key === 'Enter' && handleConnect(server, 'sftp')}
                         className={`rounded p-1 cursor-pointer transition-colors ${
                           sftpSession
-                            ? 'text-green-400 hover:bg-gray-700'
-                            : 'text-gray-400 hover:bg-gray-700 hover:text-white'
+                            ? 'text-green-400 hover:bg-surface-3'
+                            : 'text-fg-muted hover:bg-surface-3 hover:text-fg'
                         }`}
                         title={sftpSession ? 'Switch to SFTP' : 'Connect SFTP'}
                       >
@@ -284,7 +284,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             e.stopPropagation();
                             setServerMenuId(serverMenuId === server.id ? null : server.id);
                           }}
-                          className="rounded p-1 cursor-pointer transition-all text-gray-500 hover:bg-gray-700 hover:text-gray-300 opacity-0 group-hover/item:opacity-100"
+                          className="rounded p-1 cursor-pointer transition-all text-fg-subtle hover:bg-surface-3 hover:text-fg-muted opacity-0 group-hover/item:opacity-100"
                           title="More actions"
                         >
                           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -293,7 +293,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                         </span>
                         {serverMenuId === server.id && (
                           <div
-                            className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg border border-gray-700 bg-[#1f2335] py-1 shadow-xl"
+                            className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg border border-edge bg-[var(--surface-1)] py-1 shadow-xl"
                             onMouseDown={(e) => e.stopPropagation()}
                           >
                             <button
@@ -302,7 +302,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                                 setServerMenuId(null);
                                 setEditingServer(server);
                               }}
-                              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:bg-gray-700/50"
+                              className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-fg-muted hover:bg-surface-3/50"
                             >
                               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -311,7 +311,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             </button>
                             {serverSessions.length > 0 && (
                               <>
-                                <div className="my-1 border-t border-gray-700/50" />
+                                <div className="my-1 border-t border-edge/50" />
                                 <button
                                   onClick={async (e) => {
                                     e.stopPropagation();
@@ -320,7 +320,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                                       await disconnect(session.id);
                                     }
                                   }}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-gray-700/50"
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-surface-3/50"
                                 >
                                   <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -344,17 +344,17 @@ export function Sidebar({ onAddServer }: SidebarProps) {
           <div className="mt-6">
             <button
               onClick={() => setShowMembers(!showMembers)}
-              className="mb-2 flex w-full items-center justify-between rounded-lg px-1 py-1 text-left hover:bg-gray-800/50"
+              className="mb-2 flex w-full items-center justify-between rounded-lg px-1 py-1 text-left hover:bg-surface-2/50"
             >
               <div className="flex items-center gap-2">
                 <svg
-                  className={`h-3 w-3 text-gray-500 transition-transform ${showMembers ? 'rotate-90' : ''}`}
+                  className={`h-3 w-3 text-fg-subtle transition-transform ${showMembers ? 'rotate-90' : ''}`}
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                <h2 className="text-sm font-medium text-gray-400">
+                <h2 className="text-sm font-medium text-fg-muted">
                   Members ({members.filter((m) => m.status === 'active').length})
                 </h2>
               </div>
@@ -365,7 +365,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                     e.stopPropagation();
                     setShowInviteModal(true);
                   }}
-                  className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-white"
+                  className="rounded p-1 text-fg-muted hover:bg-surface-3 hover:text-fg"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -392,13 +392,13 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                     return (
                       <li
                         key={member.id}
-                        className="group/member relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400"
+                        className="group/member relative flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-fg-muted"
                       >
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-700 text-xs uppercase">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-surface-3 text-xs uppercase">
                           {displayName?.[0] || '?'}
                         </div>
                         <span className="flex-1 truncate">{displayLabel}</span>
-                        <span className={`text-xs ${member.role === 'owner' ? 'text-yellow-500' : member.role === 'admin' ? 'text-blue-400' : 'text-gray-500'}`}>
+                        <span className={`text-xs ${member.role === 'owner' ? 'text-yellow-500' : member.role === 'admin' ? 'text-blue-400' : 'text-fg-subtle'}`}>
                           {member.role}
                         </span>
                         
@@ -410,7 +410,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                                 e.stopPropagation();
                                 setMemberMenuId(memberMenuId === member.id ? null : member.id);
                               }}
-                              className="rounded p-1 text-gray-500 opacity-0 group-hover/member:opacity-100 hover:bg-gray-700 hover:text-white"
+                              className="rounded p-1 text-fg-subtle opacity-0 group-hover/member:opacity-100 hover:bg-surface-3 hover:text-fg"
                             >
                               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -419,8 +419,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             
                             {/* Dropdown menu */}
                             {memberMenuId === member.id && (
-                              <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-xl">
-                                <div className="px-3 py-1.5 text-xs text-gray-500">Change role</div>
+                              <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-edge bg-surface-2 py-1 shadow-xl">
+                                <div className="px-3 py-1.5 text-xs text-fg-subtle">Change role</div>
                                 {(['admin', 'member', 'viewer'] as MemberRole[]).map((role) => (
                                   <button
                                     key={role}
@@ -428,8 +428,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                                     disabled={member.role === role}
                                     className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm ${
                                       member.role === role
-                                        ? 'text-gray-500 cursor-default'
-                                        : 'text-gray-300 hover:bg-gray-700'
+                                        ? 'text-fg-subtle cursor-default'
+                                        : 'text-fg-muted hover:bg-surface-3'
                                     }`}
                                   >
                                     {member.role === role && (
@@ -440,10 +440,10 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                                     <span className={member.role === role ? '' : 'ml-5'}>{role}</span>
                                   </button>
                                 ))}
-                                <div className="my-1 border-t border-gray-700" />
+                                <div className="my-1 border-t border-edge" />
                                 <button
                                   onClick={() => handleRemoveMember(member.id)}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-gray-700"
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-surface-3"
                                 >
                                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -458,7 +458,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                     );
                   })}
                 {members.filter((m) => m.status === 'pending').length > 0 && (
-                  <li className="px-3 py-1 text-xs text-gray-500">
+                  <li className="px-3 py-1 text-xs text-fg-subtle">
                     {members.filter((m) => m.status === 'pending').length} pending invite(s)
                   </li>
                 )}
@@ -469,20 +469,20 @@ export function Sidebar({ onAddServer }: SidebarProps) {
       </div>
 
       {/* User menu */}
-      <div className="relative border-t border-gray-800 p-3" ref={userMenuRef}>
+      <div className="relative border-t border-edge p-3" ref={userMenuRef}>
         <button
           onClick={() => setShowUserMenu(!showUserMenu)}
-          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-gray-800"
+          className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-2"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-white uppercase">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-fg uppercase">
             {(currentUserNickname || user?.email)?.[0] || '?'}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="truncate text-sm text-gray-200">{currentUserNickname || user?.email || 'Unknown'}</div>
-            <div className="text-xs text-gray-500">v{__APP_VERSION__}</div>
+            <div className="truncate text-sm text-fg">{currentUserNickname || user?.email || 'Unknown'}</div>
+            <div className="text-xs text-fg-subtle">v{__APP_VERSION__}</div>
           </div>
           <svg
-            className={`h-4 w-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
+            className={`h-4 w-4 text-fg-subtle transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -493,15 +493,15 @@ export function Sidebar({ onAddServer }: SidebarProps) {
 
         {/* Dropdown menu */}
         {showUserMenu && (
-          <div className="absolute bottom-full left-3 right-3 mb-2 rounded-lg border border-gray-700 bg-gray-800 py-1 shadow-xl">
+          <div className="absolute bottom-full left-3 right-3 mb-2 rounded-lg border border-edge bg-surface-2 py-1 shadow-xl">
             <button
               onClick={() => {
                 setShowSettingsModal(true);
                 setShowUserMenu(false);
               }}
-              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700"
+              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-fg-muted hover:bg-surface-3"
             >
-              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4 text-fg-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -517,9 +517,9 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                 window.electronAPI.updater.check();
                 setShowUserMenu(false);
               }}
-              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700"
+              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-fg-muted hover:bg-surface-3"
             >
-              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4 text-fg-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -529,13 +529,13 @@ export function Sidebar({ onAddServer }: SidebarProps) {
               </svg>
               Check for Updates
             </button>
-            <div className="my-1 border-t border-gray-700" />
+            <div className="my-1 border-t border-edge" />
             <button
               onClick={() => {
                 logout();
                 setShowUserMenu(false);
               }}
-              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-400 hover:bg-gray-700"
+              className="flex w-full items-center gap-3 px-3 py-2 text-sm text-red-400 hover:bg-surface-3"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path

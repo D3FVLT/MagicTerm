@@ -4,16 +4,16 @@ import { readFile } from 'fs/promises';
 import { homedir } from 'os';
 import { join } from 'path';
 import { IPC_CHANNELS, STORAGE_KEYS } from '@magicterm/shared';
-import { applyProxySettings } from './proxy';
+import {
+  applyProxySettings,
+  readProxyConfig,
+  writeProxyConfig,
+  type ProxyConfig,
+} from './proxy';
 import { clearCachedVerifier, getCachedVerifier } from './master-key';
 
 const store = new Store();
 
-// Probe URL for "is the proxy configured correctly?" — must be a stable,
-// privacy-preserving endpoint we control or that returns no PII. Cloudflare's
-// /cdn-cgi/trace returns plain text including the egress IP and is
-// significantly less likely to log/correlate than third-party services like
-// httpbin.org.
 const PROXY_PROBE_URL = 'https://www.cloudflare.com/cdn-cgi/trace';
 
 function parseTrace(body: string): string | undefined {
@@ -24,46 +24,13 @@ function parseTrace(body: string): string | undefined {
   return undefined;
 }
 
-function readProxyConfig(): Record<string, unknown> | null {
-  // New encrypted-at-rest format takes precedence; fall back to the legacy
-  // plaintext key so existing installs keep working until next save.
-  const encrypted = store.get(STORAGE_KEYS.PROXY_CONFIG_ENCRYPTED) as string | undefined;
-  if (encrypted && safeStorage.isEncryptionAvailable()) {
-    try {
-      const json = safeStorage.decryptString(Buffer.from(encrypted, 'base64'));
-      return JSON.parse(json) as Record<string, unknown>;
-    } catch {
-      store.delete(STORAGE_KEYS.PROXY_CONFIG_ENCRYPTED);
-    }
-  }
-  const legacy = store.get(STORAGE_KEYS.PROXY_CONFIG) as Record<string, unknown> | undefined;
-  return legacy ?? null;
-}
-
-function writeProxyConfig(config: Record<string, unknown>): void {
-  if (safeStorage.isEncryptionAvailable()) {
-    const blob = safeStorage.encryptString(JSON.stringify(config));
-    store.set(STORAGE_KEYS.PROXY_CONFIG_ENCRYPTED, blob.toString('base64'));
-    store.delete(STORAGE_KEYS.PROXY_CONFIG);
-  } else {
-    // Last resort on Linux without an OS keyring; surface the risk in the UI.
-    store.set(STORAGE_KEYS.PROXY_CONFIG, config);
-  }
-}
-
 export function setupAuthHandlers(ipcMain: IpcMain): void {
   ipcMain.handle(IPC_CHANNELS.CRYPTO_SET_MASTER_KEY, async (_event, hash: string) => {
-    // Legacy IPC kept for backward compatibility with old renderers writing
-    // the SHA-256 hash. New code should use CRYPTO_SET_VERIFIER instead.
     store.set(STORAGE_KEYS.MASTER_KEY_HASH, hash);
     return { success: true };
   });
 
   ipcMain.handle(IPC_CHANNELS.AUTH_STATUS, async () => {
-    // SECURITY: never return the verifier or legacy hash to the renderer.
-    // The renderer only needs to know whether a master key has been set;
-    // verification happens via CRYPTO_VERIFY_MASTER_PASSWORD which keeps
-    // the verifier inside the main process.
     const cached = getCachedVerifier();
     const legacyHash = store.get(STORAGE_KEYS.MASTER_KEY_HASH) as string | undefined;
     return {
@@ -90,11 +57,6 @@ export function setupAuthHandlers(ipcMain: IpcMain): void {
   });
 
   ipcMain.handle(IPC_CHANNELS.CRYPTO_GET_SAVED_MASTER_PASSWORD, async () => {
-    // The plaintext password is still returned to the renderer here because
-    // the existing E2E pipeline runs in the renderer (cryptoManager). Until
-    // encryption is fully relocated to main, the password necessarily lives
-    // in renderer memory after unlock; this handler does not widen that
-    // exposure beyond what's already required.
     const stored = store.get(STORAGE_KEYS.SAVED_MASTER_PASSWORD) as string | undefined;
     if (!stored || !safeStorage.isEncryptionAvailable()) {
       return { success: false };
@@ -118,7 +80,7 @@ export function setupAuthHandlers(ipcMain: IpcMain): void {
     return { success: true, config: config ?? null };
   });
 
-  ipcMain.handle(IPC_CHANNELS.PROXY_SET, async (_event, config: Record<string, unknown>) => {
+  ipcMain.handle(IPC_CHANNELS.PROXY_SET, async (_event, config: ProxyConfig) => {
     writeProxyConfig(config);
     applyProxySettings();
     return { success: true };

@@ -55,10 +55,10 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       <div className="fixed inset-0 z-50 bg-black/60" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border border-gray-700 bg-gray-900 shadow-2xl"
+          className="flex max-h-[90vh] w-full max-w-md flex-col rounded-xl border border-edge bg-surface-1 shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <h3 className="flex-shrink-0 px-6 pt-6 text-lg font-semibold text-white">Proxy Settings</h3>
+          <h3 className="flex-shrink-0 px-6 pt-6 text-lg font-semibold text-fg">Proxy Settings</h3>
 
           <div className="overflow-y-auto px-6 py-4 space-y-4">
             <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -66,19 +66,19 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 type="checkbox"
                 checked={config.enabled}
                 onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-                className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500 focus:ring-offset-0"
+                className="h-4 w-4 rounded border-edge-strong bg-surface-2 text-primary-500 focus:ring-primary-500 focus:ring-offset-0"
               />
-              <span className="text-sm text-gray-300">Enable proxy</span>
+              <span className="text-sm text-fg-muted">Enable proxy</span>
             </label>
 
             {config.enabled && (
               <>
                 <div>
-                  <label className="mb-1 block text-sm text-gray-400">Type</label>
+                  <label className="mb-1 block text-sm text-fg-muted">Type</label>
                   <select
                     value={config.type}
                     onChange={(e) => setConfig({ ...config, type: e.target.value as 'http' | 'socks5' })}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-primary-500"
+                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg outline-none focus:border-primary-500"
                   >
                     <option value="http">HTTP</option>
                     <option value="socks5">SOCKS5</option>
@@ -87,43 +87,43 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label className="mb-1 block text-sm text-gray-400">Host</label>
+                    <label className="mb-1 block text-sm text-fg-muted">Host</label>
                     <input
                       type="text"
                       value={config.host}
                       onChange={(e) => setConfig({ ...config, host: e.target.value })}
                       placeholder="127.0.0.1"
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-primary-500"
+                      className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-primary-500"
                     />
                   </div>
                   <div className="w-24">
-                    <label className="mb-1 block text-sm text-gray-400">Port</label>
+                    <label className="mb-1 block text-sm text-fg-muted">Port</label>
                     <input
                       type="number"
                       value={config.port}
                       onChange={(e) => setConfig({ ...config, port: Number(e.target.value) })}
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-primary-500"
+                      className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg outline-none focus:border-primary-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-gray-400">Username (optional)</label>
+                  <label className="mb-1 block text-sm text-fg-muted">Username (optional)</label>
                   <input
                     type="text"
                     value={config.username}
                     onChange={(e) => setConfig({ ...config, username: e.target.value })}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-primary-500"
+                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-primary-500"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm text-gray-400">Password (optional)</label>
+                  <label className="mb-1 block text-sm text-fg-muted">Password (optional)</label>
                   <input
                     type="password"
                     value={config.password}
                     onChange={(e) => setConfig({ ...config, password: e.target.value })}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-primary-500"
+                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-primary-500"
                   />
                 </div>
               </>
@@ -143,7 +143,7 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                   setTimeout(() => setTestResult({ status: 'idle' }), 5000);
                 }}
                 disabled={testResult.status === 'testing'}
-                className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors hover:border-primary-500 hover:text-primary-400 disabled:opacity-50"
+                className="rounded-lg border border-edge bg-surface-2 px-3 py-1.5 text-xs font-medium text-fg transition-colors hover:border-primary-500 hover:text-primary-400 disabled:opacity-50"
               >
                 {testResult.status === 'testing' ? 'Testing...' : 'Test Connection'}
               </button>
@@ -156,17 +156,17 @@ function ProxySettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             </div>
           </div>
 
-          <div className="flex flex-shrink-0 justify-end gap-3 border-t border-gray-700 px-6 py-4">
+          <div className="flex flex-shrink-0 justify-end gap-3 border-t border-edge px-6 py-4">
             <button
               onClick={onClose}
-              className="rounded-lg border border-gray-700 bg-transparent px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800"
+              className="rounded-lg border border-edge bg-transparent px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-surface-2"
             >
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-600 disabled:opacity-50"
+              className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-primary-600 disabled:opacity-50"
             >
               {saved ? 'Saved!' : saving ? 'Saving...' : 'Save'}
             </button>
@@ -216,25 +216,25 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-app p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold text-white">Magic Term</h1>
-          <p className="text-gray-400">Secure SSH client with E2E encryption</p>
+          <h1 className="mb-2 text-3xl font-bold text-fg">Magic Term</h1>
+          <p className="text-fg-muted">Secure SSH client with E2E encryption</p>
         </div>
 
         {configError && (
           <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 p-4">
             <h3 className="font-medium text-red-400 mb-2">Configuration Error</h3>
             <p className="text-sm text-red-300">{configError}</p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-fg-subtle mt-2">
               Make sure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in the build.
             </p>
           </div>
         )}
 
-        <div className="rounded-xl bg-gray-900 p-6 shadow-xl">
-          <h2 className="mb-6 text-xl font-semibold text-white">
+        <div className="rounded-xl bg-surface-1 p-6 shadow-xl">
+          <h2 className="mb-6 text-xl font-semibold text-fg">
             {isRegistering ? 'Create Account' : 'Sign In'}
           </h2>
 
@@ -306,13 +306,13 @@ export function LoginPage() {
         </div>
 
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-fg-subtle">
             Your credentials are encrypted locally before sync
           </p>
           <button
             type="button"
             onClick={() => setShowProxy(true)}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            className="text-xs text-fg-subtle hover:text-fg-muted transition-colors"
             title="Proxy Settings"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

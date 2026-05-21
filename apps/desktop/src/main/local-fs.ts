@@ -12,19 +12,7 @@ function parsePermissions(mode: number): string {
   return owner + group + other;
 }
 
-/**
- * Path validation for renderer-supplied local paths.
- *
- * Returns the normalised absolute path on success, or null if the input is
- * malformed (NUL, relative, missing) or — when restrictToHome is true —
- * resolves outside the user's home directory.
- *
- * The dual-pane file manager UI lets users navigate anywhere they like, so
- * by default we only enforce structural validity (absolute, no NUL). Reads
- * and listings are gated by OS permissions. Write/open operations stay
- * restricted to the user's home for defence-in-depth against a compromised
- * renderer trying to e.g. shell.openPath('/Library/LaunchAgents/...').
- */
+
 function validatePath(p: unknown, opts: { restrictToHome?: boolean } = {}): string | null {
   if (typeof p !== 'string' || p.length === 0) return null;
   if (p.includes('\0')) return null;
@@ -100,9 +88,6 @@ export function setupLocalFsHandlers(ipcMain: IpcMain): void {
   });
 
   ipcMain.handle(IPC_CHANNELS.LOCAL_OPEN_FILE, async (_event, filePath: string) => {
-    // Restrict shell.openPath to the user's home: a compromised renderer
-    // could otherwise trigger /Applications/Calculator.app or arbitrary
-    // shell scripts living outside the user's data dir.
     const safePath = validatePath(filePath, { restrictToHome: true });
     if (!safePath) {
       return { success: false, error: 'invalid_path' };

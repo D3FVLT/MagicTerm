@@ -29,15 +29,15 @@ export function PendingInvites() {
   };
 
   return (
-    <div className="border-b border-gray-800 p-4">
-      <h3 className="mb-3 text-sm font-medium text-gray-400">Pending Invites</h3>
+    <div className="border-b border-edge p-4">
+      <h3 className="mb-3 text-sm font-medium text-fg-muted">Pending Invites</h3>
       <div className="space-y-2">
         {pendingInvites.map((invite) => (
           <div
             key={invite.id}
-            className="rounded-lg bg-gray-800 p-3"
+            className="rounded-lg bg-surface-2 p-3"
           >
-            <div className="mb-2 text-sm text-gray-300">
+            <div className="mb-2 text-sm text-fg-muted">
               You've been invited to join an organization as{' '}
               <span className="font-medium text-primary-400">{invite.role}</span>
             </div>

@@ -46,7 +46,7 @@ export function MainLayout() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-[#1a1b26]">
+    <div className="flex h-screen flex-col bg-app">
       <TopBar />
       <UpdateBanner />
 

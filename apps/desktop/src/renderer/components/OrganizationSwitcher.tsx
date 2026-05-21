@@ -42,18 +42,18 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between rounded-lg bg-gray-800 px-3 py-2 text-left text-sm hover:bg-gray-750"
+        className="flex w-full items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-left text-sm hover:bg-surface-3"
       >
         <div className="flex items-center gap-2">
           <div className="flex h-6 w-6 items-center justify-center rounded bg-primary-500/20 text-xs font-medium text-primary-400">
             {currentOrg ? currentOrg.name[0].toUpperCase() : 'P'}
           </div>
-          <span className="truncate text-gray-200">
+          <span className="truncate text-fg">
             {currentOrg ? currentOrg.name : 'Personal'}
           </span>
         </div>
         <svg
-          className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-fg-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -61,7 +61,7 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
         {pendingInvites.length > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-fg">
             {pendingInvites.length}
           </span>
         )}
@@ -70,28 +70,28 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="animate-slide-down absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-xl">
+          <div className="animate-slide-down absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-edge bg-surface-1 py-1 shadow-xl">
             <button
               onClick={() => handleSelect(null)}
-              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-800 ${
-                !currentOrg ? 'bg-gray-800' : ''
+              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface-2 ${
+                !currentOrg ? 'bg-surface-2' : ''
               }`}
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-gray-700 text-xs">
+              <div className="flex h-6 w-6 items-center justify-center rounded bg-surface-3 text-xs">
                 P
               </div>
-              <span className="text-gray-200">Personal</span>
+              <span className="text-fg">Personal</span>
             </button>
 
             {organizations.length > 0 && (
-              <div className="my-1 border-t border-gray-800" />
+              <div className="my-1 border-t border-edge" />
             )}
 
             {organizations.map((org) => (
               <div
                 key={org.id}
-                className={`group/org flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-gray-800 ${
-                  currentOrg?.id === org.id ? 'bg-gray-800' : ''
+                className={`group/org flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-surface-2 ${
+                  currentOrg?.id === org.id ? 'bg-surface-2' : ''
                 }`}
               >
                 <button
@@ -102,8 +102,8 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
                     {org.name[0].toUpperCase()}
                   </div>
                   <div className="flex-1 truncate">
-                    <span className="text-gray-200">{org.name}</span>
-                    <span className="ml-2 text-xs text-gray-500">{org.role}</span>
+                    <span className="text-fg">{org.name}</span>
+                    <span className="ml-2 text-xs text-fg-subtle">{org.role}</span>
                   </div>
                 </button>
                 {org.role === 'owner' && (
@@ -115,7 +115,7 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
                       setDeleteConfirmText('');
                       setDeleteError(null);
                     }}
-                    className="flex-shrink-0 rounded p-1 text-gray-500 opacity-0 group-hover/org:opacity-100 hover:text-red-400 transition-all"
+                    className="flex-shrink-0 rounded p-1 text-fg-subtle opacity-0 group-hover/org:opacity-100 hover:text-red-400 transition-all"
                     title="Delete organization"
                   >
                     <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,14 +126,14 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
               </div>
             ))}
 
-            <div className="my-1 border-t border-gray-800" />
+            <div className="my-1 border-t border-edge" />
 
             <button
               onClick={() => {
                 setIsOpen(false);
                 setShowCreateModal(true);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-400 hover:bg-gray-800"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-400 hover:bg-surface-2"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -151,7 +151,7 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
         <>
           <div className="fixed inset-0 z-50 bg-black/60" onClick={() => setDeletingOrg(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-md rounded-xl border border-edge bg-surface-1 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10">
                   <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,17 +159,17 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-100">Delete Organization</h3>
-                  <p className="text-sm text-gray-400">This action cannot be undone</p>
+                  <h3 className="text-lg font-semibold text-fg">Delete Organization</h3>
+                  <p className="text-sm text-fg-muted">This action cannot be undone</p>
                 </div>
               </div>
 
-              <p className="mb-4 text-sm text-gray-300">
-                This will permanently delete <strong className="text-white">{deletingOrg.name}</strong>, all its servers and member associations.
+              <p className="mb-4 text-sm text-fg-muted">
+                This will permanently delete <strong className="text-fg">{deletingOrg.name}</strong>, all its servers and member associations.
               </p>
 
-              <p className="mb-2 text-sm text-gray-400">
-                Type <strong className="text-white">{deletingOrg.name}</strong> to confirm:
+              <p className="mb-2 text-sm text-fg-muted">
+                Type <strong className="text-fg">{deletingOrg.name}</strong> to confirm:
               </p>
               <input
                 type="text"
@@ -177,7 +177,7 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleDeleteOrg()}
                 placeholder={deletingOrg.name}
-                className="mb-4 w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                className="mb-4 w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
                 autoFocus
               />
 
@@ -197,7 +197,7 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
                 <button
                   onClick={handleDeleteOrg}
                   disabled={deleteConfirmText !== deletingOrg.name || isDeleting}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isDeleting ? 'Deleting...' : 'Delete Organization'}
                 </button>

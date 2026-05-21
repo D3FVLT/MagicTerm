@@ -2,7 +2,7 @@
 
 Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
-![Magic Term](https://img.shields.io/badge/version-0.5.0-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Magic Term](https://img.shields.io/badge/version-0.5.1-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
 
@@ -11,7 +11,8 @@ Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 - **Pin & Reorder** — pin servers to top, drag-and-drop reorder (syncs across org)
 - **SSH Terminal** — full 256-color & truecolor support, search (Cmd/Ctrl+F)
 - **Split Panes** — horizontal (Cmd+D) and vertical (Cmd+Shift+D) terminal splits
-- **10 Built-in Themes** — Tokyo Night, Dracula, Monokai, Nord, Catppuccin and more
+- **3 App Themes** — Midnight, Onyx (true black, OLED) and Daylight (light), each paired with a matching terminal palette
+- **13 Built-in Terminal Themes** — Tokyo Night, Dracula, Monokai, Nord, Catppuccin and more (light variants too)
 - **Customizable Terminal** — font, size, cursor style, scrollback, line height
 - **SFTP File Manager** — dual-panel UI, drag-and-drop transfers, path copy
 - **Built-in Text Editor** — edit remote files directly

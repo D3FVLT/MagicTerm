@@ -3,6 +3,7 @@ import { OrganizationsProvider } from './contexts/OrganizationsContext';
 import { ServersProvider } from './contexts/ServersContext';
 import { TerminalProvider } from './contexts/TerminalContext';
 import { SnippetsProvider } from './contexts/SnippetsContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { LoginPage } from './pages/LoginPage';
 import { SetupMasterKeyPage } from './pages/SetupMasterKeyPage';
 import { MainLayout } from './layouts/MainLayout';
@@ -12,10 +13,10 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-950">
+      <div className="flex h-screen items-center justify-center bg-app">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-          <span className="text-gray-400">Loading...</span>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+          <span className="text-fg-muted">Loading...</span>
         </div>
       </div>
     );
@@ -44,8 +45,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

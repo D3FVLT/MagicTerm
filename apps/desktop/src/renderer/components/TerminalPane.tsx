@@ -179,23 +179,31 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
 
         if (hasCtrl && ev.shiftKey && key === 'c') {
           if (hasSelection) {
-            window.electronAPI.clipboard.writeText(terminal.getSelection());
+            void window.electronAPI.clipboard.writeText(terminal.getSelection());
           }
           ev.preventDefault();
           return false;
         }
 
         if (hasCtrl && !ev.shiftKey && key === 'c' && hasSelection) {
-          window.electronAPI.clipboard.writeText(terminal.getSelection());
+          void window.electronAPI.clipboard.writeText(terminal.getSelection());
           ev.preventDefault();
           return false;
         }
 
         if (hasCtrl && ev.shiftKey && key === 'v') {
-          const text = window.electronAPI.clipboard.readText();
-          if (text) {
-            window.electronAPI.ssh.sendData(sessionId, text);
-          }
+          // Read is async (sandboxed preload), so the actual paste happens
+          // after the IPC roundtrip resolves.
+          window.electronAPI.clipboard
+            .readText()
+            .then((result) => {
+              if (result.success && result.text) {
+                void window.electronAPI.ssh.sendData(sessionId, result.text);
+              }
+            })
+            .catch(() => {
+              // Clipboard unavailable — silently drop the paste.
+            });
           ev.preventDefault();
           return false;
         }
@@ -261,7 +269,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
 
   return (
     <div
-      className={`flex h-full w-full flex-col ${isFocused ? 'ring-1 ring-[#7aa2f7]/30 ring-inset' : ''}`}
+      className={`flex h-full w-full flex-col ${isFocused ? 'ring-1 ring-[var(--accent)]/30 ring-inset' : ''}`}
       style={{ backgroundColor: activeTheme.background }}
       onClick={() => {
         setFocusedPane(tabId, sessionId);
@@ -273,7 +281,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
       }}
     >
       {/* Pane header */}
-      <div className="flex h-7 flex-shrink-0 items-center justify-between border-b border-[#292e42] bg-[#1f2335] px-2">
+      <div className="flex h-7 flex-shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--surface-1)] px-2">
         <div className="flex items-center gap-1.5">
           {connectionStatus === 'connected' && (
             <div className="h-2 w-2 rounded-full bg-green-500" />
@@ -284,7 +292,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
           {connectionStatus === 'disconnected' && (
             <div className="h-2 w-2 rounded-full bg-red-500" />
           )}
-          <span className="text-xs text-[#565f89] truncate max-w-[150px]">
+          <span className="text-xs text-[var(--fg-subtle)] truncate max-w-[150px]">
             {session?.serverId ? `pane` : 'terminal'}
           </span>
         </div>
@@ -297,8 +305,8 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
             }}
             className={`rounded p-1 transition-colors ${
               showSnippets
-                ? 'bg-[#3d59a1] text-white'
-                : 'text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]'
+                ? 'bg-[var(--accent-hover)] text-white'
+                : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
             }`}
             title="Snippets"
           >
@@ -312,7 +320,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
                 e.stopPropagation();
                 closePane(sessionId);
               }}
-              className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-red-400"
+              className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-red-400"
               title="Close pane"
             >
               <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -344,9 +352,9 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
 
         {/* Reconnect toast */}
         {connectionStatus === 'disconnected' && (
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-4 py-2 shadow-lg backdrop-blur-sm">
             <div className="h-2 w-2 rounded-full bg-red-500" />
-            <span className="text-xs text-[#c0caf5]">Disconnected</span>
+            <span className="text-xs text-[var(--fg)]">Disconnected</span>
             <button
               onClick={async (e) => {
                 e.stopPropagation();
@@ -360,22 +368,22 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
                   terminalRef.current?.write('\r\n\x1b[38;5;203m✖ Reconnect failed.\x1b[0m\r\n');
                 }
               }}
-              className="rounded bg-[#7aa2f7] px-2 py-0.5 text-xs font-medium text-white hover:bg-[#6b8fd6]"
+              className="rounded bg-[var(--accent)] px-2 py-0.5 text-xs font-medium text-white hover:bg-[var(--accent-hover)]"
             >
               Reconnect
             </button>
           </div>
         )}
         {connectionStatus === 'reconnecting' && (
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-2 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2 shadow-lg backdrop-blur-sm">
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
-            <span className="text-xs text-[#c0caf5]">Reconnecting...</span>
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-4 py-2 shadow-lg backdrop-blur-sm">
+            <div className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+            <span className="text-xs text-[var(--fg)]">Reconnecting...</span>
           </div>
         )}
 
         {/* Search */}
         {showSearch && (
-          <div className="absolute bottom-2 right-2 z-10 flex w-64 items-center gap-1 rounded-lg border border-[#292e42] bg-[#1f2335]/95 p-1.5 shadow-lg backdrop-blur-sm">
+          <div className="absolute bottom-2 right-2 z-10 flex w-64 items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 p-1.5 shadow-lg backdrop-blur-sm">
             <input
               ref={searchInputRef}
               type="text"
@@ -395,11 +403,11 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
                 }
               }}
               placeholder="Search..."
-              className="flex-1 rounded bg-[#292e42] px-2 py-1 text-xs text-[#c0caf5] placeholder-[#565f89] outline-none"
+              className="flex-1 rounded bg-[var(--border)] px-2 py-1 text-xs text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none"
             />
             <button
               onClick={() => handleSearch('prev')}
-              className="rounded p-1 text-[#565f89] hover:text-[#c0caf5]"
+              className="rounded p-1 text-[var(--fg-subtle)] hover:text-[var(--fg)]"
             >
               <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -407,7 +415,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
             </button>
             <button
               onClick={() => handleSearch('next')}
-              className="rounded p-1 text-[#565f89] hover:text-[#c0caf5]"
+              className="rounded p-1 text-[var(--fg-subtle)] hover:text-[var(--fg)]"
             >
               <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -419,7 +427,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
                 setSearchQuery('');
                 terminalRef.current?.focus();
               }}
-              className="rounded p-1 text-[#565f89] hover:text-[#c0caf5]"
+              className="rounded p-1 text-[var(--fg-subtle)] hover:text-[var(--fg)]"
             >
               <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -434,7 +442,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowContextMenu(null)} />
           <div
-            className="fixed z-50 min-w-[160px] rounded-lg border border-[#292e42] bg-[#1f2335] py-1 shadow-xl"
+            className="fixed z-50 min-w-[160px] rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-xl"
             style={{ left: showContextMenu.x, top: showContextMenu.y }}
           >
             <button
@@ -442,36 +450,36 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
                 setShowContextMenu(null);
                 splitPane(sessionId, 'horizontal');
               }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[#c0caf5] hover:bg-[#292e42]"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--fg)] hover:bg-[var(--border)]"
             >
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m0-8h8m-8 0H4" />
               </svg>
               Split Right
-              <span className="ml-auto text-[#565f89]">⌘D</span>
+              <span className="ml-auto text-[var(--fg-subtle)]">⌘D</span>
             </button>
             <button
               onClick={() => {
                 setShowContextMenu(null);
                 splitPane(sessionId, 'vertical');
               }}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[#c0caf5] hover:bg-[#292e42]"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--fg)] hover:bg-[var(--border)]"
             >
               <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m0-8h8m-8 0H4" />
               </svg>
               Split Down
-              <span className="ml-auto text-[#565f89]">⇧⌘D</span>
+              <span className="ml-auto text-[var(--fg-subtle)]">⇧⌘D</span>
             </button>
             {hasMultiplePanes && (
               <>
-                <div className="my-1 border-t border-[#292e42]" />
+                <div className="my-1 border-t border-[var(--border)]" />
                 <button
                   onClick={() => {
                     setShowContextMenu(null);
                     closePane(sessionId);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-[#292e42]"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-[var(--border)]"
                 >
                   <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
