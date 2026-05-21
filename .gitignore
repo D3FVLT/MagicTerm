@@ -18,6 +18,10 @@ release/
 .env.local
 .env.*.local
 
+# Allow committing the web app's .env — it only holds the public Supabase URL
+# and anon key, which are safe to expose (RLS is what guards the data).
+!apps/web/.env
+
 # IDE
 .idea/
 *.swp

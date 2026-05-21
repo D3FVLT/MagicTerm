@@ -5,7 +5,13 @@ import { Button } from './ui/Button';
 import { Select } from './ui/Select';
 import { useOrganizations } from '../contexts/OrganizationsContext';
 import { useAppTheme } from '../contexts/ThemeContext';
-import { getUserSettings, updateUserSettings } from '@magicterm/supabase-client';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  getUserSettings,
+  updateUserSettings,
+  getAccountDeletionPreview,
+  type AccountDeletionPreview,
+} from '@magicterm/supabase-client';
 import type { UserSettings } from '@magicterm/shared';
 import {
   TERMINAL_THEMES,
@@ -14,6 +20,11 @@ import {
   type TerminalSettings,
 } from '../lib/terminal-themes';
 import { APP_THEMES } from '../lib/app-themes';
+
+const DONATE_URL = 'https://www.donationalerts.com/r/whitenobel';
+const GITHUB_URL = 'https://github.com/D3FVLT/MagicTerm';
+const WEBSITE_URL = 'https://magicterm.app';
+const APP_VERSION = '0.5.2';
 
 interface ProxyConfig {
   enabled: boolean;
@@ -41,6 +52,7 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { organizations } = useOrganizations();
   const { themeId: appThemeId, setTheme: setAppTheme, themes: appThemes } = useAppTheme();
+  const { user, deleteAccount } = useAuth();
   const [settings, setSettings] = useState<UserSettings>({ nickname: null, defaultOrgId: null });
   const [proxyConfig, setProxyConfig] = useState<ProxyConfig>(DEFAULT_PROXY);
   const [termSettings, setTermSettings] = useState<TerminalSettings>(DEFAULT_TERMINAL_SETTINGS);
@@ -49,7 +61,29 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [proxyTestResult, setProxyTestResult] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }>({ status: 'idle' });
-  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'terminal' | 'proxy'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'terminal' | 'proxy' | 'account'>('general');
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletePreview, setDeletePreview] = useState<AccountDeletionPreview | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || activeTab !== 'account') return;
+    let cancelled = false;
+    setIsLoadingPreview(true);
+    getAccountDeletionPreview()
+      .then((p) => {
+        if (!cancelled) setDeletePreview(p);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsLoadingPreview(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, activeTab]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -120,7 +154,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         ) : (
           <>
             <div className="flex gap-1 border-b border-[var(--border)]">
-              {(['general', 'appearance', 'terminal', 'proxy'] as const).map((tab) => (
+              {(['general', 'appearance', 'terminal', 'proxy', 'account'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -494,6 +528,189 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
+            {activeTab === 'account' && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="mb-3 text-sm font-medium text-[var(--fg)]">Signed in as</h3>
+                  <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-sm text-[var(--fg-muted)]">
+                    {user?.email ?? 'Unknown'}
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-[var(--accent)]/30 bg-[var(--accent)]/8 p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--accent)]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-medium text-[var(--fg)]">Support development</h3>
+                      <p className="mt-1 text-xs text-[var(--fg-muted)]">
+                        Magic Term is free and open source. Donations help fund code-signing certificates,
+                        infrastructure and new features.
+                      </p>
+                      <a
+                        href={DONATE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--accent-fg)] transition-colors hover:opacity-90"
+                      >
+                        Donate
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="mb-3 text-sm font-medium text-[var(--fg)]">About</h3>
+                  <div className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-[var(--fg-subtle)]">Version</span>
+                      <span className="font-mono text-[var(--fg)]">v{APP_VERSION}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--fg-subtle)]">Website</span>
+                      <a href={WEBSITE_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">
+                        magicterm.app
+                      </a>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--fg-subtle)]">Source code</span>
+                      <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">
+                        GitHub
+                      </a>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[var(--fg-subtle)]">Report a bug</span>
+                      <a href={`${GITHUB_URL}/issues/new`} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">
+                        Open an issue
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-[var(--border)] pt-6">
+                  <h3 className="mb-2 text-sm font-medium text-red-400">Danger zone</h3>
+                  <p className="mb-3 text-xs text-[var(--fg-subtle)]">
+                    Permanently delete your account. The list below shows exactly what happens to your data.
+                    This cannot be undone.
+                  </p>
+
+                  {isLoadingPreview && (
+                    <div className="mb-3 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-xs text-[var(--fg-subtle)]">
+                      Calculating impact...
+                    </div>
+                  )}
+
+                  {deletePreview && (
+                    <div className="mb-3 space-y-2 rounded-lg border border-red-500/30 bg-red-500/5 p-4 text-xs">
+                      <div className="text-[var(--fg-muted)]">
+                        <span className="font-medium text-[var(--fg)]">Personal data lost:</span>{' '}
+                        {deletePreview.personalServers} server{deletePreview.personalServers === 1 ? '' : 's'},{' '}
+                        {deletePreview.snippets} snippet{deletePreview.snippets === 1 ? '' : 's'},
+                        and your master-key verifier.
+                      </div>
+
+                      {deletePreview.orgMemberships > 0 && (
+                        <div className="text-[var(--fg-muted)]">
+                          <span className="font-medium text-[var(--fg)]">You'll leave</span>{' '}
+                          {deletePreview.orgMemberships} organisation{deletePreview.orgMemberships === 1 ? '' : 's'}
+                          {' '}you were a member of (their data stays put).
+                        </div>
+                      )}
+
+                      {deletePreview.orgsToTransfer.length > 0 && (
+                        <div>
+                          <div className="font-medium text-[var(--fg)]">Ownership will transfer:</div>
+                          <ul className="mt-1 space-y-0.5 pl-4">
+                            {deletePreview.orgsToTransfer.map((o) => (
+                              <li key={o.id} className="text-[var(--fg-muted)] list-disc">
+                                <span className="font-medium text-[var(--fg)]">{o.name}</span>
+                                {' → '}
+                                <span className="font-mono text-[10px] text-[var(--fg-muted)]">
+                                  {o.newOwnerEmail}
+                                </span>{' '}
+                                <span className="text-[var(--fg-subtle)]">(was {o.newOwnerRoleWas})</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="mt-1 text-[var(--fg-subtle)]">
+                            These organisations and all their servers stay intact.
+                          </p>
+                        </div>
+                      )}
+
+                      {deletePreview.orgsToDelete.length > 0 && (
+                        <div>
+                          <div className="font-medium text-red-400">
+                            Organisations that will be deleted (you're the only member):
+                          </div>
+                          <ul className="mt-1 space-y-0.5 pl-4">
+                            {deletePreview.orgsToDelete.map((o) => (
+                              <li key={o.id} className="text-[var(--fg-muted)] list-disc">
+                                <span className="font-medium text-[var(--fg)]">{o.name}</span>{' '}
+                                <span className="text-red-400">
+                                  ({o.serverCount} server{o.serverCount === 1 ? '' : 's'} lost)
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {deletePreview.orgsToTransfer.length === 0 &&
+                        deletePreview.orgsToDelete.length === 0 &&
+                        deletePreview.orgMemberships === 0 && (
+                          <div className="text-[var(--fg-subtle)]">No organisations to worry about.</div>
+                        )}
+                    </div>
+                  )}
+
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
+                    <label className="mb-1.5 block text-xs text-[var(--fg-muted)]">
+                      Type <span className="font-mono font-semibold text-[var(--fg)]">delete my account</span> to confirm
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteConfirm}
+                      onChange={(e) => {
+                        setDeleteConfirm(e.target.value);
+                        setDeleteError(null);
+                      }}
+                      placeholder="delete my account"
+                      className="w-full rounded-md border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none focus:border-red-400"
+                    />
+                    {deleteError && (
+                      <div className="mt-2 text-xs text-red-400">{deleteError}</div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (deleteConfirm.trim().toLowerCase() !== 'delete my account') {
+                          setDeleteError('Confirmation phrase does not match.');
+                          return;
+                        }
+                        setIsDeleting(true);
+                        setDeleteError(null);
+                        try {
+                          await deleteAccount();
+                        } catch (err) {
+                          setDeleteError((err as Error).message ?? 'Failed to delete account.');
+                          setIsDeleting(false);
+                        }
+                      }}
+                      disabled={isDeleting || deleteConfirm.trim().toLowerCase() !== 'delete my account'}
+                      className="mt-3 inline-flex items-center justify-center rounded-md border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete account permanently'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
                 {error}
@@ -510,9 +727,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <Button variant="secondary" onClick={onClose}>
                 Close
               </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
+              {activeTab !== 'account' && (
+                <Button onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              )}
             </div>
           </>
         )}
