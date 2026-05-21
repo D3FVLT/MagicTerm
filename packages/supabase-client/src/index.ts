@@ -153,8 +153,17 @@ export async function signInWithGitHub() {
 }
 
 export async function signOut() {
-  const { error } = await getSupabase().auth.signOut();
-  if (error) throw error;
+  const client = getSupabase();
+  try {
+    const { error } = await client.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    try {
+      await client.auth.signOut({ scope: 'local' });
+    } catch {
+    }
+    throw error;
+  }
 }
 
 export async function getSession(): Promise<Session | null> {
