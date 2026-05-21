@@ -37,5 +37,9 @@ pnpm-debug.log*
 # Turbo
 .turbo/
 
+# Astro (web app)
+.astro/
+apps/web/dist/
+
 # Testing
 coverage/

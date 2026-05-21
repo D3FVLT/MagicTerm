@@ -1,0 +1,251 @@
+---
+import BrowserFrame from './BrowserFrame.astro';
+
+interface Feature {
+  eyebrow: string;
+  title: string;
+  description: string;
+  bullets: { label: string; description: string }[];
+  screenshot: { src: string; alt: string; tab: string };
+  reverse?: boolean;
+}
+
+const features: Feature[] = [
+  {
+    eyebrow: 'Vaults',
+    title: 'A home for every server.',
+    description:
+      'Searchable cards, drag-and-drop reorder, pin favourites to the top. Personal vault by default; share servers with your team via organisations when you need to.',
+    bullets: [
+      { label: 'Instant search', description: 'Filter by name, IP, or comment as you type.' },
+      { label: 'Pin & reorder', description: 'Drag cards into order; sync with team in real time.' },
+      { label: 'Per-org isolation', description: 'Personal vault stays private; shared vaults stay shared.' },
+    ],
+    screenshot: {
+      // SCREENSHOT REQUIRED — public/screenshots/vaults.png
+      // Capture: Vaults page with at least 4 servers, Personal workspace selected.
+      // Cmd+Shift+4 around the *content* only (skip macOS title bar).
+      src: '/screenshots/vaults.png',
+      alt: 'Vaults page showing server cards in a grid',
+      tab: 'Vaults',
+    },
+  },
+  {
+    eyebrow: 'Terminal',
+    title: 'A terminal that feels right.',
+    description:
+      'Full 256-color & truecolor xterm. Split panes (Cmd+D / Cmd+Shift+D) for parallel work. Search inside the buffer with Cmd+F. 13 built-in themes, light variants too.',
+    bullets: [
+      { label: 'Split panes', description: 'Horizontal and vertical splits with focus rings.' },
+      { label: 'Search & jump', description: 'Cmd/Ctrl+F searches the entire scrollback.' },
+      { label: 'Custom palettes', description: 'Tokyo Night, Dracula, Catppuccin, and more.' },
+    ],
+    reverse: true,
+    screenshot: {
+      // SCREENSHOT REQUIRED — public/screenshots/terminal.png
+      // Capture: an active terminal session with some colorful output (try `ls --color`,
+      // `htop`, or a `git log --oneline --color`). Bonus: have one split visible.
+      src: '/screenshots/terminal.png',
+      alt: 'Magic Term terminal with colorful command output and a split pane',
+      tab: 'Terminal',
+    },
+  },
+  {
+    eyebrow: 'SFTP',
+    title: 'Move files like a desktop user.',
+    description:
+      'Dual-pane file manager — local on one side, remote on the other. Drag to transfer, double-click to edit text files in-place. Resume uploads if your connection blips.',
+    bullets: [
+      { label: 'Dual-panel UI', description: 'Local and remote side-by-side, keyboard-driven.' },
+      { label: 'In-place edit', description: 'Open remote text files in the built-in editor.' },
+      { label: 'Path bookmarks', description: 'Jump back to /var/log or wherever you live.' },
+    ],
+    screenshot: {
+      // SCREENSHOT REQUIRED — public/screenshots/sftp.png
+      // Capture: SFTP view with files on both sides. Make sure file types are visible
+      // (mix of folders and files). Hide any sensitive filenames before capture.
+      src: '/screenshots/sftp.png',
+      alt: 'SFTP dual-panel file manager view',
+      tab: 'SFTP',
+    },
+  },
+  {
+    eyebrow: 'Snippets',
+    title: 'Personal commands, securely stored.',
+    description:
+      'Save tokens, env vars, or full command snippets. Encrypted with the same master key as your servers. One click to copy with auto-clear after 30s, or paste straight into the terminal.',
+    bullets: [
+      { label: 'E2E encrypted', description: 'Same AES-256-GCM as server credentials.' },
+      { label: 'Auto-clear clipboard', description: 'Secrets wipe themselves 30s after copy.' },
+      { label: 'Paste to terminal', description: 'Click to inject directly into the focused pane.' },
+    ],
+    reverse: true,
+    screenshot: {
+      // SCREENSHOT REQUIRED — public/screenshots/snippets.png
+      // Capture: Snippets panel open with at least 3 saved snippets. Names visible,
+      // values masked or generic (do not screenshot real tokens).
+      src: '/screenshots/snippets.png',
+      alt: 'Snippets panel with saved encrypted commands',
+      tab: 'Snippets',
+    },
+  },
+];
+---
+
+<section id="features" class="features">
+  <header class="features__header">
+    <h2 class="features__title">Everything an SSH client should be.</h2>
+    <p class="features__subtitle">
+      Speed, beauty, and security — all the things terminal apps usually miss.
+    </p>
+  </header>
+
+  <div class="features__list">
+    {features.map((f) => (
+      <article class={`feature ${f.reverse ? 'feature--reverse' : ''}`}>
+        <div class="feature__copy">
+          <div class="feature__eyebrow">{f.eyebrow}</div>
+          <h3 class="feature__title">{f.title}</h3>
+          <p class="feature__description">{f.description}</p>
+          <ul class="feature__bullets">
+            {f.bullets.map((b) => (
+              <li>
+                <strong>{b.label}.</strong> {b.description}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="feature__visual">
+          <BrowserFrame
+            src={f.screenshot.src}
+            alt={f.screenshot.alt}
+            tab={f.screenshot.tab}
+          />
+        </div>
+      </article>
+    ))}
+  </div>
+</section>
+
+<style>
+  .features {
+    max-width: 1200px;
+    margin: 160px auto 0;
+    padding: 0 24px;
+  }
+
+  .features__header {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 80px;
+  }
+
+  .features__title {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--fg);
+    margin: 0 0 16px;
+  }
+
+  .features__subtitle {
+    color: var(--fg-muted);
+    font-size: clamp(16px, 2vw, 20px);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .features__list {
+    display: flex;
+    flex-direction: column;
+    gap: 120px;
+  }
+
+  .feature {
+    display: grid;
+    gap: 48px;
+    align-items: center;
+  }
+
+  @media (min-width: 900px) {
+    .feature {
+      grid-template-columns: 1fr 1.2fr;
+    }
+    .feature--reverse .feature__copy { order: 2; }
+    .feature--reverse .feature__visual { order: 1; }
+  }
+
+  .feature__eyebrow {
+    display: inline-block;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .feature__title {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: var(--fg);
+    margin: 0 0 16px;
+  }
+
+  .feature__description {
+    color: var(--fg-muted);
+    font-size: 17px;
+    line-height: 1.6;
+    margin: 0 0 24px;
+  }
+
+  .feature__bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .feature__bullets li {
+    color: var(--fg-muted);
+    font-size: 15px;
+    line-height: 1.5;
+    padding-left: 20px;
+    position: relative;
+  }
+
+  .feature__bullets li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .feature__bullets strong {
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  /* Subtle scroll-triggered reveal — skipped if reduced-motion. */
+  @supports (animation-timeline: view()) {
+    .feature {
+      animation: feature-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 35%;
+    }
+  }
+
+  @keyframes feature-reveal {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>

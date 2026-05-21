@@ -1,0 +1,265 @@
+---
+
+// Theme previews are rendered procedurally below using each theme's palette —
+// no actual screenshots needed. Keeps things in sync if the in-app theme tweaks.
+const themes = [
+  {
+    id: 'midnight',
+    name: 'Midnight',
+    description: 'Soft blue-tinted dark — Tokyo Night vibes.',
+    bg: '#1a1b26',
+    surface: '#24283b',
+    accent: '#7aa2f7',
+    text: '#c0caf5',
+  },
+  {
+    id: 'onyx',
+    name: 'Onyx',
+    description: 'True black, OLED-friendly, max contrast.',
+    bg: '#000000',
+    surface: '#0d0d10',
+    accent: '#79c0ff',
+    text: '#e6edf3',
+  },
+  {
+    id: 'daylight',
+    name: 'Daylight',
+    description: 'Light surfaces for bright environments.',
+    bg: '#ffffff',
+    surface: '#f5f6f8',
+    accent: '#0969da',
+    text: '#1f2328',
+  },
+];
+---
+
+<section id="themes" class="themes">
+  <header class="themes__header">
+    <div class="themes__eyebrow">Themes</div>
+    <h2 class="themes__title">Three palettes, perfectly tuned.</h2>
+    <p class="themes__subtitle">
+      Each app theme ships with a paired terminal palette so the chrome and your shell live in harmony.
+      Switching is one click in Settings — and yes, your choice persists.
+    </p>
+  </header>
+
+  <div class="themes__grid">
+    {themes.map((t) => (
+      <button
+        class="theme-card"
+        data-theme-id={t.id}
+        type="button"
+        aria-label={`Preview ${t.name} theme`}
+      >
+        <div
+          class="theme-card__preview"
+          style={`background: ${t.bg};`}
+        >
+          <div
+            class="theme-card__chrome"
+            style={`background: ${t.surface}; border-bottom: 1px solid color-mix(in oklab, ${t.text} 8%, transparent);`}
+          >
+            <span class="theme-card__dot" style={`background: ${t.accent};`}></span>
+            <span class="theme-card__chrome-line" style={`background: ${t.text}; opacity: 0.15;`}></span>
+            <span class="theme-card__chrome-line" style={`background: ${t.text}; opacity: 0.15;`}></span>
+          </div>
+          <div class="theme-card__body">
+            <div class="theme-card__row">
+              <span class="theme-card__pill" style={`background: ${t.accent}; color: ${t.bg};`}>
+                Personal
+              </span>
+              <span class="theme-card__heading" style={`color: ${t.text};`}>
+                Servers
+              </span>
+            </div>
+            <div class="theme-card__server" style={`background: ${t.surface}; border-color: color-mix(in oklab, ${t.text} 10%, transparent);`}>
+              <span style={`color: ${t.text};`}>Keenetic</span>
+              <span class="theme-card__sub" style={`color: color-mix(in oklab, ${t.text} 60%, transparent);`}>192.168.1.1</span>
+            </div>
+            <div class="theme-card__server" style={`background: ${t.surface}; border-color: color-mix(in oklab, ${t.text} 10%, transparent);`}>
+              <span style={`color: ${t.text};`}>Raspberry</span>
+              <span class="theme-card__sub" style={`color: color-mix(in oklab, ${t.text} 60%, transparent);`}>192.168.1.142</span>
+            </div>
+          </div>
+        </div>
+        <div class="theme-card__meta">
+          <h3 class="theme-card__name">{t.name}</h3>
+          <p class="theme-card__desc">{t.description}</p>
+        </div>
+      </button>
+    ))}
+  </div>
+</section>
+
+<script>
+  // Live theme preview — clicking a card retints the entire site for a moment so
+  // visitors can feel the palette change. Persists for the session.
+  const cards = document.querySelectorAll<HTMLButtonElement>('[data-theme-id]');
+  cards.forEach((card) => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.themeId;
+      if (!id) return;
+      document.documentElement.setAttribute('data-theme', id);
+      cards.forEach((c) => c.removeAttribute('data-active'));
+      card.setAttribute('data-active', '');
+    });
+  });
+</script>
+
+<style>
+  .themes {
+    max-width: 1200px;
+    margin: 160px auto 0;
+    padding: 0 24px;
+  }
+
+  .themes__header {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 64px;
+  }
+
+  .themes__eyebrow {
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .themes__title {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--fg);
+    margin: 0 0 16px;
+  }
+
+  .themes__subtitle {
+    color: var(--fg-muted);
+    font-size: clamp(16px, 2vw, 18px);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .themes__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  @media (min-width: 768px) {
+    .themes__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .theme-card {
+    text-align: left;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font: inherit;
+    color: inherit;
+  }
+
+  .theme-card:hover,
+  .theme-card[data-active] {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px -10px color-mix(in oklab, var(--accent) 30%, transparent);
+  }
+
+  .theme-card__preview {
+    border-radius: 10px;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    margin-bottom: 16px;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, currentColor 10%, transparent);
+  }
+
+  .theme-card__chrome {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    height: 28px;
+  }
+
+  .theme-card__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .theme-card__chrome-line {
+    height: 6px;
+    border-radius: 3px;
+    flex: 1;
+  }
+
+  .theme-card__body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .theme-card__row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .theme-card__pill {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .theme-card__heading {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .theme-card__server {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border: 1px solid;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .theme-card__sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+
+  .theme-card__meta {
+    padding: 0 4px 4px;
+  }
+
+  .theme-card__name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0 0 4px;
+  }
+
+  .theme-card__desc {
+    color: var(--fg-muted);
+    font-size: 13px;
+    line-height: 1.4;
+    margin: 0;
+  }
+</style>
