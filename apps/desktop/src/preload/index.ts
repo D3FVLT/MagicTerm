@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, clipboard } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 import {
   IPC_CHANNELS,
   type SSHConnectionConfig,
@@ -121,8 +121,9 @@ const api = {
     reveal: (filePath: string) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_REVEAL, filePath),
   },
   clipboard: {
-    writeText: (text: string) => clipboard.writeText(text),
-    readText: () => clipboard.readText(),
+    writeText: (text: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.CLIPBOARD_WRITE, text),
+    readText: () => ipcRenderer.invoke(IPC_CHANNELS.CLIPBOARD_READ),
   },
   masterPassword: {
     save: (password: string) =>

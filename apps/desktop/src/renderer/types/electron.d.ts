@@ -54,8 +54,8 @@ export interface ElectronAPI {
     onStatus: (callback: UpdateStatusCallback) => () => void;
   };
   clipboard: {
-    writeText: (text: string) => void;
-    readText: () => string;
+    writeText: (text: string) => Promise<{ success: boolean; error?: string }>;
+    readText: () => Promise<{ success: boolean; text: string; error?: string }>;
   };
   masterPassword: {
     save: (password: string) => Promise<{ success: boolean; error?: string }>;

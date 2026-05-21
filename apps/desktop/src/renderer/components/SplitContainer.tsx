@@ -116,9 +116,9 @@ function SplitView({ direction, ratio: initialRatio, tabId, focusedPaneId, isTab
         onMouseDown={handleMouseDown}
         className={`flex-shrink-0 ${
           isHorizontal
-            ? 'w-1 cursor-col-resize hover:bg-[#7aa2f7]/50'
-            : 'h-1 cursor-row-resize hover:bg-[#7aa2f7]/50'
-        } bg-[#292e42] transition-colors`}
+            ? 'w-1 cursor-col-resize hover:bg-[var(--accent)]/50'
+            : 'h-1 cursor-row-resize hover:bg-[var(--accent)]/50'
+        } bg-[var(--border)] transition-colors`}
       />
 
       <div

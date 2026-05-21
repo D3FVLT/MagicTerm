@@ -244,14 +244,14 @@ export function FilePanel({
   };
 
   return (
-    <div className="flex h-full flex-col bg-[#1a1b26]">
+    <div className="flex h-full flex-col bg-[var(--bg)]">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#292e42] bg-[#1f2335] px-3 py-2">
-        <span className="text-sm font-medium text-[#7aa2f7]">{title}</span>
+      <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface-1)] px-3 py-2">
+        <span className="text-sm font-medium text-[var(--accent)]">{title}</span>
         <div className="flex items-center gap-1">
           <button
             onClick={onRefresh}
-            className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+            className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
             title="Refresh"
           >
             <svg
@@ -270,7 +270,7 @@ export function FilePanel({
           </button>
           <button
             onClick={() => setCreatingFolder(true)}
-            className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+            className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
             title="New Folder"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,10 +286,10 @@ export function FilePanel({
       </div>
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1 border-b border-[#292e42] bg-[#1f2335] px-3 py-1.5">
+      <div className="flex items-center gap-1 border-b border-[var(--border)] bg-[var(--surface-1)] px-3 py-1.5">
         <button
           onClick={handleGoUp}
-          className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+          className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
           title="Go up"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,16 +299,16 @@ export function FilePanel({
         <div className="flex flex-1 items-center gap-0.5 overflow-hidden text-sm">
           <button
             onClick={() => onNavigate(isWindows ? pathParts[0] : '/')}
-            className="rounded px-1.5 py-0.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+            className="rounded px-1.5 py-0.5 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
           >
             {isWindows ? pathParts[0] : '/'}
           </button>
           {pathParts.slice(isWindows ? 1 : 0).map((part, i) => (
             <div key={i} className="flex items-center">
-              <span className="text-[#565f89]">/</span>
+              <span className="text-[var(--fg-subtle)]">/</span>
               <button
                 onClick={() => handleBreadcrumbClick(isWindows ? i + 1 : i)}
-                className="truncate rounded px-1.5 py-0.5 text-[#c0caf5] hover:bg-[#292e42]"
+                className="truncate rounded px-1.5 py-0.5 text-[var(--fg)] hover:bg-[var(--border)]"
               >
                 {part}
               </button>
@@ -317,15 +317,15 @@ export function FilePanel({
         </div>
         <button
           onClick={() => {
-            window.electronAPI.clipboard.writeText(currentPath);
+            void window.electronAPI.clipboard.writeText(currentPath);
             setPathCopied(true);
             setTimeout(() => setPathCopied(false), 1500);
           }}
-          className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5] flex-shrink-0"
+          className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)] flex-shrink-0"
           title="Copy path"
         >
           {pathCopied ? (
-            <svg className="h-3.5 w-3.5 text-[#9ece6a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-3.5 w-3.5 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           ) : (
@@ -342,24 +342,24 @@ export function FilePanel({
       )}
 
       {/* File List Header */}
-      <div className="grid grid-cols-[1fr_80px_140px] gap-2 border-b border-[#292e42] bg-[#1f2335] px-3 py-1.5 text-xs text-[#565f89]">
+      <div className="grid grid-cols-[1fr_80px_140px] gap-2 border-b border-[var(--border)] bg-[var(--surface-1)] px-3 py-1.5 text-xs text-[var(--fg-subtle)]">
         <button
           onClick={() => handleSort('name')}
-          className="flex items-center text-left hover:text-[#c0caf5]"
+          className="flex items-center text-left hover:text-[var(--fg)]"
         >
           Name
           <SortIcon column="name" />
         </button>
         <button
           onClick={() => handleSort('size')}
-          className="flex items-center justify-end hover:text-[#c0caf5]"
+          className="flex items-center justify-end hover:text-[var(--fg)]"
         >
           Size
           <SortIcon column="size" />
         </button>
         <button
           onClick={() => handleSort('date')}
-          className="flex items-center justify-end hover:text-[#c0caf5]"
+          className="flex items-center justify-end hover:text-[var(--fg)]"
         >
           Modified
           <SortIcon column="date" />
@@ -373,24 +373,24 @@ export function FilePanel({
       >
         {/* Loading overlay */}
         {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#1a1b26]/80">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--bg)]/80">
             <div className="flex flex-col items-center gap-2">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
-              <span className="text-xs text-[#565f89]">Loading...</span>
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+              <span className="text-xs text-[var(--fg-subtle)]">Loading...</span>
             </div>
           </div>
         )}
         {entries.length === 0 && !isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <span className="text-sm text-[#565f89]">Empty folder</span>
+            <span className="text-sm text-[var(--fg-subtle)]">Empty folder</span>
           </div>
         ) : (
           <>
             {creatingFolder && (
-              <div className="grid grid-cols-[1fr_80px_140px] gap-2 border-b border-[#292e42] px-3 py-1.5">
+              <div className="grid grid-cols-[1fr_80px_140px] gap-2 border-b border-[var(--border)] px-3 py-1.5">
                 <div className="flex items-center gap-2">
                   <svg
-                    className="h-4 w-4 text-[#7aa2f7]"
+                    className="h-4 w-4 text-[var(--accent)]"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
@@ -410,7 +410,7 @@ export function FilePanel({
                     }}
                     onBlur={handleCreateFolderSubmit}
                     placeholder="New folder name"
-                    className="flex-1 rounded bg-[#292e42] px-2 py-0.5 text-sm text-[#c0caf5] outline-none ring-1 ring-[#7aa2f7]"
+                    className="flex-1 rounded bg-[var(--border)] px-2 py-0.5 text-sm text-[var(--fg)] outline-none ring-1 ring-[var(--accent)]"
                   />
                 </div>
                 <div />
@@ -421,8 +421,8 @@ export function FilePanel({
             {sortedEntries.map((file) => (
               <div
                 key={file.path}
-                className={`grid cursor-pointer grid-cols-[1fr_80px_140px] gap-2 border-b border-[#292e42]/50 px-3 py-1.5 text-sm hover:bg-[#292e42]/50 ${
-                  selectedFiles.has(file.path) ? 'bg-[#3d59a1]/30' : ''
+                className={`grid cursor-pointer grid-cols-[1fr_80px_140px] gap-2 border-b border-[var(--border)]/50 px-3 py-1.5 text-sm hover:bg-[var(--border)]/50 ${
+                  selectedFiles.has(file.path) ? 'bg-[var(--accent-hover)]/30' : ''
                 }`}
                 onClick={(e) => handleClick(file, e)}
                 onDoubleClick={() => handleDoubleClick(file)}
@@ -442,7 +442,7 @@ export function FilePanel({
                 <div className="flex items-center gap-2 overflow-hidden">
                   {file.isDirectory ? (
                     <svg
-                      className="h-4 w-4 flex-shrink-0 text-[#7aa2f7]"
+                      className="h-4 w-4 flex-shrink-0 text-[var(--accent)]"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
@@ -450,7 +450,7 @@ export function FilePanel({
                     </svg>
                   ) : (
                     <svg
-                      className={`h-4 w-4 flex-shrink-0 ${isTextFile(file.name) ? 'text-[#9ece6a]' : 'text-[#565f89]'}`}
+                      className={`h-4 w-4 flex-shrink-0 ${isTextFile(file.name) ? 'text-[var(--success)]' : 'text-[var(--fg-subtle)]'}`}
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
@@ -471,18 +471,18 @@ export function FilePanel({
                         }
                       }}
                       onBlur={() => handleRenameSubmit(file)}
-                      className="flex-1 rounded bg-[#292e42] px-1 text-[#c0caf5] outline-none ring-1 ring-[#7aa2f7]"
+                      className="flex-1 rounded bg-[var(--border)] px-1 text-[var(--fg)] outline-none ring-1 ring-[var(--accent)]"
                     />
                   ) : (
-                    <span className={`truncate ${isTextFile(file.name) && !file.isDirectory ? 'text-[#c0caf5]' : 'text-[#c0caf5]'}`}>{file.name}</span>
+                    <span className={`truncate ${isTextFile(file.name) && !file.isDirectory ? 'text-[var(--fg)]' : 'text-[var(--fg)]'}`}>{file.name}</span>
                   )}
                   {file.isSymlink && (
-                    <span className="text-xs text-[#565f89]">→</span>
+                    <span className="text-xs text-[var(--fg-subtle)]">→</span>
                   )}
                   {!file.isDirectory && isTextFile(file.name) && type === 'remote' && onEditFile && (
                     <span title="Editable - double-click to edit">
                       <svg
-                        className="h-3 w-3 flex-shrink-0 text-[#9ece6a] opacity-60"
+                        className="h-3 w-3 flex-shrink-0 text-[var(--success)] opacity-60"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -497,10 +497,10 @@ export function FilePanel({
                     </span>
                   )}
                 </div>
-                <span className="text-right text-[#565f89]">
+                <span className="text-right text-[var(--fg-subtle)]">
                   {file.isDirectory ? '—' : formatFileSize(file.size)}
                 </span>
-                <span className="text-right text-[#565f89]">
+                <span className="text-right text-[var(--fg-subtle)]">
                   {formatDate(file.modifiedAt)}
                 </span>
               </div>
@@ -511,10 +511,10 @@ export function FilePanel({
       </div>
 
       {/* Status bar */}
-      <div className="border-t border-[#292e42] bg-[#1f2335] px-3 py-1 text-xs text-[#565f89]">
+      <div className="border-t border-[var(--border)] bg-[var(--surface-1)] px-3 py-1 text-xs text-[var(--fg-subtle)]">
         {isLoading ? (
           <span className="flex items-center gap-1">
-            <div className="h-3 w-3 animate-spin rounded-full border border-[#7aa2f7] border-t-transparent" />
+            <div className="h-3 w-3 animate-spin rounded-full border border-[var(--accent)] border-t-transparent" />
             Loading...
           </span>
         ) : selectedFiles.size > 0 ? (
@@ -527,7 +527,7 @@ export function FilePanel({
       {/* Context Menu */}
       {contextMenu && (
         <div
-          className="fixed z-50 min-w-[160px] rounded-lg border border-[#292e42] bg-[#1f2335] py-1 shadow-xl"
+          className="fixed z-50 min-w-[160px] rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-xl"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           {contextMenu.file && (
@@ -537,7 +537,7 @@ export function FilePanel({
                   handleDoubleClick(contextMenu.file!);
                   setContextMenu(null);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[var(--fg)] hover:bg-[var(--border)]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -555,7 +555,7 @@ export function FilePanel({
                     onEditFile(contextMenu.file!);
                     setContextMenu(null);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[var(--fg)] hover:bg-[var(--border)]"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -574,7 +574,7 @@ export function FilePanel({
                   onTransfer(files.length > 0 ? files : [contextMenu.file!], currentPath);
                   setContextMenu(null);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[var(--fg)] hover:bg-[var(--border)]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -586,14 +586,14 @@ export function FilePanel({
                 </svg>
                 {type === 'local' ? 'Upload' : 'Download'}
               </button>
-              <div className="my-1 border-t border-[#292e42]" />
+              <div className="my-1 border-t border-[var(--border)]" />
               <button
                 onClick={() => {
                   setRenaming(contextMenu.file!.path);
                   setNewName(contextMenu.file!.name);
                   setContextMenu(null);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[var(--fg)] hover:bg-[var(--border)]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -611,7 +611,7 @@ export function FilePanel({
                   onDelete(files.length > 0 ? files : [contextMenu.file!]);
                   setContextMenu(null);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-400 hover:bg-[#292e42]"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-red-400 hover:bg-[var(--border)]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -632,7 +632,7 @@ export function FilePanel({
                   setCreatingFolder(true);
                   setContextMenu(null);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[var(--fg)] hover:bg-[var(--border)]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -649,7 +649,7 @@ export function FilePanel({
                   onRefresh();
                   setContextMenu(null);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-[var(--fg)] hover:bg-[var(--border)]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path

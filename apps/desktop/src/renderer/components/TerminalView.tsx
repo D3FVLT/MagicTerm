@@ -91,9 +91,6 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
 
   useEffect(() => {
     if (isActive && fitAddonRef.current && terminalRef.current) {
-      // Re-sync terminal dimensions a few times after activation.
-      // Some layouts/fonts settle asynchronously and bash/zsh history redraw
-      // can glitch if PTY width is stale.
       const timers = [
         setTimeout(() => {
           syncPtySize();
@@ -205,23 +202,28 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
 
         if (hasCtrl && ev.shiftKey && key === 'c') {
           if (hasSelection) {
-            window.electronAPI.clipboard.writeText(terminal.getSelection());
+            void window.electronAPI.clipboard.writeText(terminal.getSelection());
           }
           ev.preventDefault();
           return false;
         }
 
         if (hasCtrl && !ev.shiftKey && key === 'c' && hasSelection) {
-          window.electronAPI.clipboard.writeText(terminal.getSelection());
+          void window.electronAPI.clipboard.writeText(terminal.getSelection());
           ev.preventDefault();
           return false;
         }
 
         if (hasCtrl && ev.shiftKey && key === 'v') {
-          const text = window.electronAPI.clipboard.readText();
-          if (text) {
-            window.electronAPI.ssh.sendData(sessionId, text);
-          }
+          window.electronAPI.clipboard
+            .readText()
+            .then((result) => {
+              if (result.success && result.text) {
+                void window.electronAPI.ssh.sendData(sessionId, result.text);
+              }
+            })
+            .catch(() => {
+            });
           ev.preventDefault();
           return false;
         }
@@ -280,7 +282,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
   return (
     <div className="flex h-full flex-col" style={{ backgroundColor: activeTheme.background }}>
       {/* Terminal Header */}
-      <div className="drag-region flex h-10 items-center border-b border-[#292e42] bg-[#1f2335] px-4">
+      <div className="drag-region flex h-10 items-center border-b border-[var(--border)] bg-[var(--surface-1)] px-4">
         <div className="flex items-center gap-2">
           {connectionStatus === 'connected' && (
             <div className="flex h-3 w-3 items-center justify-center rounded-full bg-green-500">
@@ -295,7 +297,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
           {connectionStatus === 'disconnected' && (
             <div className="h-3 w-3 rounded-full bg-red-500" />
           )}
-          <span className="text-sm font-medium text-[#c0caf5]">
+          <span className="text-sm font-medium text-[var(--fg)]">
             {serverName || 'Terminal'}
           </span>
         </div>
@@ -310,15 +312,15 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
         />
 
         {/* Floating Toolbar - bottom right */}
-        <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-[#292e42] bg-[#1f2335]/95 p-1 shadow-lg backdrop-blur-sm">
+        <div className="absolute bottom-4 right-4 z-10 flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 p-1 shadow-lg backdrop-blur-sm">
           {/* Snippets Button */}
           <div className="relative">
             <button
               onClick={() => setShowSnippets((prev) => !prev)}
               className={`rounded-md p-2 transition-colors ${
                 showSnippets 
-                  ? 'bg-[#3d59a1] text-white' 
-                  : 'text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]'
+                  ? 'bg-[var(--accent-hover)] text-white' 
+                  : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
               }`}
               title="Snippets (tokens, secrets)"
             >
@@ -337,15 +339,15 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
           </div>
 
           {/* Divider */}
-          <div className="h-5 w-px bg-[#292e42]" />
+          <div className="h-5 w-px bg-[var(--border)]" />
 
           {/* Search Button */}
           <button
             onClick={toggleSearch}
             className={`rounded-md p-2 transition-colors ${
               showSearch 
-                ? 'bg-[#3d59a1] text-white' 
-                : 'text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]'
+                ? 'bg-[var(--accent-hover)] text-white' 
+                : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
             }`}
             title="Search (Cmd/Ctrl+F)"
           >
@@ -357,9 +359,9 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
 
         {/* Reconnect Toast */}
         {connectionStatus === 'disconnected' && onReconnect && (
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
             <div className="h-2 w-2 rounded-full bg-red-500" />
-            <span className="text-sm text-[#c0caf5]">Connection lost</span>
+            <span className="text-sm text-[var(--fg)]">Connection lost</span>
             <button
               onClick={async () => {
                 setConnectionStatus('reconnecting');
@@ -372,22 +374,22 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                   terminalRef.current?.write('\r\n\x1b[38;5;203m✖ Reconnect failed.\x1b[0m\r\n');
                 }
               }}
-              className="rounded-md bg-[#7aa2f7] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[#6b8fd6]"
+              className="rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
             >
               Reconnect
             </button>
           </div>
         )}
         {connectionStatus === 'reconnecting' && (
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[#292e42] bg-[#1f2335]/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
-            <span className="text-sm text-[#c0caf5]">Reconnecting...</span>
+          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 px-4 py-2.5 shadow-lg backdrop-blur-sm">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+            <span className="text-sm text-[var(--fg)]">Reconnecting...</span>
           </div>
         )}
 
         {/* Search Bar - floating above toolbar */}
         {showSearch && (
-          <div className="absolute bottom-16 right-4 z-10 flex w-80 items-center gap-2 rounded-lg border border-[#292e42] bg-[#1f2335]/95 p-2 shadow-lg backdrop-blur-sm">
+          <div className="absolute bottom-16 right-4 z-10 flex w-80 items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-1)]/95 p-2 shadow-lg backdrop-blur-sm">
             <input
               ref={searchInputRef}
               type="text"
@@ -404,11 +406,11 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                 }
               }}
               placeholder="Search..."
-              className="flex-1 rounded bg-[#292e42] px-3 py-1.5 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none"
+              className="flex-1 rounded bg-[var(--border)] px-3 py-1.5 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none"
             />
             <button
               onClick={() => handleSearch('prev')}
-              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+              className="rounded p-1.5 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
               title="Previous"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -417,7 +419,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
             </button>
             <button
               onClick={() => handleSearch('next')}
-              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+              className="rounded p-1.5 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
               title="Next"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -430,7 +432,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                 setSearchQuery('');
                 terminalRef.current?.focus();
               }}
-              className="rounded p-1.5 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+              className="rounded p-1.5 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
               title="Close (Esc)"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

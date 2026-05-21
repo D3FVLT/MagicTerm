@@ -29,9 +29,9 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
   if (transfers.length === 0) return null;
 
   return (
-    <div className="border-t border-[#292e42] bg-[#1f2335]">
+    <div className="border-t border-[var(--border)] bg-[var(--surface-1)]">
       <div className="flex items-center justify-between px-3 py-1.5 text-xs">
-        <span className="font-medium text-[#7aa2f7]">
+        <span className="font-medium text-[var(--accent)]">
           Transfers {activeTransfers.length > 0 && `(${activeTransfers.length} active)`}
         </span>
       </div>
@@ -40,13 +40,13 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
         {transfers.map((transfer) => (
           <div
             key={transfer.id}
-            className="flex items-center gap-3 border-t border-[#292e42]/50 px-3 py-2"
+            className="flex items-center gap-3 border-t border-[var(--border)]/50 px-3 py-2"
           >
             {/* Direction icon */}
             <div className="flex-shrink-0">
               {transfer.direction === 'upload' ? (
                 <svg
-                  className="h-4 w-4 text-[#7aa2f7]"
+                  className="h-4 w-4 text-[var(--accent)]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -60,7 +60,7 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
                 </svg>
               ) : (
                 <svg
-                  className="h-4 w-4 text-[#9ece6a]"
+                  className="h-4 w-4 text-[var(--success)]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -78,14 +78,14 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
             {/* File info */}
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
-                <span className="truncate text-sm text-[#c0caf5]">{transfer.filename}</span>
-                <span className="ml-2 flex-shrink-0 text-xs text-[#565f89]">
+                <span className="truncate text-sm text-[var(--fg)]">{transfer.filename}</span>
+                <span className="ml-2 flex-shrink-0 text-xs text-[var(--fg-subtle)]">
                   {transfer.status === 'completed' ? (
-                    <span className="text-[#9ece6a]">Done</span>
+                    <span className="text-[var(--success)]">Done</span>
                   ) : transfer.status === 'error' ? (
                     <span className="text-red-400">Failed</span>
                   ) : transfer.status === 'cancelled' ? (
-                    <span className="text-[#e0af68]">Cancelled</span>
+                    <span className="text-[var(--warning)]">Cancelled</span>
                   ) : (
                     <>
                       {formatBytes(transfer.transferred)} / {formatBytes(transfer.total)}
@@ -96,10 +96,10 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
 
               {/* Progress bar */}
               {(transfer.status === 'transferring' || transfer.status === 'pending') && (
-                <div className="mt-1 h-1 overflow-hidden rounded-full bg-[#292e42]">
+                <div className="mt-1 h-1 overflow-hidden rounded-full bg-[var(--border)]">
                   <div
                     className={`h-full transition-all ${
-                      transfer.direction === 'upload' ? 'bg-[#7aa2f7]' : 'bg-[#9ece6a]'
+                      transfer.direction === 'upload' ? 'bg-[var(--accent)]' : 'bg-[var(--success)]'
                     }`}
                     style={{
                       width: transfer.total > 0 ? `${(transfer.transferred / transfer.total) * 100}%` : '0%',
@@ -116,7 +116,7 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
 
             {/* Progress percentage */}
             {(transfer.status === 'transferring' || transfer.status === 'pending') && (
-              <span className="flex-shrink-0 text-xs text-[#565f89]">
+              <span className="flex-shrink-0 text-xs text-[var(--fg-subtle)]">
                 {formatProgress(transfer.transferred, transfer.total)}
               </span>
             )}
@@ -124,7 +124,7 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
             {/* Status icon */}
             <div className="flex-shrink-0">
               {transfer.status === 'completed' ? (
-                <svg className="h-4 w-4 text-[#9ece6a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               ) : transfer.status === 'error' ? (
@@ -132,7 +132,7 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : transfer.status === 'transferring' ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
               ) : null}
             </div>
           </div>

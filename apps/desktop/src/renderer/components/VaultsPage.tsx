@@ -155,13 +155,13 @@ export function VaultsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-[#1a1b26]">
+    <div className="flex h-full flex-col overflow-y-auto bg-[var(--bg)]">
       <div className="mx-auto w-full max-w-5xl px-8 py-8">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <OrganizationSwitcher />
-            <h1 className="text-xl font-bold text-[#dce0f5]">
+            <h1 className="text-xl font-bold text-[var(--fg)]">
               {currentOrg ? 'Team Servers' : 'Personal Servers'}
             </h1>
           </div>
@@ -176,7 +176,7 @@ export function VaultsPage() {
         {/* Search */}
         {servers.length > 0 && (
           <div className="relative mb-6">
-            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#565f89]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -184,12 +184,12 @@ export function VaultsPage() {
               placeholder="Search by name, IP, or comment..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-[#292e42] bg-[#1f2335] py-2 pl-10 pr-4 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none transition-colors focus:border-[#3d59a1]"
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-2 pl-10 pr-4 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none transition-colors focus:border-[var(--accent-hover)]"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#565f89] hover:text-[#c0caf5]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--fg-subtle)] hover:text-[var(--fg)]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -205,26 +205,26 @@ export function VaultsPage() {
         {/* Server grid */}
         {isLoading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
           </div>
         ) : servers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[#292e42] py-20">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#292e42]">
-              <svg className="h-8 w-8 text-[#565f89]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] py-20">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--border)]">
+              <svg className="h-8 w-8 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </div>
-            <p className="mb-4 text-sm text-[#787c99]">No servers yet</p>
+            <p className="mb-4 text-sm text-[var(--fg-subtle)]">No servers yet</p>
             <Button variant="ghost" onClick={() => setShowAddServer(true)}>
               Add your first server
             </Button>
           </div>
         ) : filteredServers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16">
-            <svg className="mb-3 h-10 w-10 text-[#565f89]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="mb-3 h-10 w-10 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <p className="text-sm text-[#787c99]">No servers match "{searchQuery}"</p>
+            <p className="text-sm text-[var(--fg-subtle)]">No servers match "{searchQuery}"</p>
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
@@ -244,10 +244,10 @@ export function VaultsPage() {
                   style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
                 >
                   {insertBefore && (
-                    <div className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-[#7aa2f7] z-10 animate-pulse" />
+                    <div className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-[var(--accent)] z-10 animate-pulse" />
                   )}
                   {insertAfter && (
-                    <div className="absolute -right-2 top-0 bottom-0 w-1 rounded-full bg-[#7aa2f7] z-10 animate-pulse" />
+                    <div className="absolute -right-2 top-0 bottom-0 w-1 rounded-full bg-[var(--accent)] z-10 animate-pulse" />
                   )}
                 <div
                   draggable={!searchQuery}
@@ -259,7 +259,7 @@ export function VaultsPage() {
                   className={`group relative flex h-full flex-col rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
                     isConnected
                       ? 'border-green-500/30 bg-green-500/5 hover:shadow-lg hover:shadow-green-500/5'
-                      : 'border-[#292e42] bg-[#1f2335] hover:border-[#3d59a1]/50 hover:shadow-lg hover:shadow-[#7aa2f7]/5'
+                      : 'border-[var(--border)] bg-[var(--surface-1)] hover:border-[var(--accent-hover)]/50 hover:shadow-lg hover:shadow-[var(--accent)]/5'
                   }`}
                   onClick={() => {
                     if (terminalSession) {
@@ -271,7 +271,7 @@ export function VaultsPage() {
                 >
                   {/* Pin indicator */}
                   {server.isPinned && (
-                    <div className="absolute right-2 top-2 text-[#7aa2f7]">
+                    <div className="absolute right-2 top-2 text-[var(--accent)]">
                       <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                       </svg>
@@ -282,11 +282,11 @@ export function VaultsPage() {
                   <div className="mb-2 flex items-start justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
-                        isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-[#565f89]'
+                        isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-[var(--fg-subtle)]'
                       }`} />
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-[#dce0f5]">{server.name}</div>
-                        <div className="truncate text-xs text-[#787c99]">
+                        <div className="truncate text-sm font-semibold text-[var(--fg)]">{server.name}</div>
+                        <div className="truncate text-xs text-[var(--fg-subtle)]">
                           {decryptedHosts[server.id] || '...'}{server.port !== 22 ? `:${server.port}` : ''}
                         </div>
                       </div>
@@ -299,7 +299,7 @@ export function VaultsPage() {
                           e.stopPropagation();
                           setServerMenuId(serverMenuId === server.id ? null : server.id);
                         }}
-                        className="rounded p-1 text-[#565f89] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#292e42] hover:text-[#c0caf5]"
+                        className="rounded p-1 text-[var(--fg-subtle)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--border)] hover:text-[var(--fg)]"
                       >
                         <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -307,7 +307,7 @@ export function VaultsPage() {
                       </button>
                       {serverMenuId === server.id && (
                         <div
-                          className="animate-slide-down absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-[#292e42] bg-[#1f2335] py-1 shadow-xl"
+                          className="animate-slide-down absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-xl"
                           onMouseDown={(e) => e.stopPropagation()}
                         >
                           <button
@@ -316,9 +316,9 @@ export function VaultsPage() {
                               setServerMenuId(null);
                               pinServer(server.id, !server.isPinned);
                             }}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
                           >
-                            <svg className={`h-3.5 w-3.5 ${server.isPinned ? 'text-[#7aa2f7]' : 'text-[#565f89]'}`} fill={server.isPinned ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className={`h-3.5 w-3.5 ${server.isPinned ? 'text-[var(--accent)]' : 'text-[var(--fg-subtle)]'}`} fill={server.isPinned ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                             </svg>
                             {server.isPinned ? 'Unpin' : 'Pin to top'}
@@ -329,16 +329,16 @@ export function VaultsPage() {
                               setServerMenuId(null);
                               setEditingServer(server);
                             }}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
                           >
-                            <svg className="h-3.5 w-3.5 text-[#565f89]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="h-3.5 w-3.5 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                             Edit
                           </button>
                           {serverSessions.length > 0 && (
                             <>
-                              <div className="my-1 border-t border-[#292e42]" />
+                              <div className="my-1 border-t border-[var(--border)]" />
                               <button
                                 onClick={async (e) => {
                                   e.stopPropagation();
@@ -347,7 +347,7 @@ export function VaultsPage() {
                                     await disconnect(session.id);
                                   }
                                 }}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-[#292e42]"
+                                className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-[var(--border)]"
                               >
                                 <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -363,7 +363,7 @@ export function VaultsPage() {
 
                   {/* Comment */}
                   {server.comment && (
-                    <p className="mb-3 line-clamp-2 text-xs text-[#787c99]" title={server.comment}>{server.comment}</p>
+                    <p className="mb-3 line-clamp-2 text-xs text-[var(--fg-subtle)]" title={server.comment}>{server.comment}</p>
                   )}
 
                   {/* Action buttons */}
@@ -380,7 +380,7 @@ export function VaultsPage() {
                       className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                         terminalSession
                           ? 'bg-green-500/10 text-green-400'
-                          : 'bg-[#292e42] text-[#787c99] hover:text-[#c0caf5]'
+                          : 'bg-[var(--border)] text-[var(--fg-subtle)] hover:text-[var(--fg)]'
                       }`}
                     >
                       <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -400,7 +400,7 @@ export function VaultsPage() {
                       className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                         sftpSession
                           ? 'bg-green-500/10 text-green-400'
-                          : 'bg-[#292e42] text-[#787c99] hover:text-[#c0caf5]'
+                          : 'bg-[var(--border)] text-[var(--fg-subtle)] hover:text-[var(--fg)]'
                       }`}
                     >
                       <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -424,13 +424,13 @@ export function VaultsPage() {
               className="mb-4 flex items-center gap-3"
             >
               <svg
-                className={`h-3 w-3 text-[#565f89] transition-transform ${showMembers ? 'rotate-90' : ''}`}
+                className={`h-3 w-3 text-[var(--fg-subtle)] transition-transform ${showMembers ? 'rotate-90' : ''}`}
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path d="M8 5v14l11-7z" />
               </svg>
-              <h2 className="text-sm font-medium text-[#787c99]">
+              <h2 className="text-sm font-medium text-[var(--fg-subtle)]">
                 Members ({members.filter((m) => m.status === 'active').length})
               </h2>
               {canInvite && (
@@ -440,7 +440,7 @@ export function VaultsPage() {
                     e.stopPropagation();
                     setShowInviteModal(true);
                   }}
-                  className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+                  className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -463,13 +463,13 @@ export function VaultsPage() {
                     return (
                       <div
                         key={member.id}
-                        className="group/member relative flex items-center gap-2 rounded-lg border border-[#292e42] bg-[#1f2335] px-3 py-2"
+                        className="group/member relative flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2"
                       >
-                        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[#292e42] text-xs uppercase text-[#c0caf5]">
+                        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--border)] text-xs uppercase text-[var(--fg)]">
                           {displayName?.[0] || '?'}
                         </div>
-                        <span className="flex-1 truncate text-sm text-[#c0caf5]">{displayLabel}</span>
-                        <span className={`text-xs ${member.role === 'owner' ? 'text-yellow-500' : member.role === 'admin' ? 'text-blue-400' : 'text-[#565f89]'}`}>
+                        <span className="flex-1 truncate text-sm text-[var(--fg)]">{displayLabel}</span>
+                        <span className={`text-xs ${member.role === 'owner' ? 'text-yellow-500' : member.role === 'admin' ? 'text-blue-400' : 'text-[var(--fg-subtle)]'}`}>
                           {member.role}
                         </span>
 
@@ -477,7 +477,7 @@ export function VaultsPage() {
                           <div className="relative" ref={memberMenuId === member.id ? memberMenuRef : null}>
                             <button
                               onClick={() => setMemberMenuId(memberMenuId === member.id ? null : member.id)}
-                              className="rounded p-1 text-[#565f89] opacity-0 group-hover/member:opacity-100 hover:bg-[#292e42] hover:text-[#c0caf5]"
+                              className="rounded p-1 text-[var(--fg-subtle)] opacity-0 group-hover/member:opacity-100 hover:bg-[var(--border)] hover:text-[var(--fg)]"
                             >
                               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -485,15 +485,15 @@ export function VaultsPage() {
                             </button>
 
                             {memberMenuId === member.id && (
-                              <div className="animate-slide-down absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-[#292e42] bg-[#1f2335] py-1 shadow-xl">
-                                <div className="px-3 py-1.5 text-xs text-[#565f89]">Change role</div>
+                              <div className="animate-slide-down absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-xl">
+                                <div className="px-3 py-1.5 text-xs text-[var(--fg-subtle)]">Change role</div>
                                 {(['admin', 'member', 'viewer'] as MemberRole[]).map((role) => (
                                   <button
                                     key={role}
                                     onClick={() => handleChangeRole(member.id, role)}
                                     disabled={member.role === role}
                                     className={`flex w-full items-center gap-2 px-3 py-1.5 text-sm ${
-                                      member.role === role ? 'text-[#565f89] cursor-default' : 'text-[#c0caf5] hover:bg-[#292e42]'
+                                      member.role === role ? 'text-[var(--fg-subtle)] cursor-default' : 'text-[var(--fg)] hover:bg-[var(--border)]'
                                     }`}
                                   >
                                     {member.role === role && (
@@ -504,10 +504,10 @@ export function VaultsPage() {
                                     <span className={member.role === role ? '' : 'ml-5'}>{role}</span>
                                   </button>
                                 ))}
-                                <div className="my-1 border-t border-[#292e42]" />
+                                <div className="my-1 border-t border-[var(--border)]" />
                                 <button
                                   onClick={() => handleRemoveMember(member.id)}
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-[#292e42]"
+                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-[var(--border)]"
                                 >
                                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -522,7 +522,7 @@ export function VaultsPage() {
                     );
                   })}
                 {members.filter((m) => m.status === 'pending').length > 0 && (
-                  <div className="flex items-center rounded-lg border border-dashed border-[#292e42] px-3 py-2 text-xs text-[#565f89]">
+                  <div className="flex items-center rounded-lg border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--fg-subtle)]">
                     {members.filter((m) => m.status === 'pending').length} pending invite(s)
                   </div>
                 )}

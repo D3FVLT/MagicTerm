@@ -111,13 +111,13 @@ export function TextEditorModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div
-        className="flex h-[80vh] w-[80vw] max-w-4xl flex-col rounded-xl border border-[#292e42] bg-[#1f2335] shadow-2xl"
+        className="flex h-[80vh] w-[80vw] max-w-4xl flex-col rounded-xl border border-[var(--border)] bg-[var(--surface-1)] shadow-2xl"
         onKeyDown={handleKeyDown}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#292e42] px-4 py-3">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
           <div className="flex items-center gap-2">
-            <svg className="h-5 w-5 text-[#7aa2f7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -125,14 +125,14 @@ export function TextEditorModal({
                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
               />
             </svg>
-            <span className="font-medium text-[#c0caf5]">{filename}</span>
-            {hasChanges && <span className="text-xs text-[#e0af68]">(modified)</span>}
+            <span className="font-medium text-[var(--fg)]">{filename}</span>
+            {hasChanges && <span className="text-xs text-[var(--warning)]">(modified)</span>}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#565f89]">Cmd/Ctrl+S to save</span>
+            <span className="text-xs text-[var(--fg-subtle)]">Cmd/Ctrl+S to save</span>
             <button
               onClick={handleClose}
-              className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+              className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
             >
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -151,8 +151,8 @@ export function TextEditorModal({
           {isLoading ? (
             <div className="flex h-full items-center justify-center">
               <div className="flex flex-col items-center gap-2">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
-                <span className="text-sm text-[#565f89]">Loading file...</span>
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+                <span className="text-sm text-[var(--fg-subtle)]">Loading file...</span>
               </div>
             </div>
           ) : (
@@ -160,15 +160,15 @@ export function TextEditorModal({
               ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="h-full w-full resize-none rounded-lg border border-[#292e42] bg-[#1a1b26] p-4 font-mono text-sm text-[#c0caf5] outline-none focus:border-[#7aa2f7]"
+              className="h-full w-full resize-none rounded-lg border border-[var(--border)] bg-[var(--bg)] p-4 font-mono text-sm text-[var(--fg)] outline-none focus:border-[var(--accent)]"
               spellCheck={false}
             />
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-[#292e42] px-4 py-3">
-          <span className="text-xs text-[#565f89]">{remotePath}</span>
+        <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-3">
+          <span className="text-xs text-[var(--fg-subtle)]">{remotePath}</span>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={handleClose}>
               Cancel

@@ -71,14 +71,11 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
     onClose();
   };
 
-  const copyToClipboard = (text: string, field: string) => {
+  const copyToClipboard = async (text: string, field: string) => {
     if (SECRET_FIELDS.has(field)) {
-      // Auto-clear the system clipboard after 30s so the credential does not
-      // sit there for any pasteboard scraper to grab. Plain identifiers
-      // (host, username) get the regular non-clearing copy.
-      copySecretToClipboard(text);
+      await copySecretToClipboard(text);
     } else {
-      window.electronAPI.clipboard.writeText(text);
+      await window.electronAPI.clipboard.writeText(text);
     }
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
@@ -139,7 +136,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
       {isDecrypting ? (
         <div className="flex items-center justify-center py-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-          <span className="ml-3 text-gray-400">Decrypting server data...</span>
+          <span className="ml-3 text-fg-muted">Decrypting server data...</span>
         </div>
       ) : (
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -153,20 +150,20 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
 
         <div className="grid grid-cols-3 gap-4">
           <div className="col-span-2 space-y-1">
-            <label className="block text-sm font-medium text-gray-300">Host</label>
+            <label className="block text-sm font-medium text-fg-muted">Host</label>
             <div className="relative">
               <input
                 value={host}
                 onChange={(e) => setHost(e.target.value)}
                 placeholder="192.168.1.100"
                 required
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 pr-9 text-white placeholder-gray-500 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 pr-9 text-fg placeholder-fg-subtle transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               {host && (
                 <button
                   type="button"
                   onClick={() => copyToClipboard(host, 'host')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
                   title="Copy host"
                 >
                   {copiedField === 'host' ? (
@@ -194,20 +191,20 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-300">Username</label>
+          <label className="block text-sm font-medium text-fg-muted">Username</label>
           <div className="relative">
             <input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="root"
               required
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 pr-9 text-white placeholder-gray-500 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 pr-9 text-fg placeholder-fg-subtle transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
             {username && (
               <button
                 type="button"
                 onClick={() => copyToClipboard(username, 'username')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 hover:text-gray-300 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
                 title="Copy username"
               >
                 {copiedField === 'username' ? (
@@ -236,21 +233,21 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
 
         {authType === 'password' ? (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">Password</label>
+            <label className="block text-sm font-medium text-fg-muted">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password || (showPassword ? currentCredentials : '')}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={currentCredentials ? 'Leave empty to keep current' : 'Enter password'}
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 pr-16 text-white placeholder-gray-500 transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 pr-16 text-fg placeholder-fg-subtle transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               {currentCredentials && (
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                   <button
                     type="button"
                     onClick={() => copyToClipboard(currentCredentials, 'password')}
-                    className="rounded p-1 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
                     title="Copy current password"
                   >
                     {copiedField === 'password' ? (
@@ -266,7 +263,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="rounded p-1 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
                     title={showPassword ? 'Hide password' : 'Show current password'}
                   >
                     {showPassword ? (
@@ -287,14 +284,14 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
         ) : (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-300">
+              <label className="block text-sm font-medium text-fg-muted">
                 Private Key
               </label>
               {currentCredentials && (
                 <button
                   type="button"
                   onClick={() => copyToClipboard(currentCredentials, 'key')}
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                  className="flex items-center gap-1 text-xs text-fg-subtle hover:text-fg-muted transition-colors"
                 >
                   {copiedField === 'key' ? (
                     <>
@@ -319,7 +316,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
               onChange={(e) => setPrivateKey(e.target.value)}
               placeholder="Leave empty to keep current key"
               rows={5}
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 font-mono text-sm text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 font-mono text-sm text-fg placeholder-fg-subtle focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </div>
         )}

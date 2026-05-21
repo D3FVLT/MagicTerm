@@ -80,7 +80,7 @@ export function InviteMemberModal({ isOpen, onClose }: InviteMemberModalProps) {
           ]}
         />
 
-        <div className="rounded-lg bg-gray-800 p-3 text-sm text-gray-400">
+        <div className="rounded-lg bg-surface-2 p-3 text-sm text-fg-muted">
           The invited user will receive access once they register or sign in with this email.
         </div>
 

@@ -7,8 +7,6 @@ interface SSHSession {
   client: Client;
   stream: ClientChannel | null;
   sender: Electron.WebContents;
-  // ID of the WebContents that opened this session. Used to prevent one
-  // window from interacting with another window's sessions.
   ownerId: number;
 }
 
@@ -20,7 +18,6 @@ function safeSend(sender: Electron.WebContents, channel: string, ...args: unknow
       sender.send(channel, ...args);
     }
   } catch {
-    // Window already destroyed during shutdown
   }
 }
 
@@ -41,7 +38,6 @@ export function cleanupAllSSHSessions(): void {
       session.stream?.close();
       session.client.end();
     } catch {
-      // Ignore errors during cleanup
     }
     sessions.delete(id);
   }
@@ -56,7 +52,6 @@ export function checkSSHSessions(sender: Electron.WebContents): void {
         session.stream?.close();
         session.client.end();
       } catch {
-        // Already dead
       }
       sessions.delete(sessionId);
     }
@@ -80,9 +75,6 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
     async (event, sessionId: string, config: SSHConnectionConfig) => {
       const existing = sessions.get(sessionId);
       if (existing) {
-        // Reusing a session ID is only allowed for the original owner —
-        // otherwise a compromised renderer could hijack another window's
-        // session by guessing/reusing IDs.
         if (existing.ownerId !== event.sender.id) {
           return { success: false, error: 'session_id_in_use' };
         }

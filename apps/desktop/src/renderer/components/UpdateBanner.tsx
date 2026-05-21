@@ -80,7 +80,7 @@ export function UpdateBanner() {
           </span>
           <button
             onClick={() => setDismissed(true)}
-            className="rounded p-1 text-gray-400 hover:bg-gray-800 hover:text-white"
+            className="rounded p-1 text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -110,7 +110,7 @@ export function UpdateBanner() {
           </svg>
 
           {updateStatus.status === 'available' && (
-            <span className="text-sm text-gray-200">
+            <span className="text-sm text-fg">
               Version {updateStatus.info?.version} is available
               {isMac && ' (manual download required)'}
             </span>
@@ -118,10 +118,10 @@ export function UpdateBanner() {
 
           {updateStatus.status === 'downloading' && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-200">
+              <span className="text-sm text-fg">
                 Downloading update... {updateStatus.progress}%
               </span>
-              <div className="h-1.5 w-24 overflow-hidden rounded-full bg-gray-700">
+              <div className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-3">
                 <div
                   className="h-full bg-primary-500 transition-all"
                   style={{ width: `${updateStatus.progress}%` }}
@@ -131,7 +131,7 @@ export function UpdateBanner() {
           )}
 
           {updateStatus.status === 'downloaded' && (
-            <span className="text-sm text-gray-200">
+            <span className="text-sm text-fg">
               Update ready to install (v{updateStatus.info?.version})
             </span>
           )}
@@ -162,7 +162,7 @@ export function UpdateBanner() {
 
           <button
             onClick={() => setDismissed(true)}
-            className="rounded p-1 text-gray-400 hover:bg-gray-800 hover:text-white"
+            className="rounded p-1 text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -178,14 +178,14 @@ export function UpdateBanner() {
 
       {showChangelog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-[#292e42] bg-[#1f2335] shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#292e42] px-4 py-3">
-              <h3 className="text-sm font-semibold text-[#c0caf5]">
+          <div className="flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-[var(--border)] bg-[var(--surface-1)] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+              <h3 className="text-sm font-semibold text-[var(--fg)]">
                 What&apos;s New in v{updateStatus.info?.version || 'next update'}
               </h3>
               <button
                 onClick={() => setShowChangelog(false)}
-                className="rounded p-1 text-[#565f89] hover:bg-[#292e42] hover:text-[#c0caf5]"
+                className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -195,14 +195,14 @@ export function UpdateBanner() {
             <div className="overflow-y-auto px-4 py-3">
               {updateStatus.info?.releaseNotes?.trim() ? (
                 <div
-                  className="release-notes prose-sm text-sm leading-relaxed text-[#c0caf5]"
+                  className="release-notes prose-sm text-sm leading-relaxed text-[var(--fg)]"
                   dangerouslySetInnerHTML={{ __html: updateStatus.info.releaseNotes.trim() }}
                 />
               ) : (
-                <p className="text-sm text-[#565f89]">Changelog is not available for this release.</p>
+                <p className="text-sm text-[var(--fg-subtle)]">Changelog is not available for this release.</p>
               )}
             </div>
-            <div className="flex justify-end border-t border-[#292e42] px-4 py-3">
+            <div className="flex justify-end border-t border-[var(--border)] px-4 py-3">
               <Button size="sm" onClick={() => setShowChangelog(false)}>
                 Close
               </Button>
@@ -244,7 +244,7 @@ export function UpdateButton() {
     <button
       onClick={handleCheck}
       disabled={isChecking}
-      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-400 hover:bg-gray-800 hover:text-white disabled:opacity-50"
+      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-fg-muted hover:bg-surface-2 hover:text-fg disabled:opacity-50"
     >
       <svg
         className={`h-4 w-4 ${isChecking ? 'animate-spin' : ''}`}

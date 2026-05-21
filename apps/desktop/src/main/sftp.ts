@@ -45,19 +45,10 @@ function getOwnedSession(sessionId: string, sender: Electron.WebContents): SFTPS
   return session;
 }
 
-/**
- * Reject paths that contain NUL bytes or that are not absolute. The renderer
- * should never be supplying relative paths or null-terminated strings; either
- * is a sign of crafted input from a compromised renderer trying to traverse
- * outside the user-selected directory or trip native APIs that mishandle NUL.
- */
 function validateLocalPath(p: unknown): string | null {
   if (typeof p !== 'string' || p.length === 0) return null;
   if (p.includes('\0')) return null;
   if (!isAbsolute(p)) return null;
-  // resolvePath collapses `..` segments — call it last so a passed-in
-  // `/tmp/../etc/passwd` is normalised to `/etc/passwd` and the consumer can
-  // make a properly informed decision.
   return resolvePath(normalize(p));
 }
 
@@ -77,7 +68,6 @@ export function cleanupAllSFTPSessions(): void {
       session.sftp.end();
       session.client.end();
     } catch {
-      // Ignore errors during cleanup
     }
     sessions.delete(id);
   }
@@ -85,7 +75,6 @@ export function cleanupAllSFTPSessions(): void {
     try {
       transfer.abort();
     } catch {
-      // Ignore
     }
     activeTransfers.delete(id);
   }

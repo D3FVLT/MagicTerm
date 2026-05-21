@@ -4,6 +4,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Select } from './ui/Select';
 import { useOrganizations } from '../contexts/OrganizationsContext';
+import { useAppTheme } from '../contexts/ThemeContext';
 import { getUserSettings, updateUserSettings } from '@magicterm/supabase-client';
 import type { UserSettings } from '@magicterm/shared';
 import {
@@ -12,6 +13,7 @@ import {
   DEFAULT_TERMINAL_SETTINGS,
   type TerminalSettings,
 } from '../lib/terminal-themes';
+import { APP_THEMES } from '../lib/app-themes';
 
 interface ProxyConfig {
   enabled: boolean;
@@ -38,6 +40,7 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const { organizations } = useOrganizations();
+  const { themeId: appThemeId, setTheme: setAppTheme, themes: appThemes } = useAppTheme();
   const [settings, setSettings] = useState<UserSettings>({ nickname: null, defaultOrgId: null });
   const [proxyConfig, setProxyConfig] = useState<ProxyConfig>(DEFAULT_PROXY);
   const [termSettings, setTermSettings] = useState<TerminalSettings>(DEFAULT_TERMINAL_SETTINGS);
@@ -46,7 +49,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [proxyTestResult, setProxyTestResult] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }>({ status: 'idle' });
-  const [activeTab, setActiveTab] = useState<'general' | 'terminal' | 'proxy'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'terminal' | 'proxy'>('general');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -109,19 +112,19 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       <div className="space-y-4">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
           </div>
         ) : (
           <>
-            <div className="flex gap-1 border-b border-[#292e42]">
-              {(['general', 'terminal', 'proxy'] as const).map((tab) => (
+            <div className="flex gap-1 border-b border-[var(--border)]">
+              {(['general', 'appearance', 'terminal', 'proxy'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-3 py-2 text-xs font-medium capitalize transition-colors ${
                     activeTab === tab
-                      ? 'border-b-2 border-[#7aa2f7] text-[#7aa2f7]'
-                      : 'text-[#565f89] hover:text-[#a9b1d6]'
+                      ? 'border-b-2 border-[var(--accent)] text-[var(--accent)]'
+                      : 'text-[var(--fg-subtle)] hover:text-[var(--fg-muted)]'
                   }`}
                 >
                   {tab}
@@ -132,32 +135,32 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {activeTab === 'general' && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="mb-4 text-sm font-medium text-[#c0caf5]">Profile</h3>
+                  <h3 className="mb-4 text-sm font-medium text-[var(--fg)]">Profile</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="mb-1.5 block text-sm text-[#a9b1d6]">Nickname</label>
+                      <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Nickname</label>
                       <Input
                         value={settings.nickname || ''}
                         onChange={(e) => setSettings({ ...settings, nickname: e.target.value })}
                         placeholder="Enter your nickname (shown instead of email)"
                       />
-                      <p className="mt-1 text-xs text-[#565f89]">
+                      <p className="mt-1 text-xs text-[var(--fg-subtle)]">
                         Your nickname will be displayed to other team members instead of your email address.
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="border-t border-[#292e42] pt-6">
-                  <h3 className="mb-4 text-sm font-medium text-[#c0caf5]">Workspace</h3>
+                <div className="border-t border-[var(--border)] pt-6">
+                  <h3 className="mb-4 text-sm font-medium text-[var(--fg)]">Workspace</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="mb-1.5 block text-sm text-[#a9b1d6]">Default Workspace</label>
+                      <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Default Workspace</label>
                       <Select
                         value={settings.defaultOrgId || ''}
                         onChange={(e) => setSettings({ ...settings, defaultOrgId: e.target.value || null })}
                         options={workspaceOptions}
                       />
-                      <p className="mt-1 text-xs text-[#565f89]">
+                      <p className="mt-1 text-xs text-[var(--fg-subtle)]">
                         This workspace will be selected automatically when you open the app.
                       </p>
                     </div>
@@ -166,10 +169,73 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
+            {activeTab === 'appearance' && (
+              <div className="space-y-5">
+                <div>
+                  <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">App theme</label>
+                  <p className="mb-3 text-xs text-[var(--fg-subtle)]">
+                    Switching the app theme also updates the terminal palette to a paired theme. You can override the terminal theme separately below.
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {appThemes.map((t) => {
+                      const isActive = appThemeId === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            setAppTheme(t.id);
+                            const previousAppTheme = APP_THEMES[appThemeId];
+                            if (
+                              previousAppTheme &&
+                              termSettings.themeId === previousAppTheme.defaultTerminalThemeId
+                            ) {
+                              setTermSettings({
+                                ...termSettings,
+                                themeId: t.defaultTerminalThemeId,
+                              });
+                              window.dispatchEvent(new Event('terminal-settings-changed'));
+                            }
+                          }}
+                          className={`flex flex-col gap-2 rounded-lg border p-3 text-left transition-colors ${
+                            isActive
+                              ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                              : 'border-[var(--border)] hover:border-[var(--border-strong)]'
+                          }`}
+                        >
+                          <div
+                            className="flex h-10 overflow-hidden rounded"
+                            style={{ backgroundColor: t.preview.bg }}
+                          >
+                            <div className="flex-1" style={{ backgroundColor: t.preview.surface }} />
+                            <div className="flex-1" style={{ backgroundColor: t.preview.bg }} />
+                            <div
+                              className="w-1.5 self-center mx-1 h-5 rounded-sm"
+                              style={{ backgroundColor: t.preview.accent }}
+                            />
+                            <div
+                              className="flex-1 self-center text-[10px] font-mono px-1"
+                              style={{ color: t.preview.text }}
+                            >
+                              Aa
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-[var(--fg)]">{t.name}</div>
+                            <div className="text-xs text-[var(--fg-subtle)]">{t.description}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'terminal' && (
               <div className="space-y-5">
                 <div>
-                  <label className="mb-1.5 block text-sm text-[#a9b1d6]">Theme</label>
+                  <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Theme</label>
                   <div className="grid grid-cols-2 gap-2">
                     {Object.entries(TERMINAL_THEMES).map(([id, theme]) => (
                       <button
@@ -177,8 +243,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         onClick={() => setTermSettings({ ...termSettings, themeId: id })}
                         className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
                           termSettings.themeId === id
-                            ? 'border-[#7aa2f7] bg-[#7aa2f7]/10'
-                            : 'border-[#292e42] hover:border-[#414868]'
+                            ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                            : 'border-[var(--border)] hover:border-[var(--border-strong)]'
                         }`}
                       >
                         <div className="flex gap-0.5">
@@ -186,14 +252,14 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             <div key={i} className="h-3 w-3 rounded-sm" style={{ backgroundColor: c }} />
                           ))}
                         </div>
-                        <span className="text-[#c0caf5] truncate">{theme.name}</span>
+                        <span className="text-[var(--fg)] truncate">{theme.name}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div
-                  className="overflow-hidden rounded-lg border border-[#292e42] p-3 font-mono text-xs leading-relaxed"
+                  className="overflow-hidden rounded-lg border border-[var(--border)] p-3 font-mono text-xs leading-relaxed"
                   style={{
                     backgroundColor: currentTheme.background,
                     color: currentTheme.foreground,
@@ -241,11 +307,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm text-[#a9b1d6]">Font Family</label>
+                  <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Font Family</label>
                   <select
                     value={termSettings.fontFamily}
                     onChange={(e) => setTermSettings({ ...termSettings, fontFamily: e.target.value })}
-                    className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] outline-none focus:border-[#7aa2f7]"
+                    className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none focus:border-[var(--accent)]"
                   >
                     {FONT_OPTIONS.map((f) => (
                       <option key={f.label} value={f.value}>{f.label}</option>
@@ -255,7 +321,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label className="mb-1.5 block text-sm text-[#a9b1d6]">Font Size</label>
+                    <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Font Size</label>
                     <div className="flex items-center gap-3">
                       <input
                         type="range"
@@ -263,13 +329,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         max={24}
                         value={termSettings.fontSize}
                         onChange={(e) => setTermSettings({ ...termSettings, fontSize: Number(e.target.value) })}
-                        className="flex-1 accent-[#7aa2f7]"
+                        className="flex-1 accent-[var(--accent)]"
                       />
-                      <span className="w-8 text-center text-sm text-[#c0caf5]">{termSettings.fontSize}</span>
+                      <span className="w-8 text-center text-sm text-[var(--fg)]">{termSettings.fontSize}</span>
                     </div>
                   </div>
                   <div className="flex-1">
-                    <label className="mb-1.5 block text-sm text-[#a9b1d6]">Line Height</label>
+                    <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Line Height</label>
                     <div className="flex items-center gap-3">
                       <input
                         type="range"
@@ -277,20 +343,20 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         max={18}
                         value={Math.round(termSettings.lineHeight * 10)}
                         onChange={(e) => setTermSettings({ ...termSettings, lineHeight: Number(e.target.value) / 10 })}
-                        className="flex-1 accent-[#7aa2f7]"
+                        className="flex-1 accent-[var(--accent)]"
                       />
-                      <span className="w-8 text-center text-sm text-[#c0caf5]">{termSettings.lineHeight.toFixed(1)}</span>
+                      <span className="w-8 text-center text-sm text-[var(--fg)]">{termSettings.lineHeight.toFixed(1)}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <label className="mb-1.5 block text-sm text-[#a9b1d6]">Cursor Style</label>
+                    <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Cursor Style</label>
                     <select
                       value={termSettings.cursorStyle}
                       onChange={(e) => setTermSettings({ ...termSettings, cursorStyle: e.target.value as TerminalSettings['cursorStyle'] })}
-                      className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] outline-none focus:border-[#7aa2f7]"
+                      className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none focus:border-[var(--accent)]"
                     >
                       <option value="bar">Bar</option>
                       <option value="block">Block</option>
@@ -298,7 +364,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </select>
                   </div>
                   <div className="flex-1">
-                    <label className="mb-1.5 block text-sm text-[#a9b1d6]">Scrollback</label>
+                    <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Scrollback</label>
                     <input
                       type="number"
                       min={1000}
@@ -306,7 +372,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       step={1000}
                       value={termSettings.scrollback}
                       onChange={(e) => setTermSettings({ ...termSettings, scrollback: Number(e.target.value) })}
-                      className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] outline-none focus:border-[#7aa2f7]"
+                      className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none focus:border-[var(--accent)]"
                     />
                   </div>
                 </div>
@@ -316,9 +382,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     type="checkbox"
                     checked={termSettings.cursorBlink}
                     onChange={(e) => setTermSettings({ ...termSettings, cursorBlink: e.target.checked })}
-                    className="h-4 w-4 rounded border-[#414868] bg-[#1a1b26] text-[#7aa2f7] focus:ring-[#7aa2f7] focus:ring-offset-0"
+                    className="h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--bg)] text-[var(--accent)] focus:ring-[var(--accent)] focus:ring-offset-0"
                   />
-                  <span className="text-sm text-[#a9b1d6]">Cursor blink</span>
+                  <span className="text-sm text-[var(--fg-muted)]">Cursor blink</span>
                 </label>
               </div>
             )}
@@ -330,19 +396,19 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     type="checkbox"
                     checked={proxyConfig.enabled}
                     onChange={(e) => setProxyConfig({ ...proxyConfig, enabled: e.target.checked })}
-                    className="h-4 w-4 rounded border-[#414868] bg-[#1a1b26] text-[#7aa2f7] focus:ring-[#7aa2f7] focus:ring-offset-0"
+                    className="h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--bg)] text-[var(--accent)] focus:ring-[var(--accent)] focus:ring-offset-0"
                   />
-                  <span className="text-sm text-[#a9b1d6]">Enable proxy</span>
+                  <span className="text-sm text-[var(--fg-muted)]">Enable proxy</span>
                 </label>
 
                 {proxyConfig.enabled && (
                   <>
                     <div>
-                      <label className="mb-1.5 block text-sm text-[#a9b1d6]">Type</label>
+                      <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Type</label>
                       <select
                         value={proxyConfig.type}
                         onChange={(e) => setProxyConfig({ ...proxyConfig, type: e.target.value as 'http' | 'socks5' })}
-                        className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] outline-none focus:border-[#7aa2f7]"
+                        className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none focus:border-[var(--accent)]"
                       >
                         <option value="http">HTTP</option>
                         <option value="socks5">SOCKS5</option>
@@ -351,43 +417,43 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                     <div className="flex gap-3">
                       <div className="flex-1">
-                        <label className="mb-1.5 block text-sm text-[#a9b1d6]">Host</label>
+                        <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Host</label>
                         <input
                           type="text"
                           value={proxyConfig.host}
                           onChange={(e) => setProxyConfig({ ...proxyConfig, host: e.target.value })}
                           placeholder="127.0.0.1"
-                          className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none focus:border-[#7aa2f7]"
+                          className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none focus:border-[var(--accent)]"
                         />
                       </div>
                       <div className="w-24">
-                        <label className="mb-1.5 block text-sm text-[#a9b1d6]">Port</label>
+                        <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Port</label>
                         <input
                           type="number"
                           value={proxyConfig.port}
                           onChange={(e) => setProxyConfig({ ...proxyConfig, port: Number(e.target.value) })}
-                          className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] outline-none focus:border-[#7aa2f7]"
+                          className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none focus:border-[var(--accent)]"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm text-[#a9b1d6]">Username (optional)</label>
+                      <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Username (optional)</label>
                       <input
                         type="text"
                         value={proxyConfig.username}
                         onChange={(e) => setProxyConfig({ ...proxyConfig, username: e.target.value })}
-                        className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none focus:border-[#7aa2f7]"
+                        className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none focus:border-[var(--accent)]"
                       />
                     </div>
 
                     <div>
-                      <label className="mb-1.5 block text-sm text-[#a9b1d6]">Password (optional)</label>
+                      <label className="mb-1.5 block text-sm text-[var(--fg-muted)]">Password (optional)</label>
                       <input
                         type="password"
                         value={proxyConfig.password}
                         onChange={(e) => setProxyConfig({ ...proxyConfig, password: e.target.value })}
-                        className="w-full rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-2 text-sm text-[#c0caf5] placeholder-[#565f89] outline-none focus:border-[#7aa2f7]"
+                        className="w-full rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none focus:border-[var(--accent)]"
                       />
                     </div>
                   </>
@@ -407,18 +473,18 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       setTimeout(() => setProxyTestResult({ status: 'idle' }), 5000);
                     }}
                     disabled={proxyTestResult.status === 'testing'}
-                    className="rounded-lg border border-[#414868] bg-[#1a1b26] px-3 py-1.5 text-xs font-medium text-[#c0caf5] transition-colors hover:border-[#7aa2f7] hover:text-[#7aa2f7] disabled:opacity-50"
+                    className="rounded-lg border border-[var(--border-strong)] bg-[var(--bg)] px-3 py-1.5 text-xs font-medium text-[var(--fg)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
                   >
                     {proxyTestResult.status === 'testing' ? 'Testing...' : 'Test Connection'}
                   </button>
                   {proxyTestResult.status === 'ok' && (
-                    <span className="text-xs text-[#9ece6a]">{proxyTestResult.message}</span>
+                    <span className="text-xs text-[var(--success)]">{proxyTestResult.message}</span>
                   )}
                   {proxyTestResult.status === 'fail' && (
                     <span className="text-xs text-red-400">{proxyTestResult.message}</span>
                   )}
                 </div>
-                <p className="text-xs text-[#565f89]">
+                <p className="text-xs text-[var(--fg-subtle)]">
                   Proxy applies to app traffic (authentication, updates).
                 </p>
               </div>
@@ -436,7 +502,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            <div className="flex justify-end gap-3 border-t border-[#292e42] pt-4">
+            <div className="flex justify-end gap-3 border-t border-[var(--border)] pt-4">
               <Button variant="secondary" onClick={onClose}>
                 Close
               </Button>

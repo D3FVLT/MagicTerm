@@ -43,7 +43,7 @@ export function TopBar() {
 
   return (
     <>
-      <div className="drag-region flex h-11 flex-shrink-0 items-center border-b border-[#292e42] bg-[#1f2335]">
+      <div className="drag-region flex h-11 flex-shrink-0 items-center border-b border-[var(--border)] bg-[var(--surface-1)]">
         {/* macOS traffic lights spacing */}
         <div className="w-[78px] flex-shrink-0" />
 
@@ -52,8 +52,8 @@ export function TopBar() {
           onClick={() => setActiveView('vaults')}
           className={`no-drag flex h-full items-center gap-2 border-b-2 px-4 text-sm font-medium transition-colors ${
             activeView === 'vaults'
-              ? 'border-[#7aa2f7] text-[#dce0f5]'
-              : 'border-transparent text-[#787c99] hover:text-[#c0caf5]'
+              ? 'border-[var(--accent)] text-[var(--fg)]'
+              : 'border-transparent text-[var(--fg-subtle)] hover:text-[var(--fg)]'
           }`}
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,7 +78,7 @@ export function TopBar() {
               ? 'bg-yellow-500 animate-pulse'
               : sessionStatus === 'error'
               ? 'bg-red-500'
-              : 'bg-gray-500';
+              : 'bg-fg-subtle';
 
             return (
               <button
@@ -86,8 +86,8 @@ export function TopBar() {
                 onClick={() => setActiveView(tab.rootSessionId)}
                 className={`group flex h-full flex-shrink-0 items-center gap-1.5 border-b-2 px-3 text-sm transition-colors ${
                   isActive
-                    ? 'border-[#7aa2f7] text-[#dce0f5]'
-                    : 'border-transparent text-[#787c99] hover:text-[#c0caf5]'
+                    ? 'border-[var(--accent)] text-[var(--fg)]'
+                    : 'border-transparent text-[var(--fg-subtle)] hover:text-[var(--fg)]'
                 }`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${statusColor}`} />
@@ -103,7 +103,7 @@ export function TopBar() {
                     e.stopPropagation();
                     disconnect(tab.rootSessionId);
                   }}
-                  className="ml-0.5 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[#292e42]"
+                  className="ml-0.5 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--border)]"
                   title="Close"
                 >
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,11 +121,11 @@ export function TopBar() {
         {/* Right side: org indicator + user */}
         <div className="no-drag flex items-center gap-2 pr-4">
           {currentOrg && (
-            <div className="flex items-center gap-1.5 rounded-md bg-[#292e42] px-2 py-1">
+            <div className="flex items-center gap-1.5 rounded-md bg-[var(--border)] px-2 py-1">
               <div className="flex h-4 w-4 items-center justify-center rounded bg-primary-500/20 text-[10px] font-medium text-primary-400">
                 {currentOrg.name[0].toUpperCase()}
               </div>
-                   <span className="text-xs text-[#787c99]">{currentOrg.name}</span>
+                   <span className="text-xs text-[var(--fg-subtle)]">{currentOrg.name}</span>
             </div>
           )}
 
@@ -133,26 +133,26 @@ export function TopBar() {
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-medium text-white uppercase transition-opacity hover:opacity-90"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-medium text-fg uppercase transition-opacity hover:opacity-90"
               title={displayName}
             >
               {displayName[0]}
             </button>
 
             {showUserMenu && (
-              <div className="animate-slide-down absolute right-0 top-full mt-2 z-50 min-w-[200px] rounded-lg border border-[#292e42] bg-[#1f2335] py-1 shadow-xl">
-                <div className="border-b border-[#292e42] px-3 py-2">
-                  <div className="text-sm text-[#c0caf5]">{displayName}</div>
-                  <div className="text-xs text-[#565f89]">v{__APP_VERSION__}</div>
+              <div className="animate-slide-down absolute right-0 top-full mt-2 z-50 min-w-[200px] rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-xl">
+                <div className="border-b border-[var(--border)] px-3 py-2">
+                  <div className="text-sm text-[var(--fg)]">{displayName}</div>
+                  <div className="text-xs text-[var(--fg-subtle)]">v{__APP_VERSION__}</div>
                 </div>
                 <button
                   onClick={() => {
                     setShowSettingsModal(true);
                     setShowUserMenu(false);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
                 >
-                  <svg className="h-4 w-4 text-[#565f89]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
@@ -163,20 +163,20 @@ export function TopBar() {
                     window.electronAPI.updater.check();
                     setShowUserMenu(false);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[#c0caf5] hover:bg-[#292e42]"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
                 >
-                  <svg className="h-4 w-4 text-[#565f89]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-4 w-4 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
                   Check for Updates
                 </button>
-                <div className="my-1 border-t border-[#292e42]" />
+                <div className="my-1 border-t border-[var(--border)]" />
                 <button
                   onClick={() => {
                     logout();
                     setShowUserMenu(false);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-[#292e42]"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-[var(--border)]"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

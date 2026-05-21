@@ -322,16 +322,16 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
 
   if (isConnecting) {
     return (
-      <div className="flex h-full flex-col bg-[#1a1b26]">
-        <div className="drag-region flex h-10 items-center border-b border-[#292e42] bg-[#1f2335] px-4">
-          <span className="text-sm font-medium text-[#c0caf5]">
+      <div className="flex h-full flex-col bg-[var(--bg)]">
+        <div className="drag-region flex h-10 items-center border-b border-[var(--border)] bg-[var(--surface-1)] px-4">
+          <span className="text-sm font-medium text-[var(--fg)]">
             {serverName || 'SFTP'} - Connecting...
           </span>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#7aa2f7] border-t-transparent" />
-            <p className="text-[#565f89]">Connecting to server...</p>
+            <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+            <p className="text-[var(--fg-subtle)]">Connecting to server...</p>
           </div>
         </div>
       </div>
@@ -340,9 +340,9 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
 
   if (connectionError) {
     return (
-      <div className="flex h-full flex-col bg-[#1a1b26]">
-        <div className="drag-region flex h-10 items-center border-b border-[#292e42] bg-[#1f2335] px-4">
-          <span className="text-sm font-medium text-[#c0caf5]">
+      <div className="flex h-full flex-col bg-[var(--bg)]">
+        <div className="drag-region flex h-10 items-center border-b border-[var(--border)] bg-[var(--surface-1)] px-4">
+          <span className="text-sm font-medium text-[var(--fg)]">
             {serverName || 'SFTP'} - Connection Failed
           </span>
         </div>
@@ -353,7 +353,7 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <p className="mb-2 text-[#c0caf5]">Connection failed</p>
+            <p className="mb-2 text-[var(--fg)]">Connection failed</p>
             <p className="text-sm text-red-400">{connectionError}</p>
           </div>
         </div>
@@ -362,14 +362,14 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-[#1a1b26]">
+    <div className="flex h-full flex-col bg-[var(--bg)]">
       {/* Header */}
-      <div className="drag-region flex h-10 items-center justify-between border-b border-[#292e42] bg-[#1f2335] px-4">
+      <div className="drag-region flex h-10 items-center justify-between border-b border-[var(--border)] bg-[var(--surface-1)] px-4">
         <div className="flex items-center gap-2">
           <div className="flex h-3 w-3 items-center justify-center rounded-full bg-green-500">
             <div className="h-1.5 w-1.5 rounded-full bg-green-300 animate-pulse" />
           </div>
-          <span className="text-sm font-medium text-[#c0caf5]">
+          <span className="text-sm font-medium text-[var(--fg)]">
             {serverName || 'SFTP'}
           </span>
         </div>
@@ -405,7 +405,7 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
 
         {/* Splitter */}
         <div
-          className="relative w-1 cursor-col-resize bg-[#292e42] hover:bg-[#7aa2f7]/50 transition-colors"
+          className="relative w-1 cursor-col-resize bg-[var(--border)] hover:bg-[var(--accent)]/50 transition-colors"
           onMouseDown={handleSplitterMouseDown}
         >
           <div className="absolute inset-y-0 -left-1 -right-1" />
@@ -458,7 +458,7 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
           <div className="fixed inset-0 z-50 bg-black/60" onClick={() => resolveUploadConflict('cancel')} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-              className="w-full max-w-xl rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl"
+              className="w-full max-w-xl rounded-xl border border-edge bg-surface-1 p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-3 flex items-center gap-3">
@@ -468,25 +468,25 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-100">File already exists</h3>
-                  <p className="text-sm text-gray-400">Choose what to do with the server version.</p>
+                  <h3 className="text-lg font-semibold text-fg">File already exists</h3>
+                  <p className="text-sm text-fg-muted">Choose what to do with the server version.</p>
                 </div>
               </div>
 
-              <p className="mb-4 text-sm text-gray-300">
-                <span className="font-medium text-gray-100">{uploadConflict.localFile.name}</span> exists on the server:
-                <span className="ml-2 font-mono text-gray-400">{uploadConflict.remoteFilePath}</span>
+              <p className="mb-4 text-sm text-fg-muted">
+                <span className="font-medium text-fg">{uploadConflict.localFile.name}</span> exists on the server:
+                <span className="ml-2 font-mono text-fg-muted">{uploadConflict.remoteFilePath}</span>
               </p>
 
-              <div className="space-y-2 rounded-lg border border-gray-700 bg-gray-800/30 p-3 text-sm text-gray-300">
+              <div className="space-y-2 rounded-lg border border-edge bg-surface-2/30 p-3 text-sm text-fg-muted">
                 <div className="flex items-start justify-between gap-3">
-                  <span className="text-gray-400">Local</span>
+                  <span className="text-fg-muted">Local</span>
                   <span className="text-right">
                     {formatBytes(uploadConflict.localFile.size)} · {formatDate(uploadConflict.localFile.modifiedAt)}
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
-                  <span className="text-gray-400">Server</span>
+                  <span className="text-fg-muted">Server</span>
                   <span className="text-right">
                     {formatBytes(uploadConflict.remoteFile.size)} · {formatDate(uploadConflict.remoteFile.modifiedAt)}
                   </span>
@@ -496,19 +496,19 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
               <div className="mt-5 flex justify-end gap-3">
                 <button
                   onClick={() => resolveUploadConflict('skip')}
-                  className="rounded-lg bg-gray-800 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-700"
+                  className="rounded-lg bg-surface-2 px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-surface-3"
                 >
                   Skip
                 </button>
                 <button
                   onClick={() => resolveUploadConflict('replace')}
-                  className="rounded-lg bg-[#7aa2f7] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6b8fd6]"
+                  className="rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-[var(--accent-hover)]"
                 >
                   Replace
                 </button>
                 <button
                   onClick={() => resolveUploadConflict('cancel')}
-                  className="rounded-lg border border-gray-700 bg-transparent px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800"
+                  className="rounded-lg border border-edge bg-transparent px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-surface-2"
                 >
                   Cancel
                 </button>

@@ -20,10 +20,6 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-// Initialize Supabase once at module level to avoid multiple instances. We
-// hand the client a custom storage adapter that proxies through Electron's
-// safeStorage (via IPC). This stops the refresh token from sitting in
-// localStorage as plain JSON where any renderer-side script can read it.
 const supabaseStorage = {
   getItem: async (key: string) => {
     try {
@@ -37,15 +33,12 @@ const supabaseStorage = {
     try {
       await window.electronAPI.secureStorage.set(key, value);
     } catch {
-      // Swallow: if the OS keychain is unavailable we accept that the
-      // session won't persist across launches rather than crashing.
     }
   },
   removeItem: async (key: string) => {
     try {
       await window.electronAPI.secureStorage.remove(key);
     } catch {
-      // Ignore
     }
   },
 };
@@ -98,8 +91,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasMasterKey, setHasMasterKey] = useState(false);
-  // Renderer no longer caches the verifier itself; it only tracks whether
-  // a verifier exists somewhere (local store, cloud sync, or main cache).
   const [hasVerifier, setHasVerifier] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
 
@@ -124,19 +115,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(currentSession);
         setUser(currentUser);
 
-        // Local availability check first — main process knows whether it has
-        // a verifier cached (from prior session) without leaking the value.
         try {
           const authStatus = await window.electronAPI.auth.getStatus();
           if (!cancelled && authStatus.hasMasterKey) {
             setHasVerifier(true);
           }
         } catch {
-          // Ignore local storage errors
         }
 
-        // Cloud sync: pull the verifier and immediately hand it to main.
-        // The renderer only retains the boolean "verifier exists" flag.
         if (currentUser && !cancelled) {
           try {
             const cloudVerifier = await getMasterKeyVerifier();
@@ -147,9 +133,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
               setHasVerifier(true);
             }
           } catch {
-            // Cloud sync is optional; main process verifier (if any) still
-            // lets the user unlock locally. Avoid logging the error body
-            // since it can leak Supabase request details.
           }
         }
       } catch (error) {
@@ -170,7 +153,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       
-      // When user signs out, clear master key
       if (event === 'SIGNED_OUT') {
         setHasVerifier(false);
         setHasMasterKey(false);
@@ -199,7 +181,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setHasVerifier(true);
       }
     } catch {
-      // Ignore
     }
 
     if (newUser) {
@@ -210,7 +191,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setHasVerifier(true);
         }
       } catch {
-        // Cloud sync optional, see comment in initialize().
       }
     }
   };
@@ -238,16 +218,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const setupMasterKey = async (masterPassword: string) => {
-    // Hash on main with scrypt; renderer never sees a fast SHA-256 digest
-    // that could be brute-forced offline.
     const result = await window.electronAPI.masterKey.createVerifier(masterPassword);
     if (!result.success || !result.verifier) {
       throw new Error(result.error || 'Failed to derive master key verifier');
     }
 
-    // Sync the strong verifier to Supabase so other devices benefit. It is
-    // safe to send: it is salted + scrypt and useless without a working
-    // brute-force budget.
     await setMasterKeyVerifierInSupabase(result.verifier);
 
     cryptoManager.setMasterPassword(masterPassword);
@@ -266,19 +241,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     cryptoManager.setMasterPassword(masterPassword);
     setHasMasterKey(true);
 
-    // Transparent migration:
-    //   - Path A (main upgraded a legacy SHA-256 row to scrypt locally): mirror
-    //     the new strong verifier into the cloud sync row.
-    //   - Path B (cloud profile still has a scrypt verifier in the legacy
-    //     master_key_hash column, written by an earlier build): move it into
-    //     master_key_verifier so the legacy column can finally be retired.
-    // Both paths are idempotent — once master_key_verifier is set and the
-    // legacy column is null, neither branch fires again.
     if (result.upgraded && result.verifier) {
       try {
         await setMasterKeyVerifierInSupabase(result.verifier);
       } catch {
-        // Best-effort; main has the strong verifier locally regardless.
       }
     } else {
       try {
@@ -292,7 +258,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           await setMasterKeyVerifierInSupabase(profile.masterKeyHash);
         }
       } catch {
-        // Cloud realignment is best-effort.
       }
     }
 

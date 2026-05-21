@@ -123,7 +123,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
             type="button"
             onClick={handleImport}
             disabled={importLoading}
-            className="flex items-center gap-1.5 rounded-lg border border-[#414868] px-2.5 py-1.5 text-xs text-[#7aa2f7] transition-colors hover:bg-[#292e42] disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--border-strong)] px-2.5 py-1.5 text-xs text-[var(--accent)] transition-colors hover:bg-[var(--border)] disabled:opacity-50"
           >
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -133,16 +133,16 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
         </div>
 
         {showImport && importHosts.length > 0 && (
-          <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-[#292e42] bg-[#1a1b26] p-2">
+          <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--bg)] p-2">
             {importHosts.map((h, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => fillFromImport(h)}
-                className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs text-[#c0caf5] hover:bg-[#292e42]"
+                className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs text-[var(--fg)] hover:bg-[var(--border)]"
               >
                 <span className="font-medium">{h.name}</span>
-                <span className="text-[#565f89]">{h.username}@{h.host}:{h.port}</span>
+                <span className="text-[var(--fg-subtle)]">{h.username}@{h.host}:{h.port}</span>
               </button>
             ))}
           </div>
@@ -206,7 +206,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
           />
         ) : (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="block text-sm font-medium text-fg-muted">
               Private Key
             </label>
             <textarea
@@ -214,7 +214,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
               onChange={(e) => setPrivateKey(e.target.value)}
               placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
               rows={5}
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 font-mono text-sm text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 font-mono text-sm text-fg placeholder-fg-subtle focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               required
             />
           </div>
