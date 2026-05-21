@@ -1,32 +1,22 @@
-name: Deploy Web
+name: Deploy Web (manual)
 
-# Triggers:
-# - Pushes to `main` that touch the website (or shared workspace files).
-# - Manual dispatch.
+# Cloudflare Workers Builds (Git integration) handles automatic deploys on
+# every push to main. This workflow is a manual fallback — useful if you ever
+# want to redeploy from a fork, a different branch, or without touching
+# Cloudflare's Git integration.
 #
-# This workflow is intentionally separate from release.yml. release.yml
-# triggers only on `v*` tags, so version bumps and tags will keep building
-# the desktop app. Web changes pushed to main will only run THIS workflow,
-# never the desktop release pipeline.
+# To use it, set repository secrets `CLOUDFLARE_API_TOKEN` and
+# `CLOUDFLARE_ACCOUNT_ID`, then trigger from the Actions tab.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - '.github/workflows/web-deploy.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  deployments: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Build and deploy to Cloudflare Pages
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,15 +32,14 @@ jobs:
           node-version: '20'
           cache: 'pnpm'
 
-      - name: Install dependencies (web only)
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter @magicterm/web...
 
       - name: Build site
         run: pnpm --filter @magicterm/web build
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/dist --project-name=magicterm --branch=main
+      - name: Deploy with Wrangler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter @magicterm/web exec wrangler deploy
