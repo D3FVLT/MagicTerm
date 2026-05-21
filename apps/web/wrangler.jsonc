@@ -1,0 +1,16 @@
+// Cloudflare Workers + Static Assets config (the successor to Pages).
+// `wrangler deploy` runs from this directory and uploads ./dist as static
+// assets served from a Worker on the magicterm.<acct>.workers.dev hostname
+// (or a custom domain once you bind one).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "magicterm",
+  "compatibility_date": "2026-05-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
