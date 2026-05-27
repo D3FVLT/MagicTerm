@@ -75,6 +75,7 @@ about **supply-chain trust**, not the runtime security model.
 
 ## Recently shipped
 
+- ✅ **v0.5.4** — terminal hardening: explicit TOFU host-key prompts (no more silent trust on first connect), keyboard shortcuts cheatsheet modal, fixes for long-command rendering and `nano` redraws on retina macOS, Ctrl+R/Ctrl+L/Ctrl+C and other readline shortcuts now work on non-Latin keyboard layouts (Cyrillic, German, Greek, …).
 - ✅ **v0.5.3** — auth-flow polish: registration confirmation banner, password reset, account deletion with org ownership transfer, donate link, branded email templates, recovery from stale/deleted-account sessions.
 - ✅ **v0.5.2** — theme persistence fix.
 - ✅ **v0.5.1** — three app themes (Midnight / Onyx / Daylight) with paired terminal palettes; clipboard + proxy fixes after the security audit.

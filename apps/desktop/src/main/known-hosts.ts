@@ -30,12 +30,14 @@ export type HostKeyDecision =
   | { kind: 'mismatch'; fingerprint: string; storedFingerprint: string };
 
 /**
- * Decision logic used by the ssh2 hostVerifier callback. We default to
- * trust-on-first-use (TOFU): the first connection to a (host, port) pair
- * silently records its fingerprint. Subsequent connections must match.
+ * Pure decision logic for the ssh2 hostVerifier callback. Does NOT mutate
+ * the trusted-hosts map — every first-time host now requires explicit
+ * confirmation in the renderer (see ssh.ts / HostKeyDialog.tsx).
  *
- * The IPC handlers below let the renderer query/clear/trust fingerprints
- * and present an explicit confirmation UI on mismatch (future work).
+ * Returns:
+ *  - 'trusted'  — fingerprint matches a previously trusted entry
+ *  - 'unknown'  — first time we see (host, port); renderer must prompt
+ *  - 'mismatch' — fingerprint changed since last connection; possible MITM
  */
 export function evaluateHostKey(host: string, port: number, key: Buffer): HostKeyDecision {
   const id = `${host.toLowerCase()}:${port}`;
@@ -44,8 +46,6 @@ export function evaluateHostKey(host: string, port: number, key: Buffer): HostKe
   const existing = map[id];
 
   if (!existing) {
-    map[id] = { fingerprint, addedAt: new Date().toISOString() };
-    writeMap(map);
     return { kind: 'unknown', fingerprint };
   }
 

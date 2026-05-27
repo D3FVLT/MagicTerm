@@ -3,6 +3,8 @@ import { FilePanel } from './FilePanel';
 import { TransferPanel } from './TransferPanel';
 import { TextEditorModal } from './TextEditorModal';
 import type { FileEntry, TransferProgress, SSHConnectionConfig } from '@magicterm/shared';
+import { useHostKey } from '../contexts/HostKeyContext';
+import type { SftpConnectResult } from '../types/electron';
 
 interface SFTPViewProps {
   sessionId: string;
@@ -41,6 +43,8 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
   const uploadConflictResolver = useRef<((d: UploadConflictDecision) => void) | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const { verifyHostKey } = useHostKey();
+
   const formatBytes = (bytes: number): string => {
     if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
     const k = 1024;
@@ -66,13 +70,28 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
       setIsConnecting(true);
       setConnectionError(null);
       try {
-        const result = await window.electronAPI.sftp.connect(sessionId, config);
-        if (result.success) {
+        let result: SftpConnectResult | null = null;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          result = await window.electronAPI.sftp.connect(sessionId, config);
+          if (result.success) break;
+          if ('code' in result) {
+            const trusted = await verifyHostKey(result);
+            if (!trusted) {
+              setConnectionError('Host key verification cancelled');
+              return;
+            }
+            continue;
+          }
+          break;
+        }
+        if (result && result.success) {
           const initialPath = result.homePath || '/';
           setRemotePath(initialPath);
           loadRemoteDir(initialPath);
-        } else {
+        } else if (result && 'error' in result) {
           setConnectionError(result.error || 'Failed to connect');
+        } else {
+          setConnectionError('Failed to connect');
         }
       } catch (err) {
         setConnectionError((err as Error).message);
@@ -95,7 +114,7 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
     return () => {
       window.electronAPI.sftp.disconnect(sessionId);
     };
-  }, [sessionId, config]);
+  }, [sessionId, config, verifyHostKey]);
 
   useEffect(() => {
     const unsubscribe = window.electronAPI.sftp.onProgress((progress) => {

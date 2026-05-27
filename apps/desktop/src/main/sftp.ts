@@ -91,6 +91,17 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
 
       return new Promise((resolve, reject) => {
         const client = new Client();
+        let settled = false;
+        const finish = (value: unknown): void => {
+          if (settled) return;
+          settled = true;
+          resolve(value);
+        };
+        const fail = (err: Error): void => {
+          if (settled) return;
+          settled = true;
+          reject(err);
+        };
 
         const authConfig: {
           host: string;
@@ -109,21 +120,35 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           keepaliveCountMax: 3,
           hostVerifier: (key: Buffer) => {
             const decision = evaluateHostKey(config.host, config.port, key);
-            if (decision.kind === 'mismatch') {
-              const err = new Error(
-                `SSH host key mismatch for ${config.host}:${config.port}. ` +
-                  `Expected SHA-256 ${decision.storedFingerprint} but got ${decision.fingerprint}. ` +
-                  'Refusing to connect.'
-              );
-              safeSend(event.sender, IPC_CHANNELS.SFTP_PROGRESS, {
-                sessionId,
-                status: 'error',
-                error: err.message,
-              });
-              reject(err);
-              return false;
-            }
-            return true;
+            if (decision.kind === 'trusted') return true;
+
+            const challenge =
+              decision.kind === 'unknown'
+                ? {
+                    success: false as const,
+                    code: 'host_key_unknown' as const,
+                    host: config.host,
+                    port: config.port,
+                    fingerprint: decision.fingerprint,
+                  }
+                : {
+                    success: false as const,
+                    code: 'host_key_mismatch' as const,
+                    host: config.host,
+                    port: config.port,
+                    fingerprint: decision.fingerprint,
+                    storedFingerprint: decision.storedFingerprint,
+                  };
+
+            finish(challenge);
+            setImmediate(() => {
+              try {
+                client.end();
+              } catch {
+                // ignore — already closing
+              }
+            });
+            return false;
           },
         };
 
@@ -136,25 +161,26 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
         client.on('ready', () => {
           client.sftp((err, sftp) => {
             if (err) {
-              reject(err);
+              fail(err);
               return;
             }
 
             sftp.realpath('.', (realpathErr, absPath) => {
               const homePath = realpathErr ? '/' : absPath;
               sessions.set(sessionId, { client, sftp, ownerId: event.sender.id });
-              resolve({ success: true, homePath });
+              finish({ success: true, homePath });
             });
           });
         });
 
         client.on('error', (err) => {
+          if (settled) return;
           safeSend(event.sender, IPC_CHANNELS.SFTP_PROGRESS, {
             sessionId,
             status: 'error',
             error: err.message,
           });
-          reject(err);
+          fail(err);
         });
 
         client.on('close', () => {

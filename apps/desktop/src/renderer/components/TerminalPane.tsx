@@ -6,6 +6,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { SnippetsPanel } from './SnippetsPanel';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { TERMINAL_THEMES, DEFAULT_TERMINAL_SETTINGS, type TerminalSettings } from '../lib/terminal-themes';
 import { useTerminal } from '../contexts/TerminalContext';
 import '@xterm/xterm/css/xterm.css';
@@ -29,6 +30,9 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
   const [termSettings, setTermSettings] = useState<TerminalSettings>(DEFAULT_TERMINAL_SETTINGS);
   const settingsLoadedRef = useRef(false);
   const [showContextMenu, setShowContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const lastSizeRef = useRef<{ cols: number; rows: number } | null>(null);
+  const resizeRafRef = useRef<number | null>(null);
 
   const { reconnect, splitPane, closePane, setFocusedPane, getSession, tabs } = useTerminal();
   const session = getSession(sessionId);
@@ -36,21 +40,26 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
   const hasMultiplePanes = tab && tab.splitTree.type === 'split';
 
   const syncPtySize = useCallback(() => {
-    if (fitAddonRef.current && terminalRef.current && containerRef.current) {
-      try {
-        fitAddonRef.current.fit();
-        const { cols, rows } = terminalRef.current;
-        if (cols && rows) {
-          window.electronAPI.ssh.resize(sessionId, { cols, rows });
-        }
-      } catch {
-        // Terminal not ready yet
-      }
+    if (!fitAddonRef.current || !terminalRef.current || !containerRef.current) return;
+    try {
+      fitAddonRef.current.fit();
+      const { cols, rows } = terminalRef.current;
+      if (!cols || !rows) return;
+      const last = lastSizeRef.current;
+      if (last && last.cols === cols && last.rows === rows) return;
+      lastSizeRef.current = { cols, rows };
+      window.electronAPI.ssh.resize(sessionId, { cols, rows });
+    } catch {
+      // Terminal not ready yet
     }
   }, [sessionId]);
 
   const handleResize = useCallback(() => {
-    syncPtySize();
+    if (resizeRafRef.current !== null) cancelAnimationFrame(resizeRafRef.current);
+    resizeRafRef.current = requestAnimationFrame(() => {
+      resizeRafRef.current = null;
+      syncPtySize();
+    });
   }, [syncPtySize]);
 
   const handleSearch = useCallback((direction: 'next' | 'prev') => {
@@ -171,52 +180,75 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
     syncPtySize();
     requestAnimationFrame(() => syncPtySize());
 
+
+    const codeToLatin = (code: string): string | null => {
+      if (code.length === 4 && code.startsWith('Key')) {
+        return code.slice(3).toLowerCase();
+      }
+      return null;
+    };
+
     terminal.attachCustomKeyEventHandler((ev) => {
-      if (ev.type === 'keydown') {
-        const key = ev.key.toLowerCase();
-        const hasCtrl = ev.ctrlKey || ev.metaKey;
-        const hasSelection = terminal.hasSelection();
+      if (ev.type !== 'keydown') return true;
 
-        if (hasCtrl && ev.shiftKey && key === 'c') {
-          if (hasSelection) {
-            void window.electronAPI.clipboard.writeText(terminal.getSelection());
-          }
-          ev.preventDefault();
-          return false;
-        }
+      const physical = codeToLatin(ev.code);
+      const hasCtrl = ev.ctrlKey || ev.metaKey;
+      const hasSelection = terminal.hasSelection();
 
-        if (hasCtrl && !ev.shiftKey && key === 'c' && hasSelection) {
+      if (hasCtrl && ev.shiftKey && physical === 'c') {
+        if (hasSelection) {
           void window.electronAPI.clipboard.writeText(terminal.getSelection());
-          ev.preventDefault();
-          return false;
         }
+        ev.preventDefault();
+        return false;
+      }
 
-        if (hasCtrl && ev.shiftKey && key === 'v') {
-          // Read is async (sandboxed preload), so the actual paste happens
-          // after the IPC roundtrip resolves.
-          window.electronAPI.clipboard
-            .readText()
-            .then((result) => {
-              if (result.success && result.text) {
-                void window.electronAPI.ssh.sendData(sessionId, result.text);
-              }
-            })
-            .catch(() => {
-              // Clipboard unavailable — silently drop the paste.
-            });
-          ev.preventDefault();
-          return false;
-        }
+      if (hasCtrl && !ev.shiftKey && physical === 'c' && hasSelection) {
+        void window.electronAPI.clipboard.writeText(terminal.getSelection());
+        ev.preventDefault();
+        return false;
+      }
 
-        if (hasCtrl && key === 'f') {
-          setShowSearch((prev) => {
-            if (!prev) setTimeout(() => searchInputRef.current?.focus(), 50);
-            return !prev;
+      if (hasCtrl && ev.shiftKey && physical === 'v') {
+        window.electronAPI.clipboard
+          .readText()
+          .then((result) => {
+            if (result.success && result.text) {
+              void window.electronAPI.ssh.sendData(sessionId, result.text);
+            }
+          })
+          .catch(() => {
           });
+        ev.preventDefault();
+        return false;
+      }
+
+      if (hasCtrl && physical === 'f') {
+        setShowSearch((prev) => {
+          if (!prev) setTimeout(() => searchInputRef.current?.focus(), 50);
+          return !prev;
+        });
+        ev.preventDefault();
+        return false;
+      }
+
+      if (
+        ev.ctrlKey &&
+        !ev.metaKey &&
+        !ev.altKey &&
+        !ev.shiftKey &&
+        physical &&
+        ev.key.length === 1 &&
+        ev.key.toLowerCase() !== physical
+      ) {
+        const code = physical.charCodeAt(0) - 96;
+        if (code >= 1 && code <= 26) {
+          window.electronAPI.ssh.sendData(sessionId, String.fromCharCode(code));
           ev.preventDefault();
           return false;
         }
       }
+
       return true;
     });
 
@@ -261,6 +293,11 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
       removeDataListener();
       removeStatusListener();
       resizeObserver.disconnect();
+      if (resizeRafRef.current !== null) {
+        cancelAnimationFrame(resizeRafRef.current);
+        resizeRafRef.current = null;
+      }
+      lastSizeRef.current = null;
       terminal.dispose();
     };
   }, [sessionId, handleResize]);
@@ -312,6 +349,19 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
           >
             <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+          </button>
+          {/* Keyboard shortcuts help */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowShortcuts(true);
+            }}
+            className="rounded p-1 text-[var(--fg-subtle)] transition-colors hover:bg-[var(--border)] hover:text-[var(--fg)]"
+            title="Keyboard shortcuts"
+          >
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M8 14h8M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
             </svg>
           </button>
           {hasMultiplePanes && (
@@ -471,6 +521,19 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
               Split Down
               <span className="ml-auto text-[var(--fg-subtle)]">⇧⌘D</span>
             </button>
+            <div className="my-1 border-t border-[var(--border)]" />
+            <button
+              onClick={() => {
+                setShowContextMenu(null);
+                setShowShortcuts(true);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--fg)] hover:bg-[var(--border)]"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M8 14h8M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+              </svg>
+              Keyboard shortcuts
+            </button>
             {hasMultiplePanes && (
               <>
                 <div className="my-1 border-t border-[var(--border)]" />
@@ -491,6 +554,11 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
           </div>
         </>
       )}
+
+      <KeyboardShortcutsModal
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+      />
     </div>
   );
 }
