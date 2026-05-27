@@ -89,6 +89,17 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
 
       return new Promise((resolve, reject) => {
         const client = new Client();
+        let settled = false;
+        const finish = (value: unknown): void => {
+          if (settled) return;
+          settled = true;
+          resolve(value);
+        };
+        const fail = (err: Error): void => {
+          if (settled) return;
+          settled = true;
+          reject(err);
+        };
 
         const authConfig: SshAuthConfig = {
           host: config.host,
@@ -98,17 +109,34 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
           keepaliveCountMax: 3,
           hostVerifier: (key: Buffer) => {
             const decision = evaluateHostKey(config.host, config.port, key);
-            if (decision.kind === 'mismatch') {
-              const err = new Error(
-                `SSH host key mismatch for ${config.host}:${config.port}. ` +
-                  `Expected SHA-256 ${decision.storedFingerprint} but got ${decision.fingerprint}. ` +
-                  'This may indicate a man-in-the-middle attack. Refusing to connect.'
-              );
-              safeSend(event.sender, IPC_CHANNELS.SSH_STATUS, sessionId, 'error', err.message);
-              reject(err);
-              return false;
-            }
-            return true;
+            if (decision.kind === 'trusted') return true;
+
+            const challenge =
+              decision.kind === 'unknown'
+                ? {
+                    success: false as const,
+                    code: 'host_key_unknown' as const,
+                    host: config.host,
+                    port: config.port,
+                    fingerprint: decision.fingerprint,
+                  }
+                : {
+                    success: false as const,
+                    code: 'host_key_mismatch' as const,
+                    host: config.host,
+                    port: config.port,
+                    fingerprint: decision.fingerprint,
+                    storedFingerprint: decision.storedFingerprint,
+                  };
+
+            finish(challenge);
+            setImmediate(() => {
+              try {
+                client.end();
+              } catch {
+              }
+            });
+            return false;
           },
         };
 
@@ -132,39 +160,43 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
               },
             },
             (err, stream) => {
-            if (err) {
-              reject(err);
-              return;
-            }
+              if (err) {
+                fail(err);
+                return;
+              }
 
-            sessions.set(sessionId, {
-              client,
-              stream,
-              sender: event.sender,
-              ownerId: event.sender.id,
-            });
+              sessions.set(sessionId, {
+                client,
+                stream,
+                sender: event.sender,
+                ownerId: event.sender.id,
+              });
 
-            stream.on('data', (data: Buffer) => {
-              safeSend(event.sender, IPC_CHANNELS.SSH_DATA, sessionId, data.toString());
-            });
+              stream.on('data', (data: Buffer) => {
+                safeSend(event.sender, IPC_CHANNELS.SSH_DATA, sessionId, data.toString());
+              });
 
-            stream.on('close', () => {
-              safeSend(event.sender, IPC_CHANNELS.SSH_STATUS, sessionId, 'disconnected');
-              sessions.delete(sessionId);
-            });
+              stream.on('close', () => {
+                safeSend(event.sender, IPC_CHANNELS.SSH_STATUS, sessionId, 'disconnected');
+                sessions.delete(sessionId);
+              });
 
-            stream.stderr.on('data', (data: Buffer) => {
-              safeSend(event.sender, IPC_CHANNELS.SSH_DATA, sessionId, data.toString());
-            });
+              stream.stderr.on('data', (data: Buffer) => {
+                safeSend(event.sender, IPC_CHANNELS.SSH_DATA, sessionId, data.toString());
+              });
 
-            resolve({ success: true });
+              finish({ success: true });
             }
           );
         });
 
         client.on('error', (err) => {
+          // If we already resolved with a host-key challenge (or any other
+          // outcome), ignore the delayed `client-timeout` ssh2 fires after
+          // our hostVerifier returned false.
+          if (settled) return;
           safeSend(event.sender, IPC_CHANNELS.SSH_STATUS, sessionId, 'error', err.message);
-          reject(err);
+          fail(err);
         });
 
         client.on('close', () => {

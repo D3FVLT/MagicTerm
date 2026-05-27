@@ -4,6 +4,7 @@ import { ServersProvider } from './contexts/ServersContext';
 import { TerminalProvider } from './contexts/TerminalContext';
 import { SnippetsProvider } from './contexts/SnippetsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { HostKeyProvider } from './contexts/HostKeyContext';
 import { LoginPage } from './pages/LoginPage';
 import { SetupMasterKeyPage } from './pages/SetupMasterKeyPage';
 import { MainLayout } from './layouts/MainLayout';
@@ -34,9 +35,11 @@ function AppContent() {
     <OrganizationsProvider>
       <ServersProvider>
         <SnippetsProvider>
-          <TerminalProvider>
-            <MainLayout />
-          </TerminalProvider>
+          <HostKeyProvider>
+            <TerminalProvider>
+              <MainLayout />
+            </TerminalProvider>
+          </HostKeyProvider>
         </SnippetsProvider>
       </ServersProvider>
     </OrganizationsProvider>

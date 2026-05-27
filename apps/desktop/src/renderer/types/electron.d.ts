@@ -24,9 +24,33 @@ export interface UpdateStatus {
 
 export type UpdateStatusCallback = (status: UpdateStatus) => void;
 
+export type HostKeyChallenge =
+  | {
+      success: false;
+      code: 'host_key_unknown';
+      host: string;
+      port: number;
+      fingerprint: string;
+    }
+  | {
+      success: false;
+      code: 'host_key_mismatch';
+      host: string;
+      port: number;
+      fingerprint: string;
+      storedFingerprint: string;
+    };
+
+export type SshConnectResult = { success: true } | HostKeyChallenge;
+
+export type SftpConnectResult =
+  | { success: true; homePath: string }
+  | HostKeyChallenge
+  | { success: false; error: string };
+
 export interface ElectronAPI {
   ssh: {
-    connect: (sessionId: string, config: SSHConnectionConfig) => Promise<{ success: boolean }>;
+    connect: (sessionId: string, config: SSHConnectionConfig) => Promise<SshConnectResult>;
     disconnect: (sessionId: string) => Promise<{ success: boolean }>;
     sendData: (sessionId: string, data: string) => Promise<void>;
     resize: (sessionId: string, size: TerminalSize) => Promise<void>;
@@ -98,10 +122,7 @@ export interface ElectronAPI {
     import: () => Promise<{ success: boolean; hosts: { name: string; host: string; port: number; username: string; identityFile?: string }[]; error?: string }>;
   };
   sftp: {
-    connect: (
-      sessionId: string,
-      config: SSHConnectionConfig
-    ) => Promise<{ success: boolean; error?: string; homePath?: string }>;
+    connect: (sessionId: string, config: SSHConnectionConfig) => Promise<SftpConnectResult>;
     disconnect: (sessionId: string) => Promise<{ success: boolean }>;
     list: (
       sessionId: string,

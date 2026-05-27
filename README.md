@@ -2,7 +2,7 @@
 
 Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
 
-![Magic Term](https://img.shields.io/badge/version-0.5.3-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+![Magic Term](https://img.shields.io/badge/version-0.5.4-blue) ![License](https://img.shields.io/badge/license-MIT-green)
 
 Website: [magicterm.app](https://magicterm.app) · Roadmap: [ROADMAP.md](./ROADMAP.md) · Support: [donate ❤️](https://www.donationalerts.com/r/whitenobel)
 

@@ -21,9 +21,24 @@ import { SITE } from '~/data/site';
 
     <section class="release">
       <header class="release__head">
-        <h2>v0.5.3</h2>
+        <h2>v0.5.4</h2>
         <span class="release__date">May 2026</span>
         <span class="release__tag">Latest</span>
+      </header>
+      <ul>
+        <li><strong>TOFU prompt:</strong> first-time host key now asks for explicit confirmation with the SHA-256 fingerprint instead of silently trusting it. Mismatched fingerprints (possible MITM) get a separate red dialog showing both the old and new keys.</li>
+        <li><strong>Keyboard shortcuts cheatsheet:</strong> floating "?" button in the terminal toolbar opens a modal with all shortcuts grouped by category and rendered with the right modifier key for your OS.</li>
+        <li><strong>Fixed:</strong> long commands from history no longer corrupt the prompt or eat the line above on retina macOS.</li>
+        <li><strong>Fixed:</strong> <code>nano</code>'s status bar stops disappearing on the same setup.</li>
+        <li><strong>Fixed:</strong> Ctrl+R, Ctrl+L, Ctrl+A, Ctrl+E and the rest of readline's shortcuts now work on non-Latin keyboard layouts (Cyrillic, German, Greek, …) — previously the terminal silently swallowed them.</li>
+        <li><strong>Fixed:</strong> Ctrl+Shift+C / Ctrl+Shift+V copy-paste also works regardless of layout.</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <header class="release__head">
+        <h2>v0.5.3</h2>
+        <span class="release__date">May 2026</span>
       </header>
       <ul>
         <li><strong>Auth flow:</strong> proper "check your inbox" banner after sign-up, working password reset, and an account-deletion flow with org ownership transfer / safe dissolution.</li>

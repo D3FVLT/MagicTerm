@@ -24,7 +24,7 @@ import { APP_THEMES } from '../lib/app-themes';
 const DONATE_URL = 'https://www.donationalerts.com/r/whitenobel';
 const GITHUB_URL = 'https://github.com/D3FVLT/MagicTerm';
 const WEBSITE_URL = 'https://magicterm.app';
-const APP_VERSION = '0.5.3';
+const APP_VERSION = '0.5.4';
 
 interface ProxyConfig {
   enabled: boolean;

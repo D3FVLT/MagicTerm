@@ -6,6 +6,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { SnippetsPanel } from './SnippetsPanel';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { TERMINAL_THEMES, DEFAULT_TERMINAL_SETTINGS, type TerminalSettings } from '../lib/terminal-themes';
 import '@xterm/xterm/css/xterm.css';
 
@@ -27,27 +28,35 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSnippets, setShowSnippets] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [termSettings, setTermSettings] = useState<TerminalSettings>(DEFAULT_TERMINAL_SETTINGS);
   const settingsLoadedRef = useRef(false);
+  const lastSizeRef = useRef<{ cols: number; rows: number } | null>(null);
+  const resizeRafRef = useRef<number | null>(null);
 
   const syncPtySize = useCallback(() => {
-    if (fitAddonRef.current && terminalRef.current && containerRef.current) {
-      try {
-        fitAddonRef.current.fit();
-        const { cols, rows } = terminalRef.current;
-        if (cols && rows) {
-          window.electronAPI.ssh.resize(sessionId, { cols, rows });
-        }
-      } catch {
-        // Terminal not ready yet
-      }
+    if (!fitAddonRef.current || !terminalRef.current || !containerRef.current) return;
+    try {
+      fitAddonRef.current.fit();
+      const { cols, rows } = terminalRef.current;
+      if (!cols || !rows) return;
+      const last = lastSizeRef.current;
+      if (last && last.cols === cols && last.rows === rows) return;
+      lastSizeRef.current = { cols, rows };
+      window.electronAPI.ssh.resize(sessionId, { cols, rows });
+    } catch {
+      // Terminal not ready yet
     }
   }, [sessionId]);
 
   const handleResize = useCallback(() => {
-    syncPtySize();
+    if (resizeRafRef.current !== null) cancelAnimationFrame(resizeRafRef.current);
+    resizeRafRef.current = requestAnimationFrame(() => {
+      resizeRafRef.current = null;
+      syncPtySize();
+    });
   }, [syncPtySize]);
 
   const handleSearch = useCallback((direction: 'next' | 'prev') => {
@@ -194,36 +203,59 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       syncPtySize();
     });
 
+    const codeToLatin = (code: string): string | null => {
+      if (code.length === 4 && code.startsWith('Key')) {
+        return code.slice(3).toLowerCase();
+      }
+      return null;
+    };
+
     terminal.attachCustomKeyEventHandler((ev) => {
-      if (ev.type === 'keydown') {
-        const key = ev.key.toLowerCase();
-        const hasCtrl = ev.ctrlKey || ev.metaKey;
-        const hasSelection = terminal.hasSelection();
+      if (ev.type !== 'keydown') return true;
 
-        if (hasCtrl && ev.shiftKey && key === 'c') {
-          if (hasSelection) {
-            void window.electronAPI.clipboard.writeText(terminal.getSelection());
-          }
-          ev.preventDefault();
-          return false;
-        }
+      const physical = codeToLatin(ev.code);
+      const hasCtrl = ev.ctrlKey || ev.metaKey;
+      const hasSelection = terminal.hasSelection();
 
-        if (hasCtrl && !ev.shiftKey && key === 'c' && hasSelection) {
+      if (hasCtrl && ev.shiftKey && physical === 'c') {
+        if (hasSelection) {
           void window.electronAPI.clipboard.writeText(terminal.getSelection());
-          ev.preventDefault();
-          return false;
         }
+        ev.preventDefault();
+        return false;
+      }
 
-        if (hasCtrl && ev.shiftKey && key === 'v') {
-          window.electronAPI.clipboard
-            .readText()
-            .then((result) => {
-              if (result.success && result.text) {
-                void window.electronAPI.ssh.sendData(sessionId, result.text);
-              }
-            })
-            .catch(() => {
-            });
+      if (hasCtrl && !ev.shiftKey && physical === 'c' && hasSelection) {
+        void window.electronAPI.clipboard.writeText(terminal.getSelection());
+        ev.preventDefault();
+        return false;
+      }
+
+      if (hasCtrl && ev.shiftKey && physical === 'v') {
+        window.electronAPI.clipboard
+          .readText()
+          .then((result) => {
+            if (result.success && result.text) {
+              void window.electronAPI.ssh.sendData(sessionId, result.text);
+            }
+          })
+          .catch(() => {});
+        ev.preventDefault();
+        return false;
+      }
+
+      if (
+        ev.ctrlKey &&
+        !ev.metaKey &&
+        !ev.altKey &&
+        !ev.shiftKey &&
+        physical &&
+        ev.key.length === 1 &&
+        ev.key.toLowerCase() !== physical
+      ) {
+        const code = physical.charCodeAt(0) - 96;
+        if (code >= 1 && code <= 26) {
+          window.electronAPI.ssh.sendData(sessionId, String.fromCharCode(code));
           ev.preventDefault();
           return false;
         }
@@ -273,6 +305,11 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       removeDataListener();
       removeStatusListener();
       resizeObserver.disconnect();
+      if (resizeRafRef.current !== null) {
+        cancelAnimationFrame(resizeRafRef.current);
+        resizeRafRef.current = null;
+      }
+      lastSizeRef.current = null;
       terminal.dispose();
     };
   }, [sessionId, handleResize]);
@@ -355,7 +392,23 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
+
+          {/* Keyboard shortcuts help */}
+          <button
+            onClick={() => setShowShortcuts(true)}
+            className="rounded-md p-2 text-[var(--fg-subtle)] transition-colors hover:bg-[var(--border)] hover:text-[var(--fg)]"
+            title="Keyboard shortcuts"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M8 14h8M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+            </svg>
+          </button>
         </div>
+
+        <KeyboardShortcutsModal
+          isOpen={showShortcuts}
+          onClose={() => setShowShortcuts(false)}
+        />
 
         {/* Reconnect Toast */}
         {connectionStatus === 'disconnected' && onReconnect && (

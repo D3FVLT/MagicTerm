@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import type { Server, TerminalSession, ConnectionStatus, SSHConnectionConfig, SessionType } from '@magicterm/shared';
 import { useServers } from './ServersContext';
+import { useHostKey } from './HostKeyContext';
+import type { SshConnectResult } from '../types/electron';
 
 export type SplitNode =
   | { type: 'pane'; sessionId: string }
@@ -95,12 +97,31 @@ interface TerminalProviderProps {
 
 export function TerminalProvider({ children }: TerminalProviderProps) {
   const { decryptServerHost, decryptServerUsername, decryptServerCredentials } = useServers();
+  const { verifyHostKey } = useHostKey();
   const [sessions, setSessions] = useState<ExtendedSession[]>([]);
   const [tabs, setTabs] = useState<TabState[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [activeView, setActiveViewState] = useState<ActiveView>('vaults');
 
   const activeSessionId = activeTabId;
+  const connectWithHostKeyCheck = useCallback(
+    async (sessionId: string, config: SSHConnectionConfig): Promise<void> => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const result: SshConnectResult = await window.electronAPI.ssh.connect(sessionId, config);
+        if (result.success) return;
+        if (result.code === 'host_key_unknown' || result.code === 'host_key_mismatch') {
+          const trusted = await verifyHostKey(result);
+          if (!trusted) {
+            throw new Error('Host key verification cancelled');
+          }
+          continue;
+        }
+        throw new Error('Connection failed');
+      }
+      throw new Error('Host key verification failed');
+    },
+    [verifyHostKey]
+  );
 
   const setActiveView = useCallback((view: ActiveView) => {
     setActiveViewState(view);
@@ -160,7 +181,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
       setActiveViewState(sessionId);
 
       if (type === 'terminal') {
-        await window.electronAPI.ssh.connect(sessionId, config);
+        await connectWithHostKeyCheck(sessionId, config);
       }
       updateSessionStatus(sessionId, 'connected');
 
@@ -170,7 +191,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
       updateSessionStatus(sessionId, 'error', errorMessage);
       throw error;
     }
-  }, [decryptServerHost, decryptServerUsername, decryptServerCredentials, updateSessionStatus]);
+  }, [decryptServerHost, decryptServerUsername, decryptServerCredentials, updateSessionStatus, connectWithHostKeyCheck]);
 
   const reconnect = useCallback(async (sessionId: string): Promise<void> => {
     const session = sessions.find((s) => s.id === sessionId);
@@ -180,14 +201,14 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
 
     updateSessionStatus(sessionId, 'connecting');
     try {
-      await window.electronAPI.ssh.connect(sessionId, session.config);
+      await connectWithHostKeyCheck(sessionId, session.config);
       updateSessionStatus(sessionId, 'connected');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Reconnect failed';
       updateSessionStatus(sessionId, 'error', errorMessage);
       throw error;
     }
-  }, [sessions, updateSessionStatus]);
+  }, [sessions, updateSessionStatus, connectWithHostKeyCheck]);
 
   const disconnect = useCallback(async (sessionId: string): Promise<void> => {
     const tab = tabs.find((t) => t.rootSessionId === sessionId);
@@ -273,13 +294,13 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
     );
 
     try {
-      await window.electronAPI.ssh.connect(newSessionId, sourceSession.config);
+      await connectWithHostKeyCheck(newSessionId, sourceSession.config);
       updateSessionStatus(newSessionId, 'connected');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Connection failed';
       updateSessionStatus(newSessionId, 'error', errorMessage);
     }
-  }, [tabs, sessions, updateSessionStatus]);
+  }, [tabs, sessions, updateSessionStatus, connectWithHostKeyCheck]);
 
   const closePane = useCallback(async (paneSessionId: string): Promise<void> => {
     const tab = tabs.find((t) => findNodeBySessionId(t.splitTree, paneSessionId));
