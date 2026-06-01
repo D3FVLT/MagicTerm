@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get version from tag
         id: version
@@ -127,7 +127,7 @@ jobs:
       version: ${{ steps.version.outputs.VERSION }}
     steps:
       - name: Checkout (for changelog)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -341,7 +341,7 @@ jobs:
 
       - name: Checkout
         if: steps.check-secrets.outputs.skip != 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Get version
         if: steps.check-secrets.outputs.skip != 'true'
