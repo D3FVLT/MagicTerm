@@ -22,14 +22,14 @@
     "astro": "^5.2.5",
     "framer-motion": "^11.18.2",
     "lenis": "^1.1.20",
-    "react": "^18.3.1",
+    "react": "^19.2.6",
     "react-dom": "^18.3.1",
     "sharp": "^0.33.5",
     "tailwindcss": "^4.0.6",
     "typescript": "^5.4.0"
   },
   "devDependencies": {
-    "@types/react": "^18.3.18",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^18.3.5",
     "wrangler": "^3.95.0"
   }
