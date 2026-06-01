@@ -204,6 +204,31 @@ jobs:
       - name: List artifacts
         run: ls -la artifacts/ || echo "No artifacts directory"
 
+      - name: Generate SHA256 checksums
+        id: checksums
+        shell: bash
+        run: |
+          cd artifacts
+          shopt -s nullglob
+          # Only hash user-facing installers (skip auto-updater internals: .zip/.blockmap/.yml)
+          files=( *.dmg *.exe *.AppImage *.deb )
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No distributable artifacts found to checksum"
+            exit 0
+          fi
+          sha256sum "${files[@]}" | sort -k2 > SHA256SUMS.txt
+          echo "Generated SHA256SUMS.txt:"
+          cat SHA256SUMS.txt
+          {
+            echo "TABLE<<EOF"
+            echo "| File | SHA256 |"
+            echo "|------|--------|"
+            while read -r hash name; do
+              echo "| \`${name}\` | \`${hash}\` |"
+            done < SHA256SUMS.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Delete existing release
         run: |
           gh release delete v${{ steps.version.outputs.VERSION }} --yes || true
@@ -235,7 +260,29 @@ jobs:
             | **macOS** | Intel (x64) | [MagicTerm-${{ steps.version.outputs.VERSION }}-x64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x64.dmg) |
             | **macOS** | Apple Silicon (ARM64) | [MagicTerm-${{ steps.version.outputs.VERSION }}-arm64.dmg](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-arm64.dmg) |
             | **Linux** | x64 | [MagicTerm-${{ steps.version.outputs.VERSION }}-x86_64.AppImage](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-x86_64.AppImage) |
-            | **Linux** | x64 (deb) | [magicterm_${{ steps.version.outputs.VERSION }}_amd64.deb](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/magicterm_${{ steps.version.outputs.VERSION }}_amd64.deb) |
+            | **Linux** | x64 (deb) | [MagicTerm-${{ steps.version.outputs.VERSION }}-amd64.deb](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/MagicTerm-${{ steps.version.outputs.VERSION }}-amd64.deb) |
+
+            ---
+
+            ## Verify your download
+
+            Compare the SHA256 of the file you downloaded against the value below before installing. All checksums are also published as [`SHA256SUMS.txt`](https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.VERSION }}/SHA256SUMS.txt).
+
+            ${{ steps.checksums.outputs.TABLE }}
+
+            <details>
+            <summary>How to compute it locally</summary>
+
+            ```bash
+            # macOS / Linux
+            shasum -a 256 <file>        # or: sha256sum <file>
+            ```
+            ```powershell
+            # Windows (PowerShell)
+            Get-FileHash <file> -Algorithm SHA256
+            ```
+
+            </details>
 
             ---
 

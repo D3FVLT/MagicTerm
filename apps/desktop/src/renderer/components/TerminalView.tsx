@@ -7,7 +7,9 @@ import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { SnippetsPanel } from './SnippetsPanel';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
+import { ConnectionOverlay } from './ConnectionOverlay';
 import { TERMINAL_THEMES, DEFAULT_TERMINAL_SETTINGS, type TerminalSettings } from '../lib/terminal-themes';
+import { useTerminal } from '../contexts/TerminalContext';
 import '@xterm/xterm/css/xterm.css';
 
 interface TerminalViewProps {
@@ -35,6 +37,14 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
   const settingsLoadedRef = useRef(false);
   const lastSizeRef = useRef<{ cols: number; rows: number } | null>(null);
   const resizeRafRef = useRef<number | null>(null);
+
+  const { getSession, reconnect } = useTerminal();
+  const session = getSession(sessionId);
+  // Only surface the initial-connect overlay; mid-session drops use the toasts below.
+  const initialStatus =
+    connectionStatus === 'connected' && (session?.status === 'connecting' || session?.status === 'error')
+      ? session?.status
+      : undefined;
 
   const syncPtySize = useCallback(() => {
     if (!fitAddonRef.current || !terminalRef.current || !containerRef.current) return;
@@ -346,6 +356,16 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
           ref={containerRef} 
           className="terminal-container absolute inset-0" 
           style={{ backgroundColor: activeTheme.background }}
+        />
+
+        <ConnectionOverlay
+          status={initialStatus}
+          serverName={serverName}
+          error={session?.error}
+          background={activeTheme.background}
+          onRetry={() => {
+            void reconnect(sessionId).catch(() => {});
+          }}
         />
 
         {/* Floating Toolbar - bottom right */}

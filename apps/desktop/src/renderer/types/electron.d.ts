@@ -41,12 +41,14 @@ export type HostKeyChallenge =
       storedFingerprint: string;
     };
 
-export type SshConnectResult = { success: true } | HostKeyChallenge;
+export type ConnectFailure = { success: false; error: string; cancelled?: boolean };
+
+export type SshConnectResult = { success: true } | HostKeyChallenge | ConnectFailure;
 
 export type SftpConnectResult =
   | { success: true; homePath: string }
   | HostKeyChallenge
-  | { success: false; error: string };
+  | ConnectFailure;
 
 export interface ElectronAPI {
   ssh: {

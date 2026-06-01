@@ -10,6 +10,7 @@ import {
   type TransferProgress,
 } from '@magicterm/shared';
 import { evaluateHostKey } from './known-hosts';
+import { friendlyConnectError, READY_TIMEOUT_MS } from './ssh';
 
 interface SFTPSession {
   client: Client;
@@ -19,6 +20,7 @@ interface SFTPSession {
 
 const sessions = new Map<string, SFTPSession>();
 const activeTransfers = new Map<string, { abort: () => void }>();
+const pendingConnections = new Map<string, { ownerId: number; abort: () => void }>();
 
 function safeSend(sender: Electron.WebContents, channel: string, ...args: unknown[]): void {
   try {
@@ -71,6 +73,13 @@ export function cleanupAllSFTPSessions(): void {
     }
     sessions.delete(id);
   }
+  for (const [, pending] of pendingConnections) {
+    try {
+      pending.abort();
+    } catch {
+    }
+  }
+  pendingConnections.clear();
   for (const [id, transfer] of activeTransfers) {
     try {
       transfer.abort();
@@ -89,19 +98,37 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
         return { success: false, error: 'session_id_in_use' };
       }
 
-      return new Promise((resolve, reject) => {
+      const stalePending = pendingConnections.get(sessionId);
+      if (stalePending) {
+        pendingConnections.delete(sessionId);
+        stalePending.abort();
+      }
+
+      return new Promise((resolve) => {
         const client = new Client();
         let settled = false;
         const finish = (value: unknown): void => {
           if (settled) return;
           settled = true;
+          pendingConnections.delete(sessionId);
           resolve(value);
         };
         const fail = (err: Error): void => {
-          if (settled) return;
-          settled = true;
-          reject(err);
+          finish({ success: false, error: friendlyConnectError(err) });
         };
+
+        pendingConnections.set(sessionId, {
+          ownerId: event.sender.id,
+          abort: () => {
+            finish({ success: false, error: 'cancelled', cancelled: true });
+            setImmediate(() => {
+              try {
+                client.end();
+              } catch {
+              }
+            });
+          },
+        });
 
         const authConfig: {
           host: string;
@@ -111,6 +138,7 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           privateKey?: string;
           keepaliveInterval?: number;
           keepaliveCountMax?: number;
+          readyTimeout?: number;
           hostVerifier: (key: Buffer) => boolean;
         } = {
           host: config.host,
@@ -118,6 +146,7 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
           username: config.username,
           keepaliveInterval: 10000,
           keepaliveCountMax: 3,
+          readyTimeout: READY_TIMEOUT_MS,
           hostVerifier: (key: Buffer) => {
             const decision = evaluateHostKey(config.host, config.port, key);
             if (decision.kind === 'trusted') return true;
@@ -184,7 +213,10 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
         });
 
         client.on('close', () => {
-          sessions.delete(sessionId);
+          const current = sessions.get(sessionId);
+          if (current && current.client === client) {
+            sessions.delete(sessionId);
+          }
         });
 
         client.connect(authConfig);
@@ -193,6 +225,11 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
   );
 
   ipcMain.handle(IPC_CHANNELS.SFTP_DISCONNECT, async (event, sessionId: string) => {
+    const pending = pendingConnections.get(sessionId);
+    if (pending && pending.ownerId === event.sender.id) {
+      pendingConnections.delete(sessionId);
+      pending.abort();
+    }
     const session = getOwnedSession(sessionId, event.sender);
     if (session) {
       session.sftp.end();

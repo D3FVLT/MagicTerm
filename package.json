@@ -1,6 +1,6 @@
 {
   "name": "magicterm",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "private": true,
   "description": "Cross-platform SSH/SFTP client with E2E encryption",
   "scripts": {
@@ -11,8 +11,16 @@
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "turbo": "^2.3.0",
+    "turbo": "^2.9.16",
     "typescript": "^5.4.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron"
+    ],
+    "overrides": {
+      "ws@>=8.0.0 <8.21.0": "^8.21.0"
+    }
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {

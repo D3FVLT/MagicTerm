@@ -109,14 +109,16 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
       for (let attempt = 0; attempt < 2; attempt++) {
         const result: SshConnectResult = await window.electronAPI.ssh.connect(sessionId, config);
         if (result.success) return;
-        if (result.code === 'host_key_unknown' || result.code === 'host_key_mismatch') {
+        // Aborted because the tab was closed mid-handshake — stay silent.
+        if ('cancelled' in result && result.cancelled) return;
+        if ('code' in result && (result.code === 'host_key_unknown' || result.code === 'host_key_mismatch')) {
           const trusted = await verifyHostKey(result);
           if (!trusted) {
             throw new Error('Host key verification cancelled');
           }
           continue;
         }
-        throw new Error('Connection failed');
+        throw new Error('error' in result && result.error ? result.error : 'Connection failed');
       }
       throw new Error('Host key verification failed');
     },

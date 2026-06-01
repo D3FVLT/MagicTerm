@@ -7,6 +7,7 @@ import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { SnippetsPanel } from './SnippetsPanel';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
+import { ConnectionOverlay } from './ConnectionOverlay';
 import { TERMINAL_THEMES, DEFAULT_TERMINAL_SETTINGS, type TerminalSettings } from '../lib/terminal-themes';
 import { useTerminal } from '../contexts/TerminalContext';
 import '@xterm/xterm/css/xterm.css';
@@ -38,6 +39,11 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
   const session = getSession(sessionId);
   const tab = tabs.find((t) => t.rootSessionId === tabId);
   const hasMultiplePanes = tab && tab.splitTree.type === 'split';
+  // Only surface the initial-connect overlay; mid-session drops use the toasts below.
+  const initialStatus =
+    connectionStatus === 'connected' && (session?.status === 'connecting' || session?.status === 'error')
+      ? session?.status
+      : undefined;
 
   const syncPtySize = useCallback(() => {
     if (!fitAddonRef.current || !terminalRef.current || !containerRef.current) return;
@@ -387,6 +393,15 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
           ref={containerRef}
           className="terminal-container absolute inset-0"
           style={{ backgroundColor: activeTheme.background }}
+        />
+
+        <ConnectionOverlay
+          status={initialStatus}
+          error={session?.error}
+          background={activeTheme.background}
+          onRetry={() => {
+            void reconnect(sessionId).catch(() => {});
+          }}
         />
 
         {/* Snippets panel */}

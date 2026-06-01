@@ -21,9 +21,23 @@ import { SITE } from '~/data/site';
 
     <section class="release">
       <header class="release__head">
+        <h2>v0.5.5</h2>
+        <span class="release__date">June 2026</span>
+        <span class="release__tag">Latest</span>
+      </header>
+      <ul>
+        <li><strong>Verify downloads:</strong> the <a href="/download">Download</a> page now lists a SHA256 hash for every installer (macOS, Windows, Linux). Each GitHub release ships a <code>SHA256SUMS.txt</code> with the same values.</li>
+        <li><strong>Connection UX:</strong> SSH and SFTP show a clear "Connecting…" state instead of a blank screen, friendly error messages when a host is unreachable, and a Retry button. Timeout shortened to 15 seconds.</li>
+        <li><strong>Fixed:</strong> closing a tab while a connection is still handshaking no longer leaves a stray timeout error in the console.</li>
+        <li><strong>Fixed:</strong> broken Linux <code>.deb</code> download link on the website.</li>
+        <li><strong>Security:</strong> Electron upgraded to 42, runtime dependency patches (<code>ws</code>, build tooling), and Dependabot enabled for automated update PRs.</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <header class="release__head">
         <h2>v0.5.4</h2>
         <span class="release__date">May 2026</span>
-        <span class="release__tag">Latest</span>
       </header>
       <ul>
         <li><strong>TOFU prompt:</strong> first-time host key now asks for explicit confirmation with the SHA-256 fingerprint instead of silently trusting it. Mismatched fingerprints (possible MITM) get a separate red dialog showing both the old and new keys.</li>

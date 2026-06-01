@@ -24,7 +24,7 @@ import { APP_THEMES } from '../lib/app-themes';
 const DONATE_URL = 'https://www.donationalerts.com/r/whitenobel';
 const GITHUB_URL = 'https://github.com/D3FVLT/MagicTerm';
 const WEBSITE_URL = 'https://magicterm.app';
-const APP_VERSION = '0.5.4';
+declare const __APP_VERSION__: string;
 
 interface ProxyConfig {
   enabled: boolean;
@@ -568,7 +568,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   <div className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] p-4 text-sm">
                     <div className="flex justify-between">
                       <span className="text-[var(--fg-subtle)]">Version</span>
-                      <span className="font-mono text-[var(--fg)]">v{APP_VERSION}</span>
+                      <span className="font-mono text-[var(--fg)]">v{__APP_VERSION__}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[var(--fg-subtle)]">Website</span>

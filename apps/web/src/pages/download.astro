@@ -42,13 +42,41 @@ const downloads = [
       href: `${RELEASE_BASE}/MagicTerm-${VERSION}-x86_64.AppImage`,
     },
     secondary: [
-      { label: '.deb (Debian/Ubuntu)', href: `${RELEASE_BASE}/magicterm_${VERSION}_amd64.deb` },
+      { label: '.deb (Debian/Ubuntu)', href: `${RELEASE_BASE}/MagicTerm-${VERSION}-amd64.deb` },
       { label: 'AUR (Arch Linux)', href: 'https://aur.archlinux.org/packages/magicterm-bin', external: true },
     ],
     note: 'For Arch Linux:',
     code: 'yay -S magicterm-bin',
   },
 ];
+
+// Installers we publish a SHA256 for, in display order.
+const artifacts = [
+  { label: 'macOS · Apple Silicon (.dmg)', file: `MagicTerm-${VERSION}-arm64.dmg` },
+  { label: 'macOS · Intel (.dmg)', file: `MagicTerm-${VERSION}-x64.dmg` },
+  { label: 'Windows · Installer (.exe)', file: `MagicTerm-${VERSION}-x64.exe` },
+  { label: 'Linux · AppImage', file: `MagicTerm-${VERSION}-x86_64.AppImage` },
+  { label: 'Linux · Debian/Ubuntu (.deb)', file: `MagicTerm-${VERSION}-amd64.deb` },
+];
+
+// Pull SHA256SUMS.txt for this version at build time (server-side, no CORS).
+// GitHub doesn't send CORS headers on release assets, so a client fetch can't
+// do this. If the release isn't published yet we just fall back to a link.
+const checksums: Record<string, string> = {};
+try {
+  const res = await fetch(`${RELEASE_BASE}/SHA256SUMS.txt`, { redirect: 'follow' });
+  if (res.ok) {
+    const text = await res.text();
+    for (const line of text.split('\n')) {
+      const m = line.trim().match(/^([a-f0-9]{64})\s+\*?(.+)$/i);
+      if (m) checksums[m[2].trim()] = m[1].toLowerCase();
+    }
+  }
+} catch {
+  // No network at build time or release not published — degrade to link-only.
+}
+const hasChecksums = artifacts.some((a) => checksums[a.file]);
+const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
 ---
 
 <Base
@@ -112,6 +140,55 @@ const downloads = [
       ))}
     </div>
 
+    <section class="verify" data-sums-url={sumsUrl}>
+      <header class="verify__head">
+        <h2>Verify your download</h2>
+        <p>
+          Every build is open-source and reproducible. Before installing, power users can confirm
+          the file wasn't tampered with by comparing its SHA256 hash to the value below.
+        </p>
+      </header>
+
+      {hasChecksums ? (
+        <div class="verify__table">
+          {artifacts.filter((a) => checksums[a.file]).map((a) => (
+            <div class="verify__row">
+              <div class="verify__meta">
+                <span class="verify__label">{a.label}</span>
+                <code class="verify__file">{a.file}</code>
+              </div>
+              <div class="verify__hash">
+                <code data-hash={checksums[a.file]}>{checksums[a.file]}</code>
+                <button class="verify__copy" type="button" data-copy={checksums[a.file]} aria-label="Copy SHA256">
+                  Copy
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p class="verify__fallback">
+          Checksums for v{VERSION} are published as
+          <a href={sumsUrl} target="_blank" rel="noopener"><code>SHA256SUMS.txt</code></a>
+          on the GitHub release page.
+        </p>
+      )}
+
+      <details class="verify__how">
+        <summary>How to compute the hash yourself</summary>
+        <div class="verify__how-body">
+          <p>macOS / Linux:</p>
+          <pre><code>shasum -a 256 &lt;file&gt;   # or: sha256sum &lt;file&gt;</code></pre>
+          <p>Windows (PowerShell):</p>
+          <pre><code>Get-FileHash &lt;file&gt; -Algorithm SHA256</code></pre>
+          <p>
+            The full list lives in
+            <a href={sumsUrl} target="_blank" rel="noopener"><code>SHA256SUMS.txt</code></a>.
+          </p>
+        </div>
+      </details>
+    </section>
+
     <footer class="download-page__footer">
       <p>
         Looking for older versions? See <a href={SITE.releasesUrl} target="_blank" rel="noopener">all releases on GitHub</a>.
@@ -123,6 +200,27 @@ const downloads = [
   </main>
   <Footer />
 </Base>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.verify__copy').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const hash = btn.dataset.copy;
+      if (!hash) return;
+      try {
+        await navigator.clipboard.writeText(hash);
+        const prev = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('is-copied');
+        setTimeout(() => {
+          btn.textContent = prev;
+          btn.classList.remove('is-copied');
+        }, 1500);
+      } catch {
+        // Clipboard unavailable — ignore.
+      }
+    });
+  });
+</script>
 
 <style>
   .download-page {
@@ -262,6 +360,172 @@ const downloads = [
   }
 
   .download-card__note code {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--fg);
+  }
+
+  .verify {
+    margin-top: 72px;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+  }
+
+  .verify__head {
+    max-width: 720px;
+    margin-bottom: 20px;
+  }
+
+  .verify__head h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--fg);
+    margin: 0 0 8px;
+  }
+
+  .verify__head p {
+    color: var(--fg-muted);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .verify__table {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .verify__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .verify__row:last-child {
+    border-bottom: none;
+  }
+
+  .verify__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .verify__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg);
+  }
+
+  .verify__file {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg-muted);
+  }
+
+  .verify__hash {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 320px;
+    justify-content: flex-end;
+  }
+
+  .verify__hash code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--fg);
+    word-break: break-all;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    line-height: 1.4;
+  }
+
+  .verify__copy {
+    flex-shrink: 0;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    transition: all 0.15s ease;
+  }
+
+  .verify__copy:hover {
+    color: var(--fg);
+    border-color: var(--accent);
+  }
+
+  .verify__copy.is-copied {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .verify__fallback {
+    color: var(--fg-muted);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .verify__fallback a,
+  .verify__how-body a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .verify__how {
+    margin-top: 18px;
+  }
+
+  .verify__how summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-muted);
+    user-select: none;
+  }
+
+  .verify__how summary:hover {
+    color: var(--fg);
+  }
+
+  .verify__how-body {
+    margin-top: 12px;
+  }
+
+  .verify__how-body p {
+    color: var(--fg-muted);
+    font-size: 13px;
+    margin: 12px 0 6px;
+  }
+
+  .verify__how-body pre {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 0;
+    overflow-x: auto;
+  }
+
+  .verify__how-body code {
     font-family: var(--font-mono);
     font-size: 12px;
     color: var(--fg);
