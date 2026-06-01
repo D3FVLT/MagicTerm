@@ -27,9 +27,11 @@ const softwareApp = {
   '@context': 'https://schema.org',
   '@type': 'SoftwareApplication',
   name: SITE.name,
+  alternateName: ['MagicTerm', 'Magic Term SSH client'],
   description: SITE.description,
   url: SITE.url,
   applicationCategory: 'DeveloperApplication',
+  applicationSubCategory: 'SSH client',
   operatingSystem: 'macOS, Windows, Linux',
   offers: {
     '@type': 'Offer',
@@ -44,6 +46,20 @@ const softwareApp = {
     url: SITE.githubUrl,
   },
   license: `https://github.com/${SITE.githubRepo}/blob/main/LICENSE`,
+  screenshot: new URL('/screenshots/vaults.webp', SITE.url).toString(),
+  featureList: [
+    'End-to-end encrypted credentials (AES-256-GCM)',
+    'Master password with scrypt KDF, never sent to the server',
+    'Cloud sync across devices via Supabase',
+    'Split terminal panes with horizontal and vertical layouts',
+    'Built-in SFTP file manager with drag and drop',
+    'Snippet manager for tokens and frequently used commands',
+    'TOFU host-key verification with explicit fingerprint prompts',
+    'Import hosts from ~/.ssh/config',
+    'Organizations and team-shared vaults',
+    'Cross-platform: macOS (Apple Silicon and Intel), Windows, Linux',
+    'No telemetry, no tracking',
+  ],
 };
 ---
 

@@ -22,6 +22,13 @@ import { SITE } from '~/data/site';
         <a href="/changelog">Changelog</a>
       </div>
       <div>
+        <h4>Platforms</h4>
+        <a href="/ssh-client-mac">SSH client for macOS</a>
+        <a href="/ssh-client-windows">SSH client for Windows</a>
+        <a href="/ssh-client-linux">SSH client for Linux</a>
+        <a href="/termius-alternative">Termius alternative</a>
+      </div>
+      <div>
         <h4>Project</h4>
         <a href={SITE.githubUrl} target="_blank" rel="noopener">GitHub</a>
         <a href={`${SITE.githubUrl}/issues`} target="_blank" rel="noopener">Issues</a>
@@ -67,7 +74,7 @@ import { SITE } from '~/data/site';
 
   @media (min-width: 768px) {
     .site-footer__inner {
-      grid-template-columns: 1fr 2fr;
+      grid-template-columns: minmax(200px, 260px) 1fr;
     }
   }
 
@@ -93,8 +100,14 @@ import { SITE } from '~/data/site';
 
   .site-footer__cols {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 32px;
+  }
+
+  @media (min-width: 640px) {
+    .site-footer__cols {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 
   .site-footer__cols h4 {
