@@ -1,0 +1,208 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+import { SITE } from '~/data/site';
+import '~/styles/landing.css';
+
+const title = 'Free, Open-source Termius Alternative — Magic Term';
+const description =
+  "Magic Term is a free, open-source SSH and SFTP client with end-to-end encrypted credentials and free cloud sync — a Termius alternative that doesn't paywall basic features.";
+
+const comparison = [
+  {
+    feature: 'Open source',
+    magicterm: 'Yes — MIT license',
+    termius: 'No, proprietary',
+  },
+  {
+    feature: 'Price',
+    magicterm: 'Free, forever',
+    termius: 'Free tier limited; cloud sync paywalled',
+  },
+  {
+    feature: 'Cloud sync of servers and credentials',
+    magicterm: 'Free, end-to-end encrypted',
+    termius: 'Paid (Pro / Premium plans)',
+  },
+  {
+    feature: 'End-to-end encryption of credentials',
+    magicterm: 'AES-256-GCM, scrypt KDF on a master password',
+    termius: 'Encrypted, but the provider holds keys / proprietary',
+  },
+  {
+    feature: 'SFTP file manager',
+    magicterm: 'Built-in, with drag-and-drop',
+    termius: 'Yes',
+  },
+  {
+    feature: 'Split terminal panes',
+    magicterm: 'Horizontal and vertical splits',
+    termius: 'Yes',
+  },
+  {
+    feature: 'Snippets / saved commands',
+    magicterm: 'Encrypted, paste with one click',
+    termius: 'Yes',
+  },
+  {
+    feature: 'SSH config import (~/.ssh/config)',
+    magicterm: 'Yes',
+    termius: 'Yes',
+  },
+  {
+    feature: 'Team collaboration / shared vaults',
+    magicterm: 'Organizations with role-based access',
+    termius: 'Team plans (paid)',
+  },
+  {
+    feature: 'Telemetry',
+    magicterm: 'None',
+    termius: 'Analytics enabled by default',
+  },
+  {
+    feature: 'Self-hostable backend',
+    magicterm: "Yes — bring your own Supabase project",
+    termius: 'No',
+  },
+  {
+    feature: 'Mobile clients',
+    magicterm: 'Not yet (planned)',
+    termius: 'iOS and Android (paid)',
+  },
+];
+---
+
+<Base title={title} description={description}>
+  <Header />
+  <main class="landing">
+    <header class="landing__header">
+      <p class="landing__eyebrow">Comparison</p>
+      <h1>A free, open-source Termius alternative</h1>
+      <p class="landing__lead">
+        I built Magic Term because Termius's free tier locks the most useful
+        feature behind a subscription: syncing your servers across devices.
+        Magic Term keeps the whole experience free and open, with one twist —
+        your credentials are encrypted on your device with a master password
+        before they ever touch the cloud, so the sync server can't read them
+        even if it wanted to.
+      </p>
+      <div class="landing__cta">
+        <a href="/download" class="landing__button landing__button--primary">
+          Download Magic Term
+        </a>
+        <a
+          href={SITE.githubUrl}
+          class="landing__button landing__button--secondary"
+          target="_blank"
+          rel="noopener"
+        >
+          View on GitHub
+        </a>
+      </div>
+    </header>
+
+    <section class="landing__section">
+      <h2>Magic Term vs Termius</h2>
+      <div class="landing__table-wrap">
+        <table class="landing__table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Magic Term</th>
+              <th>Termius</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparison.map((row) => (
+              <tr>
+                <th scope="row">{row.feature}</th>
+                <td>{row.magicterm}</td>
+                <td>{row.termius}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="landing__caveat">
+        Comparison is based on Termius's public pricing and feature pages at
+        the time of writing. Termius is a perfectly good product — Magic Term
+        just optimizes for a different audience: people who don't want to pay
+        a subscription for a feature like cloud sync, and people who want the
+        sync provider to be physically incapable of reading their credentials.
+      </p>
+    </section>
+
+    <section class="landing__section">
+      <h2>What you get for free</h2>
+      <ul class="landing__list">
+        <li>
+          <strong>Unlimited servers and snippets</strong>, synced across
+          macOS, Windows and Linux.
+        </li>
+        <li>
+          <strong>End-to-end encryption</strong> with AES-256-GCM. Your master
+          password is never sent — only a verifier that proves you know it.
+        </li>
+        <li>
+          <strong>Built-in SFTP file manager</strong> with drag-and-drop, a
+          remote text editor, and path copy.
+        </li>
+        <li>
+          <strong>Split panes</strong>, terminal themes (Tokyo Night, Dracula,
+          Nord, Catppuccin and a dozen more) and a customizable terminal.
+        </li>
+        <li>
+          <strong>Trust on first use</strong> host-key verification with
+          explicit fingerprint prompts and a loud MITM warning if a known key
+          changes.
+        </li>
+        <li>
+          <strong>Organizations</strong> for sharing servers with a team —
+          role-based access, all credentials still encrypted client-side.
+        </li>
+      </ul>
+    </section>
+
+    <section class="landing__section">
+      <h2>Honest about what's missing</h2>
+      <p>
+        Magic Term is in active development and pre-1.0. A few things you
+        might miss if you switch from Termius today:
+      </p>
+      <ul class="landing__list">
+        <li>
+          <strong>Mobile apps.</strong> Not yet. A read-only iOS/Android
+          viewer is on the roadmap but not committed to a date.
+        </li>
+        <li>
+          <strong>Port forwarding UI.</strong> Planned for v0.7. You can use
+          regular `ssh -L` from the terminal in the meantime.
+        </li>
+        <li>
+          <strong>Code signing on macOS and Windows.</strong> Working on it —
+          Apple Developer ID and EV cert cost real money. For now you'll see
+          a Gatekeeper / SmartScreen warning on first launch.
+        </li>
+      </ul>
+      <p>
+        Full roadmap is in
+        <a href="https://github.com/D3FVLT/MagicTerm/blob/main/ROADMAP.md" target="_blank" rel="noopener">ROADMAP.md</a>.
+        Issues and PRs are very welcome.
+      </p>
+    </section>
+
+    <footer class="landing__footer">
+      <h2>Try it</h2>
+      <p>
+        Free, open-source, no account required to evaluate the desktop app
+        (you only need an account if you want cloud sync).
+      </p>
+      <a href="/download" class="landing__button landing__button--primary">
+        Download Magic Term
+      </a>
+    </footer>
+  </main>
+  <Footer />
+</Base>
+

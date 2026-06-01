@@ -1,0 +1,154 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+import { SITE } from '~/data/site';
+import '~/styles/landing.css';
+
+const title = 'Free SSH Client for Linux — Magic Term';
+const description =
+  'Magic Term is a free, open-source SSH and SFTP client for Linux with end-to-end encrypted credentials and cloud sync. AppImage, .deb and AUR packages. Works on Ubuntu, Debian, Arch, Fedora.';
+
+const VERSION = SITE.version;
+const REPO = SITE.githubRepo;
+const RELEASE_BASE = `https://github.com/${REPO}/releases/download/v${VERSION}`;
+---
+
+<Base title={title} description={description}>
+  <Header />
+  <main class="landing">
+    <header class="landing__header">
+      <p class="landing__eyebrow">Linux</p>
+      <h1>A free, open-source SSH client for Linux</h1>
+      <p class="landing__lead">
+        Magic Term ships as a portable AppImage, a Debian/Ubuntu .deb package,
+        and an AUR package for Arch Linux. It includes an SFTP file manager,
+        split terminal panes, a snippet manager, and end-to-end encrypted
+        cloud sync — MIT-licensed, no telemetry, no account required for
+        local use.
+      </p>
+      <div class="landing__cta">
+        <a
+          href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x86_64.AppImage`}
+          class="landing__button landing__button--primary"
+        >
+          AppImage (x64)
+        </a>
+        <a
+          href={`${RELEASE_BASE}/magicterm_${VERSION}_amd64.deb`}
+          class="landing__button landing__button--secondary"
+        >
+          Debian / Ubuntu (.deb)
+        </a>
+        <a
+          href="https://aur.archlinux.org/packages/magicterm-bin"
+          target="_blank"
+          rel="noopener"
+          class="landing__button landing__button--secondary"
+        >
+          Arch (AUR)
+        </a>
+      </div>
+    </header>
+
+    <img
+      src="/screenshots/sftp.webp"
+      alt="Magic Term on Linux showing the SFTP file manager"
+      class="landing__screenshot"
+      loading="lazy"
+      decoding="async"
+    />
+
+    <section class="landing__section">
+      <h2>Why use Magic Term on Linux</h2>
+      <ul class="landing__list">
+        <li>
+          <strong>Imports your <code>~/.ssh/config</code></strong> on first
+          launch — including key paths, ProxyJump and ports.
+        </li>
+        <li>
+          <strong>Real terminal</strong> based on xterm.js with full
+          UTF-8 / 256-color / true-color support; <code>htop</code>,
+          <code>vim</code>, <code>nano</code> and other TUIs render correctly.
+        </li>
+        <li>
+          <strong>SFTP file manager</strong> with drag-and-drop into your
+          file manager, plus a built-in remote text editor.
+        </li>
+        <li>
+          <strong>Split panes</strong>, dozens of terminal themes, persistent
+          tabs across restarts.
+        </li>
+        <li>
+          <strong>End-to-end encryption</strong> with AES-256-GCM and scrypt
+          KDF. The sync backend cannot read your credentials.
+        </li>
+      </ul>
+    </section>
+
+    <section class="landing__section">
+      <h2>Installation</h2>
+
+      <h3>Arch Linux</h3>
+      <pre class="landing__code"><code>yay -S magicterm-bin
+# or
+paru -S magicterm-bin</code></pre>
+
+      <h3>Debian / Ubuntu / Pop!_OS</h3>
+      <p>
+        Download <a href={`${RELEASE_BASE}/magicterm_${VERSION}_amd64.deb`}>the .deb package</a> and install:
+      </p>
+      <pre class="landing__code"><code>sudo dpkg -i magicterm_{VERSION}_amd64.deb
+# fix any missing deps
+sudo apt -f install</code></pre>
+
+      <h3>AppImage (any distribution)</h3>
+      <p>
+        Download <a href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x86_64.AppImage`}>the AppImage</a>, mark it executable and run:
+      </p>
+      <pre class="landing__code"><code>chmod +x MagicTerm-{VERSION}-x86_64.AppImage
+./MagicTerm-{VERSION}-x86_64.AppImage</code></pre>
+      <p>
+        AppImageLauncher is recommended if you want desktop integration
+        (icon, shortcut, MIME associations).
+      </p>
+    </section>
+
+    <section class="landing__section">
+      <h2>How it compares</h2>
+      <p>
+        Most Linux users live in <code>tmux</code> + OpenSSH. Magic Term is
+        not trying to replace that; it's for the times you want a GUI list
+        of servers, an SFTP browser, and the same vault on your laptop and
+        desktop. Compared to Termius on Linux, Magic Term is free, open-source,
+        and encrypts credentials end-to-end. See the
+        <a href="/termius-alternative">full comparison</a>.
+      </p>
+    </section>
+
+    <section class="landing__section">
+      <h2>System requirements</h2>
+      <ul class="landing__list">
+        <li>Any modern x86_64 Linux distribution with glibc 2.28+ (Ubuntu 20.04+, Debian 11+, Fedora 33+, Arch)</li>
+        <li>An X11 or Wayland session (Wayland recommended)</li>
+        <li>~250 MB of disk space</li>
+      </ul>
+      <p>
+        ARM64 (Raspberry Pi, Apple Silicon Asahi, etc.) builds are on the
+        roadmap.
+      </p>
+    </section>
+
+    <footer class="landing__footer">
+      <h2>Get started</h2>
+      <p>Free, open-source, no telemetry. Works offline; cloud sync is opt-in.</p>
+      <a
+        href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x86_64.AppImage`}
+        class="landing__button landing__button--primary"
+      >
+        Download AppImage
+      </a>
+    </footer>
+  </main>
+  <Footer />
+</Base>

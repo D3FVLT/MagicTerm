@@ -1,0 +1,134 @@
+---
+import Base from '~/layouts/Base.astro';
+import Header from '~/components/Header.astro';
+import Footer from '~/components/Footer.astro';
+import { SITE } from '~/data/site';
+import '~/styles/landing.css';
+
+const title = 'Free SSH Client for macOS — Magic Term';
+const description =
+  'Magic Term is a free, open-source SSH and SFTP client for macOS (Apple Silicon and Intel) with end-to-end encrypted credentials and cloud sync. Native .dmg, no subscription.';
+
+const VERSION = SITE.version;
+const REPO = SITE.githubRepo;
+const RELEASE_BASE = `https://github.com/${REPO}/releases/download/v${VERSION}`;
+---
+
+<Base title={title} description={description}>
+  <Header />
+  <main class="landing">
+    <header class="landing__header">
+      <p class="landing__eyebrow">macOS</p>
+      <h1>A free, open-source SSH client for macOS</h1>
+      <p class="landing__lead">
+        Magic Term is a native Electron app for macOS Sonoma and later, with
+        first-class support for Apple Silicon (M1/M2/M3/M4). It includes an
+        SFTP file manager, split panes, snippet manager, and end-to-end
+        encrypted cloud sync — all free and open-source under the MIT license.
+      </p>
+      <div class="landing__cta">
+        <a
+          href={`${RELEASE_BASE}/MagicTerm-${VERSION}-arm64.dmg`}
+          class="landing__button landing__button--primary"
+        >
+          Download for Apple Silicon (.dmg)
+        </a>
+        <a
+          href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x64.dmg`}
+          class="landing__button landing__button--secondary"
+        >
+          Intel Mac (.dmg)
+        </a>
+      </div>
+    </header>
+
+    <img
+      src="/screenshots/vaults.webp"
+      alt="Magic Term on macOS showing the encrypted vault and a connected SSH session"
+      class="landing__screenshot"
+      loading="lazy"
+      decoding="async"
+    />
+
+    <section class="landing__section">
+      <h2>Why use Magic Term on a Mac</h2>
+      <ul class="landing__list">
+        <li>
+          <strong>Native Apple Silicon binary</strong> — no Rosetta translation,
+          no battery drain.
+        </li>
+        <li>
+          <strong>Imports your <code>~/.ssh/config</code></strong> on first
+          launch, including <code>HostName</code>, <code>Port</code>,
+          <code>User</code> and <code>IdentityFile</code> entries.
+        </li>
+        <li>
+          <strong>Keychain-friendly</strong> — credentials are encrypted with a
+          master password using AES-256-GCM and scrypt, separately from macOS
+          Keychain so the same vault works across machines.
+        </li>
+        <li>
+          <strong>SFTP file manager</strong> with drag-and-drop into Finder.
+        </li>
+        <li>
+          <strong>Split panes</strong>, dozens of terminal themes, and ⌘+T /
+          ⌘+W tab management.
+        </li>
+      </ul>
+    </section>
+
+    <section class="landing__section">
+      <h2>Installation</h2>
+      <ol class="landing__list">
+        <li>
+          Download the right build for your Mac:
+          <ul class="landing__list" style="margin-top: 8px;">
+            <li><a href={`${RELEASE_BASE}/MagicTerm-${VERSION}-arm64.dmg`}>Apple Silicon (M1/M2/M3/M4)</a></li>
+            <li><a href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x64.dmg`}>Intel Mac</a></li>
+          </ul>
+        </li>
+        <li>Open the DMG and drag <strong>Magic Term.app</strong> into Applications.</li>
+        <li>
+          On first launch, Gatekeeper will warn that the app is from an
+          unidentified developer. Magic Term isn't code-signed yet (Apple
+          Developer ID is on the to-do list). You can clear the quarantine
+          flag with:
+          <pre class="landing__code"><code>xattr -cr "/Applications/Magic Term.app"</code></pre>
+        </li>
+        <li>Launch the app from Applications. Updates auto-install after the first run.</li>
+      </ol>
+    </section>
+
+    <section class="landing__section">
+      <h2>How it compares</h2>
+      <p>
+        On macOS the most popular paid options are Termius and Royal TSX.
+        Magic Term is closer to Termius in scope (SSH + SFTP + sync) but stays
+        free and open-source, and encrypts credentials end-to-end so the sync
+        backend literally cannot read them. Full feature comparison:
+        <a href="/termius-alternative">Magic Term vs Termius</a>.
+      </p>
+    </section>
+
+    <section class="landing__section">
+      <h2>System requirements</h2>
+      <ul class="landing__list">
+        <li>macOS 11 Big Sur or later (macOS 13+ recommended)</li>
+        <li>Apple Silicon or 64-bit Intel CPU</li>
+        <li>~150 MB of disk space</li>
+      </ul>
+    </section>
+
+    <footer class="landing__footer">
+      <h2>Get started</h2>
+      <p>Free, open-source, no telemetry. Works offline; sync is optional.</p>
+      <a
+        href={`${RELEASE_BASE}/MagicTerm-${VERSION}-arm64.dmg`}
+        class="landing__button landing__button--primary"
+      >
+        Download for macOS
+      </a>
+    </footer>
+  </main>
+  <Footer />
+</Base>

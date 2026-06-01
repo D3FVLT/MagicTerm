@@ -7,9 +7,18 @@ import ThemesSection from '~/components/ThemesSection.astro';
 import SecuritySection from '~/components/SecuritySection.astro';
 import DownloadCTA from '~/components/DownloadCTA.astro';
 import Footer from '~/components/Footer.astro';
+
+// Title and description tuned for search intent rather than aesthetics.
+// Title leads with the primary keywords (open-source SSH/SFTP client +
+// platform list); brand follows. Description is ~160 chars, mentions the
+// concrete differentiators a person searching for an SSH client cares
+// about (E2E encryption, cloud sync, free, no telemetry).
+const title = 'Open-source SSH/SFTP Client for macOS, Windows and Linux';
+const description =
+  'Magic Term is a free open-source SSH and SFTP client with end-to-end encrypted credentials, optional cloud sync, split terminal panes and a built-in file manager. macOS, Windows, Linux. No telemetry.';
 ---
 
-<Base>
+<Base title={title} description={description}>
   <Header />
   <main>
     <Hero />
