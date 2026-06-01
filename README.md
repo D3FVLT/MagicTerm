@@ -1,182 +1,105 @@
 # Magic Term
 
-Cross-platform SSH/SFTP client with E2E encryption and cloud sync.
+A free SSH/SFTP client with end-to-end encrypted cloud sync. Cross-platform
+desktop app for macOS, Windows and Linux.
 
-![Magic Term](https://img.shields.io/badge/version-0.5.4-blue) ![License](https://img.shields.io/badge/license-MIT-green)
+[![version](https://img.shields.io/badge/version-0.5.4-blue)](https://github.com/D3FVLT/MagicTerm/releases)
+[![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-Website: [magicterm.app](https://magicterm.app) · Roadmap: [ROADMAP.md](./ROADMAP.md) · Support: [donate ❤️](https://www.donationalerts.com/r/whitenobel)
+[magicterm.app](https://magicterm.app) · [Roadmap](./ROADMAP.md) · [Donate](https://www.donationalerts.com/r/whitenobel)
 
-## Features
+---
 
-- **Vaults UI** — Termius-style top-tab navigation with server card grid
-- **Server Search** — instant filter by name, IP address, or comment
-- **Pin & Reorder** — pin servers to top, drag-and-drop reorder (syncs across org)
-- **SSH Terminal** — full 256-color & truecolor support, search (Cmd/Ctrl+F)
-- **Split Panes** — horizontal (Cmd+D) and vertical (Cmd+Shift+D) terminal splits
-- **3 App Themes** — Midnight, Onyx (true black, OLED) and Daylight (light), each paired with a matching terminal palette
-- **13 Built-in Terminal Themes** — Tokyo Night, Dracula, Monokai, Nord, Catppuccin and more (light variants too)
-- **Customizable Terminal** — font, size, cursor style, scrollback, line height
-- **SFTP File Manager** — dual-panel UI, drag-and-drop transfers, path copy
-- **Built-in Text Editor** — edit remote files directly
-- **Session Tabs** — multiple connections with persistent state
-- **Personal Snippets** — encrypted storage for tokens/secrets, paste to terminal
-- **Credential Viewer** — view/copy saved server passwords from Edit Server modal
-- **SSH Config Import** — import hosts from ~/.ssh/config
-- **Organizations** — team collaboration with role management (owner/admin/member/viewer)
-- **E2E Encryption** — credentials encrypted client-side with AES-256-GCM
-- **Cloud Sync** — via Supabase, works across devices
-- **Proxy Support** — HTTP/SOCKS5 proxy for app traffic with connection testing
-- **Master Password Remember** — secure device-level storage via OS keychain
-- **Smooth Animations** — modals, dropdowns, server cards with staggered transitions
-- **Cross-platform** — macOS, Windows, Linux
-- **Auto-updates** — Windows (silent), macOS (notification with download link)
+I built this because I was tired of paying Termius for cloud sync. Magic
+Term keeps your servers, snippets and credentials encrypted on your device
+with a master password you never send anywhere, and only the encrypted
+blobs are synced through Supabase. The server cannot read them, even if
+the database is dumped.
 
-## Known Issues
+The desktop app is a regular Electron app (xterm.js + ssh2 + react). The
+terminal does what you'd expect: 256-color, splits, search, SFTP file
+manager with drag-and-drop, snippets you can paste with one click, SSH
+config import. There are three light/dark UI themes and a dozen terminal
+palettes. Multi-user organizations are supported if you want to share
+servers with a team.
 
-**Organizations:**
+Screenshots and a feature tour live on [magicterm.app](https://magicterm.app).
 
-- Inviting members does not send an email — the invite appears in the app UI only
-- Invited users need to re-login (restart the app) to see pending invites
+## Install
 
-## Installation
+Grab the latest build from the [releases page](https://github.com/D3FVLT/MagicTerm/releases/latest):
 
-### Windows
+- **macOS** — `.dmg` for your architecture (`arm64` for M1+, `x64` for Intel).
+  The app isn't notarized yet, so on first launch run
+  `xattr -cr "/Applications/Magic Term.app"` once. Auto-updates show a
+  notification with a download link.
+- **Windows** — `MagicTerm-x64.exe`. Silent auto-updates in the background.
+- **Linux** — `.AppImage`, `.deb`, or `yay -S magicterm-bin` from the AUR.
+  No auto-updates yet.
 
-Download [MagicTerm-x64.exe](../../releases/latest) and run the installer.
+## Run from source
 
-Auto-updates are enabled — the app will silently update in background.
-
-### macOS
-
-Download the `.dmg` for your architecture:
-- **Apple Silicon (M1/M2/M3/M4):** [MagicTerm-arm64.dmg](../../releases/latest)
-- **Intel:** [MagicTerm-x64.dmg](../../releases/latest)
-
-**First launch fix** (app is not code-signed):
+You need Node 20+ and pnpm 9+.
 
 ```bash
-xattr -cr "/Applications/Magic Term.app"
-```
-
-Auto-updates show a notification with download link.
-
-### Linux
-
-**AppImage:**
-
-```bash
-chmod +x MagicTerm-*-x86_64.AppImage
-./MagicTerm-*-x86_64.AppImage
-```
-
-**Debian/Ubuntu:**
-
-```bash
-sudo dpkg -i magicterm_*_amd64.deb
-```
-
-**Arch Linux (AUR):**
-
-```bash
-yay -S magicterm-bin
-```
-
-> Auto-updates are not supported on Linux.
-
-## Quick Start (Development)
-
-### Prerequisites
-
-- Node.js 20+
-- pnpm 9+
-
-### Setup
-
-```bash
-# Clone
 git clone https://github.com/D3FVLT/MagicTerm.git
 cd MagicTerm
-
-# Install dependencies
 pnpm install
-
-# Set up Supabase (see docs/SUPABASE_SETUP.md)
-cp apps/desktop/.env.example apps/desktop/.env
-# Edit .env with your Supabase credentials
-
-# Run the SQL schema
-# Execute supabase/schema.sql in your Supabase SQL Editor
-# Then run additional migrations: add-user-profiles.sql, add-user-settings.sql, add-snippets.sql
-
-# Start development
+cp apps/desktop/.env.example apps/desktop/.env  # add your Supabase keys
 pnpm dev
 ```
 
-## Project Structure
-
-```
-MagicTerm/
-├── apps/
-│   └── desktop/           # Electron app
-│       ├── src/
-│       │   ├── main/      # Main process (SSH, SFTP, updater)
-│       │   ├── preload/   # IPC bridge
-│       │   └── renderer/  # React UI
-│       └── ...
-├── packages/
-│   ├── shared/            # Shared types & constants
-│   ├── crypto/            # E2E encryption (AES-256-GCM)
-│   └── supabase-client/   # Supabase SDK wrapper
-└── supabase/              # Database schema & migrations
-```
-
-## Security
-
-- **Client-side encryption** — All credentials encrypted with AES-256-GCM before leaving your device
-- **Master password** — Never transmitted or stored, only used to derive encryption keys
-- **Zero-knowledge sync** — Supabase only stores encrypted blobs
-- **Row Level Security** — Database policies ensure data isolation between users
-
-## Building
+The Supabase setup (schema + RLS policies) is documented in
+[`supabase/`](./supabase/). For desktop builds:
 
 ```bash
-# macOS (Intel + Apple Silicon)
-pnpm --filter @magicterm/desktop dist:mac
-
-# Windows (x64)
-pnpm --filter @magicterm/desktop dist:win
-
-# Linux (AppImage + deb)
-pnpm --filter @magicterm/desktop dist:linux
+pnpm --filter @magicterm/desktop dist:mac    # or dist:win / dist:linux
 ```
 
-Output will be in `apps/desktop/release/`.
+Releases are tagged (`git tag v0.x.x && git push origin v0.x.x`) and built
+in parallel by GitHub Actions. The workflow needs `SUPABASE_URL` and
+`SUPABASE_ANON_KEY` in repo secrets.
 
-## CI/CD Setup
+## How the encryption works
 
-Add these secrets to your GitHub repository:
+Master password goes through scrypt to derive a 256-bit key. That key
+encrypts every credential, snippet and SSH key with AES-256-GCM before
+anything leaves the device. Supabase only ever sees ciphertext, even if
+its database leaks. The master password itself is never sent or stored
+on the server — only a verifier hash that proves you know it without
+revealing it.
 
-| Secret | Description |
-|--------|-------------|
-| `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_ANON_KEY` | Supabase publishable (anon) key |
+The renderer process runs sandboxed with `contextIsolation: true` and a
+strict CSP. SSH and SFTP go through ssh2 in the main process with
+trust-on-first-use host-key pinning (you confirm the SHA-256 fingerprint
+on first connect, and a mismatch later triggers a loud MITM warning).
+Server-side, RLS policies make sure one user can't read another user's
+encrypted blobs even if they tried.
 
-Create a tag to trigger a release:
+If you spot something fishy in the crypto or the IPC surface, open an
+issue. The whole code is open and I'd rather know.
 
-```bash
-git tag v0.x.x
-git push origin v0.x.x
-```
+## Status
 
-The workflow builds all platforms in parallel, then creates a release with all artifacts.
+The app is in active development and works for daily use, but it's still
+pre-1.0 — schema and APIs may change between minor versions. See
+[ROADMAP.md](./ROADMAP.md) for what's coming and what's already shipped.
 
-## Contributing
+Feedback, bug reports and PRs are very welcome — open an issue on GitHub.
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+## Support the project
+
+Right now everything is on me: servers, Supabase, the domain, the time.
+The app is and will stay free, but if it saved you a Termius subscription
+and you can spare a coffee, there's a donate link below. Every contribution
+goes back into the project — covering hosting, paying for code-signing
+certificates (so you can stop running `xattr -cr` on macOS), and freeing
+up time to ship roadmap items faster.
+
+Donate: [donationalerts.com/r/whitenobel](https://www.donationalerts.com/r/whitenobel)
+
+Thank you!
 
 ## License
 
-MIT
+MIT — see [LICENSE](./LICENSE).
