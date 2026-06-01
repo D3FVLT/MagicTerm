@@ -16,7 +16,6 @@ about **supply-chain trust**, not the runtime security model.
 - ⏳ **Code-sign macOS builds** — Apple Developer ID + notarization.
   - Eliminates the `xattr -cr` ritual on first launch.
   - Hardens the auto-updater: signed binary + blockmap, not just blockmap.
-  - Cost: $99/year + ~30 min CI integration.
   - Removes the biggest "honest disclosure" item on the website's Security section.
 - ⏳ **Code-sign Windows builds** — EV cert or Azure Trusted Signing.
   - Removes SmartScreen warning for new releases.
