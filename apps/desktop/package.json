@@ -51,7 +51,7 @@
     "electron": "^42.0.0",
     "electron-builder": "^26.8.1",
     "electron-builder-squirrel-windows": "^26.8.1",
-    "electron-vite": "^2.2.0",
+    "electron-vite": "^5.0.0",
     "postcss": "^8.4.38",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
