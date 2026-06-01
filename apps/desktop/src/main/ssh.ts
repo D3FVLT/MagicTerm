@@ -11,6 +11,7 @@ interface SSHSession {
 }
 
 const sessions = new Map<string, SSHSession>();
+const pendingConnections = new Map<string, { ownerId: number; abort: () => void }>();
 
 function safeSend(sender: Electron.WebContents, channel: string, ...args: unknown[]): void {
   try {
@@ -41,6 +42,13 @@ export function cleanupAllSSHSessions(): void {
     }
     sessions.delete(id);
   }
+  for (const [, pending] of pendingConnections) {
+    try {
+      pending.abort();
+    } catch {
+    }
+  }
+  pendingConnections.clear();
 }
 
 export function checkSSHSessions(sender: Electron.WebContents): void {
@@ -58,6 +66,32 @@ export function checkSSHSessions(sender: Electron.WebContents): void {
   }
 }
 
+export const READY_TIMEOUT_MS = 15000;
+
+export function friendlyConnectError(err: Error): string {
+  const msg = err.message || '';
+  const code = (err as NodeJS.ErrnoException).code;
+  if (/Timed out while waiting for handshake/i.test(msg)) {
+    return "Couldn't reach the host — it didn't respond in time.";
+  }
+  if (code === 'ECONNREFUSED' || /ECONNREFUSED/.test(msg)) {
+    return 'Connection refused — check the host address and port.';
+  }
+  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN' || /getaddrinfo/.test(msg)) {
+    return "Host not found — check the address.";
+  }
+  if (code === 'ETIMEDOUT' || code === 'EHOSTUNREACH' || /ETIMEDOUT|EHOSTUNREACH/.test(msg)) {
+    return "Couldn't reach the host — it may be offline or behind a firewall.";
+  }
+  if (code === 'ECONNRESET' || /ECONNRESET/.test(msg)) {
+    return 'Connection reset by the host.';
+  }
+  if (/All configured authentication methods failed/i.test(msg)) {
+    return 'Authentication failed — check your username and credentials.';
+  }
+  return msg || 'Connection failed';
+}
+
 interface SshAuthConfig {
   host: string;
   port: number;
@@ -66,6 +100,7 @@ interface SshAuthConfig {
   privateKey?: string;
   keepaliveInterval?: number;
   keepaliveCountMax?: number;
+  readyTimeout?: number;
   hostVerifier: (key: Buffer) => boolean;
 }
 
@@ -87,19 +122,37 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
         sessions.delete(sessionId);
       }
 
-      return new Promise((resolve, reject) => {
+      const stalePending = pendingConnections.get(sessionId);
+      if (stalePending) {
+        pendingConnections.delete(sessionId);
+        stalePending.abort();
+      }
+
+      return new Promise((resolve) => {
         const client = new Client();
         let settled = false;
         const finish = (value: unknown): void => {
           if (settled) return;
           settled = true;
+          pendingConnections.delete(sessionId);
           resolve(value);
         };
         const fail = (err: Error): void => {
-          if (settled) return;
-          settled = true;
-          reject(err);
+          finish({ success: false, error: friendlyConnectError(err) });
         };
+
+        pendingConnections.set(sessionId, {
+          ownerId: event.sender.id,
+          abort: () => {
+            finish({ success: false, error: 'cancelled', cancelled: true });
+            setImmediate(() => {
+              try {
+                client.end();
+              } catch {
+              }
+            });
+          },
+        });
 
         const authConfig: SshAuthConfig = {
           host: config.host,
@@ -107,6 +160,7 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
           username: config.username,
           keepaliveInterval: 10000,
           keepaliveCountMax: 3,
+          readyTimeout: READY_TIMEOUT_MS,
           hostVerifier: (key: Buffer) => {
             const decision = evaluateHostKey(config.host, config.port, key);
             if (decision.kind === 'trusted') return true;
@@ -177,6 +231,8 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
               });
 
               stream.on('close', () => {
+                const current = sessions.get(sessionId);
+                if (current && current.client !== client) return;
                 safeSend(event.sender, IPC_CHANNELS.SSH_STATUS, sessionId, 'disconnected');
                 sessions.delete(sessionId);
               });
@@ -191,16 +247,16 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
         });
 
         client.on('error', (err) => {
-          // If we already resolved with a host-key challenge (or any other
-          // outcome), ignore the delayed `client-timeout` ssh2 fires after
-          // our hostVerifier returned false.
           if (settled) return;
           safeSend(event.sender, IPC_CHANNELS.SSH_STATUS, sessionId, 'error', err.message);
           fail(err);
         });
 
         client.on('close', () => {
-          sessions.delete(sessionId);
+          const current = sessions.get(sessionId);
+          if (current && current.client === client) {
+            sessions.delete(sessionId);
+          }
         });
 
         client.connect(authConfig);
@@ -209,6 +265,11 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
   );
 
   ipcMain.handle(IPC_CHANNELS.SSH_DISCONNECT, async (event, sessionId: string) => {
+    const pending = pendingConnections.get(sessionId);
+    if (pending && pending.ownerId === event.sender.id) {
+      pendingConnections.delete(sessionId);
+      pending.abort();
+    }
     const session = getOwnedSession(sessionId, event.sender);
     if (session) {
       session.stream?.close();

@@ -64,7 +64,12 @@ function isLegacyVerifier(value: string): boolean {
 
 async function legacyMatches(password: string, legacyHash: string): Promise<boolean> {
   // Legacy verifier was a single SHA-256 of the UTF-8 password, base64 encoded.
-  // Constant-time compare to avoid leaking timing info if it matters.
+  // This is NOT a place where we store a password hash: it only re-derives the
+  // old digest to verify a pre-existing legacy verifier, after which the caller
+  // (CRYPTO_VERIFY_MASTER_PASSWORD) immediately re-hashes the password with
+  // scrypt and overwrites the stored verifier. SHA-256 is therefore unavoidable
+  // here for backward compatibility and never used to persist new credentials.
+  // codeql[js/insufficient-password-hash]
   const expected = Buffer.from(legacyHash, 'base64');
   const actual = createHash('sha256').update(password, 'utf8').digest();
   if (expected.length !== actual.length) return false;

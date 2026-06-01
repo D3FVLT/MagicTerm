@@ -20,8 +20,8 @@ about **supply-chain trust**, not the runtime security model.
 - ⏳ **Code-sign Windows builds** — EV cert or Azure Trusted Signing.
   - Removes SmartScreen warning for new releases.
   - Lower priority than macOS (Windows users tolerate the warning better).
-- ⏳ **Repository checksums on the website's `/download`** — display SHA256 of each
-  artefact so power users can verify before installing.
+- ✅ **Repository checksums on the website's `/download`** — SHA256 of each
+  installer on the download page; `SHA256SUMS.txt` attached to every GitHub release.
 - ⏳ **Move credential decryption into the main process** — keep the master key
   off the renderer entirely. Renderer holds only ciphertext until the moment of
   use. Reduces the blast radius of a hypothetical XSS to near zero.
@@ -74,6 +74,7 @@ about **supply-chain trust**, not the runtime security model.
 
 ## Recently shipped
 
+- ✅ **v0.5.5** — supply-chain trust + connection UX: SHA256 checksums on `/download` and in every GitHub release (`SHA256SUMS.txt`), clearer SSH/SFTP connect states (spinner, friendly errors, Retry), 15 s timeout for unreachable hosts, no more stray handshake errors after closing a tab mid-connect, Electron 42 + dependency security updates, Dependabot for automated patch PRs.
 - ✅ **v0.5.4** — terminal hardening: explicit TOFU host-key prompts (no more silent trust on first connect), keyboard shortcuts cheatsheet modal, fixes for long-command rendering and `nano` redraws on retina macOS, Ctrl+R/Ctrl+L/Ctrl+C and other readline shortcuts now work on non-Latin keyboard layouts (Cyrillic, German, Greek, …).
 - ✅ **v0.5.3** — auth-flow polish: registration confirmation banner, password reset, account deletion with org ownership transfer, donate link, branded email templates, recovery from stale/deleted-account sessions.
 - ✅ **v0.5.2** — theme persistence fix.

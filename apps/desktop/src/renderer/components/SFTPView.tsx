@@ -17,6 +17,7 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
 
   const [isConnecting, setIsConnecting] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [retryNonce, setRetryNonce] = useState(0);
 
   const [localPath, setLocalPath] = useState('');
   const [localEntries, setLocalEntries] = useState<FileEntry[]>([]);
@@ -66,6 +67,8 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
   };
 
   useEffect(() => {
+    let active = true;
+
     const connect = async () => {
       setIsConnecting(true);
       setConnectionError(null);
@@ -73,9 +76,11 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
         let result: SftpConnectResult | null = null;
         for (let attempt = 0; attempt < 2; attempt++) {
           result = await window.electronAPI.sftp.connect(sessionId, config);
+          if (!active) return;
           if (result.success) break;
           if ('code' in result) {
             const trusted = await verifyHostKey(result);
+            if (!active) return;
             if (!trusted) {
               setConnectionError('Host key verification cancelled');
               return;
@@ -84,24 +89,28 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
           }
           break;
         }
+        if (!active) return;
         if (result && result.success) {
           const initialPath = result.homePath || '/';
           setRemotePath(initialPath);
           loadRemoteDir(initialPath);
+        } else if (result && 'cancelled' in result && result.cancelled) {
+          return;
         } else if (result && 'error' in result) {
           setConnectionError(result.error || 'Failed to connect');
         } else {
           setConnectionError('Failed to connect');
         }
       } catch (err) {
-        setConnectionError((err as Error).message);
+        if (active) setConnectionError((err as Error).message);
       } finally {
-        setIsConnecting(false);
+        if (active) setIsConnecting(false);
       }
     };
 
     const initLocalPath = async () => {
       const result = await window.electronAPI.localFs.getHome();
+      if (!active) return;
       if (result.success && result.path) {
         setLocalPath(result.path);
         loadLocalDir(result.path);
@@ -112,9 +121,10 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
     initLocalPath();
 
     return () => {
+      active = false;
       window.electronAPI.sftp.disconnect(sessionId);
     };
-  }, [sessionId, config, verifyHostKey]);
+  }, [sessionId, config, verifyHostKey, retryNonce]);
 
   useEffect(() => {
     const unsubscribe = window.electronAPI.sftp.onProgress((progress) => {
@@ -373,7 +383,20 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
               </svg>
             </div>
             <p className="mb-2 text-[var(--fg)]">Connection failed</p>
-            <p className="text-sm text-red-400">{connectionError}</p>
+            <p className="mb-5 text-sm text-red-400">{connectionError}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setConnectionError(null);
+                setRetryNonce((n) => n + 1);
+              }}
+              className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Retry
+            </button>
           </div>
         </div>
       </div>

@@ -22,9 +22,6 @@ export function TransferPanel({ transfers }: TransferPanelProps) {
   const activeTransfers = transfers.filter(
     (t) => t.status === 'pending' || t.status === 'transferring'
   );
-  const completedTransfers = transfers.filter(
-    (t) => t.status === 'completed' || t.status === 'error'
-  );
 
   if (transfers.length === 0) return null;
 
