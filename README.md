@@ -3,7 +3,7 @@
 A free SSH/SFTP client with end-to-end encrypted cloud sync. Cross-platform
 desktop app for macOS, Windows and Linux.
 
-[![version](https://img.shields.io/badge/version-0.5.5-blue)](https://github.com/D3FVLT/MagicTerm/releases)
+[![version](https://img.shields.io/badge/version-0.5.6-blue)](https://github.com/D3FVLT/MagicTerm/releases)
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
 [magicterm.app](https://magicterm.app) · [Roadmap](./ROADMAP.md) · [Donate](https://www.donationalerts.com/r/whitenobel)

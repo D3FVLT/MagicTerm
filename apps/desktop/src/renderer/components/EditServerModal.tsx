@@ -34,10 +34,19 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
   const [showPassword, setShowPassword] = useState(false);
   const [currentCredentials, setCurrentCredentials] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [initialForm, setInitialForm] = useState<{
+    name: string;
+    host: string;
+    port: string;
+    username: string;
+    authType: AuthType;
+    comment: string;
+  } | null>(null);
 
   useEffect(() => {
     if (server && isOpen) {
       setIsDecrypting(true);
+      setInitialForm(null);
       setName(server.name);
       setPort(String(server.port));
       setAuthType(server.authType);
@@ -55,19 +64,39 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
         setHost(decryptedHost);
         setUsername(decryptedUsername);
         setCurrentCredentials(decryptedCreds || '');
+        setInitialForm({
+          name: server.name,
+          host: decryptedHost,
+          port: String(server.port),
+          username: decryptedUsername,
+          authType: server.authType,
+          comment: server.comment || '',
+        });
       }).catch((err) => {
         setError('Failed to decrypt server data: ' + (err instanceof Error ? err.message : 'Unknown error'));
       }).finally(() => {
         setIsDecrypting(false);
       });
     }
-  }, [server, isOpen, decryptServerHost, decryptServerUsername]);
+  }, [server, isOpen, decryptServerHost, decryptServerUsername, decryptServerCredentials]);
 
-  const handleClose = () => {
+  const isDirty =
+    initialForm !== null &&
+    (name !== initialForm.name ||
+      host !== initialForm.host ||
+      port !== initialForm.port ||
+      username !== initialForm.username ||
+      authType !== initialForm.authType ||
+      comment !== initialForm.comment ||
+      Boolean(authType === 'password' ? password : privateKey));
+
+  const handleClose = (force = false) => {
+    if (!force && isDirty && !window.confirm('Discard unsaved changes?')) return;
     setShowDeleteConfirm(false);
     setShowPassword(false);
     setCurrentCredentials('');
     setCopiedField(null);
+    setInitialForm(null);
     onClose();
   };
 
@@ -108,7 +137,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
       }
 
       await editServer(server.id, updates);
-      handleClose();
+      handleClose(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update server');
     } finally {
@@ -121,7 +150,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
     setIsDeleting(true);
     try {
       await removeServer(server.id);
-      handleClose();
+      handleClose(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete server');
     } finally {
@@ -132,7 +161,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
   if (!server) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Edit Server">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Edit Server" closeOnBackdropClick={false}>
       {isDecrypting ? (
         <div className="flex items-center justify-center py-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
@@ -369,7 +398,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
           </div>
           
           <div className="flex gap-3">
-            <Button type="button" variant="ghost" onClick={handleClose}>
+            <Button type="button" variant="ghost" onClick={() => handleClose()}>
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>

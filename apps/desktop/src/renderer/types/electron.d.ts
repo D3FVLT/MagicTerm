@@ -55,7 +55,7 @@ export interface ElectronAPI {
     connect: (sessionId: string, config: SSHConnectionConfig) => Promise<SshConnectResult>;
     disconnect: (sessionId: string) => Promise<{ success: boolean }>;
     sendData: (sessionId: string, data: string) => Promise<void>;
-    resize: (sessionId: string, size: TerminalSize) => Promise<void>;
+    resize: (sessionId: string, size: TerminalSize) => Promise<{ applied: boolean; queued: boolean }>;
     onData: (callback: SSHDataCallback) => () => void;
     onStatus: (callback: SSHStatusCallback) => () => void;
   };

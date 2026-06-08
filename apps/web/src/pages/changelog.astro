@@ -21,9 +21,22 @@ import { SITE } from '~/data/site';
 
     <section class="release">
       <header class="release__head">
-        <h2>v0.5.5</h2>
+        <h2>v0.5.6</h2>
         <span class="release__date">June 2026</span>
         <span class="release__tag">Latest</span>
+      </header>
+      <ul>
+        <li><strong>Fixed:</strong> terminal prompt corruption when browsing command history (↑), <code>nano</code> status bar glitches, and stale progress lines (e.g. <code>docker compose down</code>) on macOS — caused by PTY and on-screen terminal size getting out of sync.</li>
+        <li><strong>Fixed:</strong> <kbd>Ctrl+R</kbd> and other readline shortcuts (<kbd>Ctrl+L</kbd>, <kbd>Ctrl+A</kbd>, …) now work reliably on macOS and non-Latin keyboard layouts.</li>
+        <li><strong>SSH UX:</strong> connecting overlay with spinner, error message, and Retry (same as SFTP).</li>
+        <li><strong>Fixed:</strong> Add/Edit Server modal no longer closes when clicking outside; warns before discarding unsaved changes (<a href="https://github.com/D3FVLT/MagicTerm/issues/18">#18</a>).</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <header class="release__head">
+        <h2>v0.5.5</h2>
+        <span class="release__date">June 2026</span>
       </header>
       <ul>
         <li><strong>Verify downloads:</strong> the <a href="/download">Download</a> page now lists a SHA256 hash for every installer (macOS, Windows, Linux). Each GitHub release ships a <code>SHA256SUMS.txt</code> with the same values.</li>

@@ -8,10 +8,13 @@ interface SSHSession {
   stream: ClientChannel | null;
   sender: Electron.WebContents;
   ownerId: number;
+  terminalSize?: TerminalSize;
 }
 
 const sessions = new Map<string, SSHSession>();
 const pendingConnections = new Map<string, { ownerId: number; abort: () => void }>();
+/** Resize requests that arrive before the PTY stream is ready. */
+const pendingTerminalSizes = new Map<string, TerminalSize>();
 
 function safeSend(sender: Electron.WebContents, channel: string, ...args: unknown[]): void {
   try {
@@ -49,6 +52,7 @@ export function cleanupAllSSHSessions(): void {
     }
   }
   pendingConnections.clear();
+  pendingTerminalSizes.clear();
 }
 
 export function checkSSHSessions(sender: Electron.WebContents): void {
@@ -127,6 +131,7 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
         pendingConnections.delete(sessionId);
         stalePending.abort();
       }
+      pendingTerminalSizes.delete(sessionId);
 
       return new Promise((resolve) => {
         const client = new Client();
@@ -201,11 +206,15 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
         }
 
         client.on('ready', () => {
+          const pendingSize = pendingTerminalSizes.get(sessionId);
+          const initialCols = pendingSize?.cols ?? 120;
+          const initialRows = pendingSize?.rows ?? 40;
+
           client.shell(
             {
               term: 'xterm-256color',
-              cols: 120,
-              rows: 40,
+              cols: initialCols,
+              rows: initialRows,
             },
             {
               env: {
@@ -224,7 +233,10 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
                 stream,
                 sender: event.sender,
                 ownerId: event.sender.id,
+                terminalSize: { cols: initialCols, rows: initialRows },
               });
+
+              pendingTerminalSizes.delete(sessionId);
 
               stream.on('data', (data: Buffer) => {
                 safeSend(event.sender, IPC_CHANNELS.SSH_DATA, sessionId, data.toString());
@@ -235,12 +247,14 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
                 if (current && current.client !== client) return;
                 safeSend(event.sender, IPC_CHANNELS.SSH_STATUS, sessionId, 'disconnected');
                 sessions.delete(sessionId);
+                pendingTerminalSizes.delete(sessionId);
               });
 
               stream.stderr.on('data', (data: Buffer) => {
                 safeSend(event.sender, IPC_CHANNELS.SSH_DATA, sessionId, data.toString());
               });
 
+              safeSend(event.sender, IPC_CHANNELS.SSH_STATUS, sessionId, 'connected');
               finish({ success: true });
             }
           );
@@ -276,6 +290,7 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
       session.client.end();
       sessions.delete(sessionId);
     }
+    pendingTerminalSizes.delete(sessionId);
     return { success: true };
   });
 
@@ -292,7 +307,12 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
       const session = getOwnedSession(sessionId, event.sender);
       if (session?.stream) {
         session.stream.setWindow(size.rows, size.cols, 0, 0);
+        session.terminalSize = size;
+        pendingTerminalSizes.delete(sessionId);
+        return { applied: true, queued: false };
       }
+      pendingTerminalSizes.set(sessionId, size);
+      return { applied: false, queued: true };
     }
   );
 }

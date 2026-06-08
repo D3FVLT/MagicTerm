@@ -37,7 +37,18 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
     setError('');
   };
 
-  const handleClose = () => {
+  const isDirty =
+    Boolean(name.trim()) ||
+    Boolean(host.trim()) ||
+    Boolean(username.trim()) ||
+    Boolean(password) ||
+    Boolean(privateKey) ||
+    Boolean(comment.trim()) ||
+    port !== '22' ||
+    authType !== 'password';
+
+  const handleClose = (force = false) => {
+    if (!force && isDirty && !window.confirm('Discard unsaved changes?')) return;
     resetForm();
     onClose();
   };
@@ -69,7 +80,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
         credentials,
         comment: comment.trim() || undefined,
       });
-      handleClose();
+      handleClose(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add server');
     } finally {
@@ -116,7 +127,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Add Server">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Add Server" closeOnBackdropClick={false}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex items-center justify-between">
           <button
@@ -234,7 +245,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
         )}
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="ghost" onClick={handleClose}>
+          <Button type="button" variant="ghost" onClick={() => handleClose()}>
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading}>
