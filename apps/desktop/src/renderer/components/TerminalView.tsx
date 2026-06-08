@@ -9,6 +9,13 @@ import { SnippetsPanel } from './SnippetsPanel';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { ConnectionOverlay } from './ConnectionOverlay';
 import { TERMINAL_THEMES, DEFAULT_TERMINAL_SETTINGS, type TerminalSettings } from '../lib/terminal-themes';
+import { attachTerminalKeyHandler } from '../lib/terminal-keyboard';
+import {
+  clearPtySizeCache,
+  disposePtyResize,
+  handlePtyResize,
+  syncPtySize,
+} from '../lib/terminal-resize';
 import { useTerminal } from '../contexts/TerminalContext';
 import '@xterm/xterm/css/xterm.css';
 
@@ -36,7 +43,11 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
   const [termSettings, setTermSettings] = useState<TerminalSettings>(DEFAULT_TERMINAL_SETTINGS);
   const settingsLoadedRef = useRef(false);
   const lastSizeRef = useRef<{ cols: number; rows: number } | null>(null);
+  const lastContainerRef = useRef<{ width: number; height: number } | null>(null);
+  const ptySyncedRef = useRef(false);
   const resizeRafRef = useRef<number | null>(null);
+  const resizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ptyRefs = { lastSizeRef, lastContainerRef, ptySyncedRef, resizeRafRef, resizeDebounceRef };
 
   const { getSession, reconnect } = useTerminal();
   const session = getSession(sessionId);
@@ -46,28 +57,13 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       ? session?.status
       : undefined;
 
-  const syncPtySize = useCallback(() => {
-    if (!fitAddonRef.current || !terminalRef.current || !containerRef.current) return;
-    try {
-      fitAddonRef.current.fit();
-      const { cols, rows } = terminalRef.current;
-      if (!cols || !rows) return;
-      const last = lastSizeRef.current;
-      if (last && last.cols === cols && last.rows === rows) return;
-      lastSizeRef.current = { cols, rows };
-      window.electronAPI.ssh.resize(sessionId, { cols, rows });
-    } catch {
-      // Terminal not ready yet
-    }
+  const runSyncPtySize = useCallback(() => {
+    syncPtySize(sessionId, containerRef.current, terminalRef.current, fitAddonRef.current, ptyRefs);
   }, [sessionId]);
 
-  const handleResize = useCallback(() => {
-    if (resizeRafRef.current !== null) cancelAnimationFrame(resizeRafRef.current);
-    resizeRafRef.current = requestAnimationFrame(() => {
-      resizeRafRef.current = null;
-      syncPtySize();
-    });
-  }, [syncPtySize]);
+  const runHandleResize = useCallback(() => {
+    handlePtyResize(sessionId, containerRef, terminalRef, fitAddonRef, ptyRefs);
+  }, [sessionId]);
 
   const handleSearch = useCallback((direction: 'next' | 'prev') => {
     if (!searchAddonRef.current || !searchQuery) return;
@@ -95,10 +91,6 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
-        e.preventDefault();
-        toggleSearch();
-      }
       if (e.key === 'Escape' && showSearch) {
         setShowSearch(false);
         terminalRef.current?.focus();
@@ -106,25 +98,30 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearch, toggleSearch]);
+  }, [showSearch]);
 
   useEffect(() => {
-    if (isActive && fitAddonRef.current && terminalRef.current) {
-      const timers = [
-        setTimeout(() => {
-          syncPtySize();
-          terminalRef.current?.focus();
-        }, 20),
-        setTimeout(() => {
-          syncPtySize();
-        }, 120),
-        setTimeout(() => {
-          syncPtySize();
-        }, 300),
-      ];
-      return () => timers.forEach((t) => clearTimeout(t));
+    if (session?.status !== 'connected' || !terminalRef.current) return;
+    clearPtySizeCache(ptyRefs);
+    void syncPtySize(
+      sessionId,
+      containerRef.current,
+      terminalRef.current,
+      fitAddonRef.current,
+      ptyRefs
+    );
+  }, [session?.status, sessionId]);
+
+  useEffect(() => {
+    if (isActive && terminalRef.current) {
+      clearPtySizeCache(ptyRefs);
+      const timer = setTimeout(() => {
+        runSyncPtySize();
+        terminalRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
     }
-  }, [isActive, syncPtySize]);
+  }, [isActive, runSyncPtySize]);
 
   useEffect(() => {
     const loadSettings = () => {
@@ -150,9 +147,10 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       terminalRef.current.options.cursorBlink = termSettings.cursorBlink;
       terminalRef.current.options.scrollback = termSettings.scrollback;
       terminalRef.current.options.lineHeight = termSettings.lineHeight;
-      setTimeout(() => syncPtySize(), 50);
+      clearPtySizeCache(ptyRefs);
+      setTimeout(() => runSyncPtySize(), 50);
     }
-  }, [termSettings, syncPtySize]);
+  }, [termSettings, runSyncPtySize]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -207,71 +205,13 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       console.warn('WebGL addon failed to load, using canvas renderer');
     }
 
-    // Initial PTY sync (with a delayed second pass after layout settles).
-    syncPtySize();
-    requestAnimationFrame(() => {
-      syncPtySize();
-    });
+    runSyncPtySize();
+    requestAnimationFrame(() => runSyncPtySize());
 
-    const codeToLatin = (code: string): string | null => {
-      if (code.length === 4 && code.startsWith('Key')) {
-        return code.slice(3).toLowerCase();
-      }
-      return null;
-    };
-
-    terminal.attachCustomKeyEventHandler((ev) => {
-      if (ev.type !== 'keydown') return true;
-
-      const physical = codeToLatin(ev.code);
-      const hasCtrl = ev.ctrlKey || ev.metaKey;
-      const hasSelection = terminal.hasSelection();
-
-      if (hasCtrl && ev.shiftKey && physical === 'c') {
-        if (hasSelection) {
-          void window.electronAPI.clipboard.writeText(terminal.getSelection());
-        }
-        ev.preventDefault();
-        return false;
-      }
-
-      if (hasCtrl && !ev.shiftKey && physical === 'c' && hasSelection) {
-        void window.electronAPI.clipboard.writeText(terminal.getSelection());
-        ev.preventDefault();
-        return false;
-      }
-
-      if (hasCtrl && ev.shiftKey && physical === 'v') {
-        window.electronAPI.clipboard
-          .readText()
-          .then((result) => {
-            if (result.success && result.text) {
-              void window.electronAPI.ssh.sendData(sessionId, result.text);
-            }
-          })
-          .catch(() => {});
-        ev.preventDefault();
-        return false;
-      }
-
-      if (
-        ev.ctrlKey &&
-        !ev.metaKey &&
-        !ev.altKey &&
-        !ev.shiftKey &&
-        physical &&
-        ev.key.length === 1 &&
-        ev.key.toLowerCase() !== physical
-      ) {
-        const code = physical.charCodeAt(0) - 96;
-        if (code >= 1 && code <= 26) {
-          window.electronAPI.ssh.sendData(sessionId, String.fromCharCode(code));
-          ev.preventDefault();
-          return false;
-        }
-      }
-
-      return true;
+    attachTerminalKeyHandler({
+      sessionId,
+      terminal,
+      onToggleSearch: toggleSearch,
     });
 
     terminal.onData((data) => {
@@ -297,13 +237,21 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
             setConnectionStatus('disconnected');
           } else if (status === 'connected') {
             setConnectionStatus('connected');
+            clearPtySizeCache(ptyRefs);
+            void syncPtySize(
+              sessionId,
+              containerRef.current,
+              terminalRef.current,
+              fitAddonRef.current,
+              ptyRefs
+            );
           }
         }
       }
     );
 
     const resizeObserver = new ResizeObserver(() => {
-      requestAnimationFrame(() => handleResize());
+      runHandleResize();
     });
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
@@ -315,14 +263,10 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       removeDataListener();
       removeStatusListener();
       resizeObserver.disconnect();
-      if (resizeRafRef.current !== null) {
-        cancelAnimationFrame(resizeRafRef.current);
-        resizeRafRef.current = null;
-      }
-      lastSizeRef.current = null;
+      disposePtyResize(ptyRefs);
       terminal.dispose();
     };
-  }, [sessionId, handleResize]);
+  }, [sessionId, runHandleResize, runSyncPtySize, toggleSearch]);
 
   const activeTheme = TERMINAL_THEMES[termSettings.themeId] || TERMINAL_THEMES['tokyo-night'];
 

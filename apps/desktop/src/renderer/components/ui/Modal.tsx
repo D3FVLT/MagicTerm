@@ -6,9 +6,11 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  /** When false, clicking the backdrop does nothing. Default: true. */
+  closeOnBackdropClick?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, closeOnBackdropClick = true }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -33,7 +35,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     <div
       className="no-drag fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (closeOnBackdropClick && e.target === e.currentTarget) onClose();
       }}
     >
       <div className="animate-fade-in pointer-events-none absolute inset-0 bg-black/60 backdrop-blur-sm" />
