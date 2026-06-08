@@ -30,6 +30,7 @@ import { SITE } from '~/data/site';
         <li><strong>Fixed:</strong> <kbd>Ctrl+R</kbd> and other readline shortcuts (<kbd>Ctrl+L</kbd>, <kbd>Ctrl+A</kbd>, …) now work reliably on macOS and non-Latin keyboard layouts.</li>
         <li><strong>SSH UX:</strong> connecting overlay with spinner, error message, and Retry (same as SFTP).</li>
         <li><strong>Fixed:</strong> Add/Edit Server modal no longer closes when clicking outside; warns before discarding unsaved changes (<a href="https://github.com/D3FVLT/MagicTerm/issues/18">#18</a>).</li>
+        <li><strong>Hotfix (rebuild):</strong> <kbd>Ctrl+R</kbd> and other readline shortcuts work in production builds — dev-only behavior from <code>electron-toolkit</code> was swallowing <kbd>Ctrl+R</kbd> before it reached the terminal.</li>
       </ul>
     </section>
 

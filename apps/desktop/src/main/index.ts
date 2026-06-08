@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell, ipcMain, powerMonitor, dialog } from 'electron';
 import { join } from 'path';
-import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import { electronApp, is } from '@electron-toolkit/utils';
 import { setupSSHHandlers, cleanupAllSSHSessions, checkSSHSessions, getActiveSessionCount as getSSHCount } from './ssh';
 import { setupSFTPHandlers, cleanupAllSFTPSessions, getActiveSessionCount as getSFTPCount } from './sftp';
 import { setupLocalFsHandlers } from './local-fs';
@@ -32,6 +32,32 @@ function safeOpenExternal(rawUrl: string): void {
   } else {
     console.warn('[Security] Blocked openExternal for non-allowlisted URL');
   }
+}
+
+function installWindowShortcuts(window: BrowserWindow): void {
+  window.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return;
+
+    if (is.dev && input.code === 'F12') {
+      if (window.webContents.isDevToolsOpened()) {
+        window.webContents.closeDevTools();
+      } else {
+        window.webContents.openDevTools({ mode: 'undocked' });
+      }
+      event.preventDefault();
+      return;
+    }
+
+    if (
+      !is.dev &&
+      process.platform === 'darwin' &&
+      input.code === 'KeyR' &&
+      input.meta &&
+      !input.control
+    ) {
+      event.preventDefault();
+    }
+  });
 }
 
 
@@ -117,7 +143,7 @@ app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.magicterm.app');
 
   app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window);
+    installWindowShortcuts(window);
   });
 
   installSecurityPolicies();
