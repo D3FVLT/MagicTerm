@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSnippets } from '../contexts/SnippetsContext';
 import { copySecretToClipboard } from '../lib/secret-clipboard';
 import type { Snippet } from '@magicterm/shared';
@@ -7,9 +7,13 @@ interface SnippetsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   onPaste?: (text: string) => void;
+  captureKeys?: boolean;
 }
 
-export function SnippetsPanel({ isOpen, onClose, onPaste }: SnippetsPanelProps) {
+const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform);
+const MOD_LABEL = isMac ? '⌘' : 'Ctrl';
+
+export function SnippetsPanel({ isOpen, onClose, onPaste, captureKeys = true }: SnippetsPanelProps) {
   const { snippets, isLoading, addSnippet, editSnippet, removeSnippet, decryptSnippetValue } = useSnippets();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -19,6 +23,31 @@ export function SnippetsPanel({ isOpen, onClose, onPaste }: SnippetsPanelProps) 
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCopy = useCallback(async (snippet: Snippet) => {
+    try {
+      const decrypted = await decryptSnippetValue(snippet);
+      // Snippets contain the user's tokens/passwords by definition. Use the
+      // auto-clearing helper so the value is wiped from the clipboard 30s
+      // after copy unless the user re-copied something else in the meantime.
+      copySecretToClipboard(decrypted);
+      setCopiedId(snippet.id);
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch {
+      setError('Failed to copy');
+    }
+  }, [decryptSnippetValue]);
+
+  const handlePaste = useCallback(async (snippet: Snippet) => {
+    if (!onPaste) return;
+    try {
+      const decrypted = await decryptSnippetValue(snippet);
+      onPaste(decrypted);
+      onClose();
+    } catch {
+      setError('Failed to paste');
+    }
+  }, [decryptSnippetValue, onPaste, onClose]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -38,30 +67,45 @@ export function SnippetsPanel({ isOpen, onClose, onPaste }: SnippetsPanelProps) 
     }
   }, [isAdding]);
 
-  const handleCopy = async (snippet: Snippet) => {
-    try {
-      const decrypted = await decryptSnippetValue(snippet);
-      // Snippets contain the user's tokens/passwords by definition. Use the
-      // auto-clearing helper so the value is wiped from the clipboard 30s
-      // after copy unless the user re-copied something else in the meantime.
-      copySecretToClipboard(decrypted);
-      setCopiedId(snippet.id);
-      setTimeout(() => setCopiedId(null), 1500);
-    } catch {
-      setError('Failed to copy');
-    }
-  };
+  // Keyboard: Esc closes; 1–9 paste corresponding snippet (when not editing).
+  useEffect(() => {
+    if (!isOpen || !captureKeys) return;
 
-  const handlePaste = async (snippet: Snippet) => {
-    if (!onPaste) return;
-    try {
-      const decrypted = await decryptSnippetValue(snippet);
-      onPaste(decrypted);
-      onClose();
-    } catch (err) {
-      setError('Failed to paste');
-    }
-  };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isAdding) {
+          setIsAdding(false);
+          setEditingId(null);
+          setName('');
+          setValue('');
+          setError(null);
+        } else {
+          onClose();
+        }
+        return;
+      }
+
+      if (isAdding || !onPaste) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      const digit = e.code.match(/^Digit([1-9])$/)?.[1] ?? e.key.match(/^([1-9])$/)?.[1];
+      if (!digit) return;
+
+      const index = Number(digit) - 1;
+      const snippet = snippets[index];
+      if (!snippet) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      void handlePaste(snippet);
+    };
+
+    // Capture so digits don't land in the terminal while the panel is open.
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, captureKeys, isAdding, onPaste, onClose, snippets, handlePaste]);
 
   const handleSave = async () => {
     if (!name.trim() || !value.trim()) {
@@ -92,7 +136,7 @@ export function SnippetsPanel({ isOpen, onClose, onPaste }: SnippetsPanelProps) 
       setName(snippet.name);
       setValue(decrypted);
       setIsAdding(true);
-    } catch (err) {
+    } catch {
       setError('Failed to load snippet');
     }
   };
@@ -190,68 +234,84 @@ export function SnippetsPanel({ isOpen, onClose, onPaste }: SnippetsPanelProps) 
           </div>
         ) : (
           <ul>
-            {snippets.map((snippet) => (
-              <li
-                key={snippet.id}
-                className="group flex items-center gap-2 border-b border-[var(--border)]/50 px-3 py-2 hover:bg-[var(--border)]/50"
-              >
-                <div
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => handleCopy(snippet)}
-                  title="Click to copy"
+            {snippets.map((snippet, index) => {
+              const shortcutDigit = index < 9 && onPaste ? String(index + 1) : null;
+              return (
+                <li
+                  key={snippet.id}
+                  className="group flex items-center gap-2 border-b border-[var(--border)]/50 px-3 py-2 hover:bg-[var(--border)]/50"
                 >
-                  <div className="flex items-center gap-2">
-                    <svg className="h-3.5 w-3.5 flex-shrink-0 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                    </svg>
-                    <span className="truncate text-sm text-[var(--fg)]">{snippet.name}</span>
+                  {shortcutDigit && (
+                    <kbd
+                      className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-2)] font-mono text-[10px] text-[var(--fg-subtle)]"
+                      title={`Press ${shortcutDigit} to paste`}
+                    >
+                      {shortcutDigit}
+                    </kbd>
+                  )}
+                  <div
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => handleCopy(snippet)}
+                    title="Click to copy"
+                  >
+                    <div className="flex items-center gap-2">
+                      {!shortcutDigit && (
+                        <svg className="h-3.5 w-3.5 flex-shrink-0 text-[var(--accent)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                        </svg>
+                      )}
+                      <span className="truncate text-sm text-[var(--fg)]">{snippet.name}</span>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {copiedId === snippet.id ? (
-                    <span className="text-xs text-green-400">Copied!</span>
-                  ) : (
-                    <>
-                      {onPaste && (
+
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {copiedId === snippet.id ? (
+                      <span className="text-xs text-green-400">Copied!</span>
+                    ) : (
+                      <>
+                        {onPaste && (
+                          <button
+                            onClick={() => handlePaste(snippet)}
+                            className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--accent-hover)] hover:text-fg"
+                            title={shortcutDigit ? `Paste to terminal (${shortcutDigit})` : 'Paste to terminal'}
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                          </button>
+                        )}
                         <button
-                          onClick={() => handlePaste(snippet)}
-                          className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--accent-hover)] hover:text-fg"
-                          title="Paste to terminal"
+                          onClick={() => handleEdit(snippet)}
+                          className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
+                          title="Edit"
                         >
                           <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                           </svg>
                         </button>
-                      )}
-                      <button
-                        onClick={() => handleEdit(snippet)}
-                        className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
-                        title="Edit"
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDelete(snippet.id)}
-                        className="rounded p-1 text-[var(--fg-subtle)] hover:bg-red-500/20 hover:text-red-400"
-                        title="Delete"
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </li>
-            ))}
+                        <button
+                          onClick={() => handleDelete(snippet.id)}
+                          className="rounded p-1 text-[var(--fg-subtle)] hover:bg-red-500/20 hover:text-red-400"
+                          title="Delete"
+                        >
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
 
-      <div className="border-t border-[var(--border)] px-3 py-2">
+      <div className="border-t border-[var(--border)] px-3 py-2 space-y-0.5">
+        <p className="text-xs text-[var(--fg-subtle)]">
+          {MOD_LABEL}+Shift+S to open • 1–9 paste • Esc close
+        </p>
         <p className="text-xs text-[var(--fg-subtle)]">
           Click to copy • All values are encrypted
         </p>

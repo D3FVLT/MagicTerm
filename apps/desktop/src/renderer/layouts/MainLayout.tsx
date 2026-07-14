@@ -41,8 +41,8 @@ export function MainLayout() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [tabs, activeTabId, getSession, splitPane, closePane]);
 
-  const getServerName = (serverId: string) => {
-    return servers.find((s) => s.id === serverId)?.name;
+  const getServerName = (serverId: string, fallbackName?: string) => {
+    return servers.find((s) => s.id === serverId)?.name || fallbackName;
   };
 
   return (
@@ -78,7 +78,7 @@ export function MainLayout() {
                 ) : (
                   <TerminalView
                     sessionId={tab.rootSessionId}
-                    serverName={getServerName(tab.serverId)}
+                    serverName={getServerName(tab.serverId, tab.serverName)}
                     isActive={isActive}
                     onReconnect={reconnect}
                   />
@@ -86,7 +86,7 @@ export function MainLayout() {
               ) : rootSession?.config ? (
                 <SFTPView
                   sessionId={tab.rootSessionId}
-                  serverName={getServerName(tab.serverId) || 'SFTP'}
+                  serverName={getServerName(tab.serverId, tab.serverName) || 'SFTP'}
                   config={rootSession.config}
                 />
               ) : null}

@@ -37,8 +37,8 @@ export function TopBar() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showUserMenu]);
 
-  const getServerName = (serverId: string) => {
-    return servers.find((s) => s.id === serverId)?.name || 'Unknown';
+  const getServerName = (serverId: string, fallbackName?: string) => {
+    return servers.find((s) => s.id === serverId)?.name || fallbackName || 'Unknown';
   };
 
   return (
@@ -66,7 +66,7 @@ export function TopBar() {
         <div className="no-drag flex h-full items-center gap-0.5 overflow-x-auto px-1">
           {tabs.map((tab) => {
             const isActive = activeView === tab.rootSessionId;
-            const serverName = getServerName(tab.serverId);
+            const serverName = getServerName(tab.serverId, tab.serverName);
             const rootSession = getSession(tab.rootSessionId);
             const sessionType = rootSession?.type || 'terminal';
             const sessionStatus = rootSession?.status || 'disconnected';

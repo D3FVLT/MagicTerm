@@ -47,6 +47,16 @@ const GROUPS: ShortcutGroup[] = [
     ],
   },
   {
+    title: 'Snippets',
+    hint: 'Encrypted tokens and secrets — no mouse needed',
+    items: [
+      { keys: ['Mod+Shift+S'], description: 'Open / close snippets panel' },
+      { keys: ['1'], description: 'Paste 1st snippet (while panel is open)' },
+      { keys: ['2'], description: 'Paste 2nd snippet … up to 9' },
+      { keys: ['Esc'], description: 'Close snippets panel' },
+    ],
+  },
+  {
     title: 'Clipboard',
     hint: 'Copy/paste',
     items: isMac

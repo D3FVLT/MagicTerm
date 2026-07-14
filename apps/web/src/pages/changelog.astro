@@ -21,9 +21,20 @@ import { SITE } from '~/data/site';
 
     <section class="release">
       <header class="release__head">
+        <h2>v0.5.7</h2>
+        <span class="release__date">July 2026</span>
+        <span class="release__tag">Latest</span>
+      </header>
+      <ul>
+        <li><strong>Fixed:</strong> open session tabs no longer rename to "Unknown" when switching between organization and personal vaults — the server name is kept on the tab.</li>
+        <li><strong>Snippets:</strong> open the panel with <kbd>Cmd/Ctrl+Shift+S</kbd>; press <kbd>1</kbd>–<kbd>9</kbd> to paste a snippet without using the mouse. Documented in Keyboard shortcuts and the panel footer.</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <header class="release__head">
         <h2>v0.5.6</h2>
         <span class="release__date">June 2026</span>
-        <span class="release__tag">Latest</span>
       </header>
       <ul>
         <li><strong>Fixed:</strong> terminal prompt corruption when browsing command history (↑), <code>nano</code> status bar glitches, and stale progress lines (e.g. <code>docker compose down</code>) on macOS — caused by PTY and on-screen terminal size getting out of sync.</li>

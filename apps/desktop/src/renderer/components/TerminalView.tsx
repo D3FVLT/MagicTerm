@@ -77,8 +77,16 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
   const toggleSearch = useCallback(() => {
     setShowSearch((prev) => {
       if (!prev) {
+        setShowSnippets(false);
         setTimeout(() => searchInputRef.current?.focus(), 50);
       }
+      return !prev;
+    });
+  }, []);
+
+  const toggleSnippets = useCallback(() => {
+    setShowSnippets((prev) => {
+      if (!prev) setShowSearch(false);
       return !prev;
     });
   }, []);
@@ -212,6 +220,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       sessionId,
       terminal,
       onToggleSearch: toggleSearch,
+      onToggleSnippets: toggleSnippets,
     });
 
     terminal.onData((data) => {
@@ -266,7 +275,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
       disposePtyResize(ptyRefs);
       terminal.dispose();
     };
-  }, [sessionId, runHandleResize, runSyncPtySize, toggleSearch]);
+  }, [sessionId, runHandleResize, runSyncPtySize, toggleSearch, toggleSnippets]);
 
   const activeTheme = TERMINAL_THEMES[termSettings.themeId] || TERMINAL_THEMES['tokyo-night'];
 
@@ -317,13 +326,13 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
           {/* Snippets Button */}
           <div className="relative">
             <button
-              onClick={() => setShowSnippets((prev) => !prev)}
+              onClick={toggleSnippets}
               className={`rounded-md p-2 transition-colors ${
                 showSnippets 
                   ? 'bg-[var(--accent-hover)] text-white' 
                   : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
               }`}
-              title="Snippets (tokens, secrets)"
+              title="Snippets (Cmd/Ctrl+Shift+S)"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -333,7 +342,11 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
             <div className="absolute bottom-full right-0 mb-2">
               <SnippetsPanel
                 isOpen={showSnippets}
-                onClose={() => setShowSnippets(false)}
+                captureKeys={isActive}
+                onClose={() => {
+                  setShowSnippets(false);
+                  terminalRef.current?.focus();
+                }}
                 onPaste={handlePasteToTerminal}
               />
             </div>

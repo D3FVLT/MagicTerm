@@ -74,6 +74,7 @@ about **supply-chain trust**, not the runtime security model.
 
 ## Recently shipped
 
+- ✅ **v0.5.7** — vault switch keeps open-tab server names (no more "Unknown"); snippets keyboard workflow (Cmd/Ctrl+Shift+S, 1–9 paste, Esc) with discoverability in the shortcuts modal and panel UI.
 - ✅ **v0.5.6** — terminal reliability on macOS (PTY/xterm sync, history ↑, nano, docker compose output), Ctrl+R via physical key mapping, SSH connecting overlay, server modal UX ([#18](https://github.com/D3FVLT/MagicTerm/issues/18)); **hotfix rebuild** fixes Ctrl+R in production (electron-toolkit was blocking it outside dev).
 - ✅ **v0.5.5** — supply-chain trust + connection UX: SHA256 checksums on `/download` and in every GitHub release (`SHA256SUMS.txt`), clearer SSH/SFTP connect states (spinner, friendly errors, Retry), 15 s timeout for unreachable hosts, no more stray handshake errors after closing a tab mid-connect, Electron 42 + dependency security updates, Dependabot for automated patch PRs.
 - ✅ **v0.5.4** — terminal hardening: explicit TOFU host-key prompts (no more silent trust on first connect), keyboard shortcuts cheatsheet modal, fixes for long-command rendering and `nano` redraws on retina macOS, Ctrl+R/Ctrl+L/Ctrl+C and other readline shortcuts now work on non-Latin keyboard layouts (Cyrillic, German, Greek, …).

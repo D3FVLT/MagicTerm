@@ -16,6 +16,7 @@ interface ExtendedSession extends TerminalSession {
 interface TabState {
   rootSessionId: string;
   serverId: string;
+  serverName: string;
   splitTree: SplitNode;
   focusedPaneId: string;
 }
@@ -175,6 +176,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
       const newTab: TabState = {
         rootSessionId: sessionId,
         serverId: server.id,
+        serverName: server.name,
         splitTree: { type: 'pane', sessionId },
         focusedPaneId: sessionId,
       };
