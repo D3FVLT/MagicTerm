@@ -21,9 +21,22 @@ import { SITE } from '~/data/site';
 
     <section class="release">
       <header class="release__head">
-        <h2>v0.5.7</h2>
+        <h2>v0.5.8</h2>
         <span class="release__date">July 2026</span>
         <span class="release__tag">Latest</span>
+      </header>
+      <ul>
+        <li><strong>Folders:</strong> group servers into folders — by hosting provider, client, project, or environment (<a href="https://github.com/D3FVLT/MagicTerm/issues/19">#19</a>). Works in your personal vault and in shared organisation vaults, with collapsible sections that remember their state.</li>
+        <li><strong>Organise however you like:</strong> drag a card into another folder, drop it on a folder header, or pick <em>Move to</em> from the card menu. Folders can be renamed, and deleting one keeps its servers — they simply move back to <em>Ungrouped</em>.</li>
+        <li><strong>Pins now work per folder:</strong> a pinned server sticks to the top of its own folder instead of jumping over the whole list.</li>
+        <li><strong>Security:</strong> shared folders are protected by row-level security plus database triggers, so a teammate cannot attach a team server to a private folder or quietly take ownership of a shared one.</li>
+      </ul>
+    </section>
+
+    <section class="release">
+      <header class="release__head">
+        <h2>v0.5.7</h2>
+        <span class="release__date">July 2026</span>
       </header>
       <ul>
         <li><strong>Fixed:</strong> open session tabs no longer rename to "Unknown" when switching between organization and personal vaults — the server name is kept on the tab.</li>

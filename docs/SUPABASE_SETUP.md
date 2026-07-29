@@ -76,6 +76,8 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_Q4DGz...
    - регистрирует RPC `create_organization`, `delete_organization`, `change_member_role`
    - сужает `get_user_display_name` так, чтобы email чужих пользователей не утекал
 
+9. `supabase/add-server-folders.sql` — таблица `server_folders` + `folder_id` в `servers` для группировки серверов по папкам. Идёт после `fix-rls.sql`, потому что политики опираются на хелперы `get_user_org_ids` / `is_org_member` / `is_org_admin`.
+
 > Если ты пропустишь `fix-rls.sql` или `security-hardening.sql`, в проде останутся уязвимости с эскалацией ролей и/или утечкой PII через `get_user_display_name`.
 
 ### Проверка таблиц
@@ -84,6 +86,7 @@ VITE_SUPABASE_ANON_KEY=sb_publishable_Q4DGz...
 - `organizations`
 - `org_members`  
 - `servers`
+- `server_folders`
 - `user_profiles`
 - `snippets`
 

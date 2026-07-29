@@ -12,7 +12,7 @@ interface AddServerModalProps {
 }
 
 export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
-  const { addServer } = useServers();
+  const { addServer, folders } = useServers();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,6 +24,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
   const [password, setPassword] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [comment, setComment] = useState('');
+  const [folderId, setFolderId] = useState('');
 
   const resetForm = () => {
     setName('');
@@ -34,6 +35,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
     setPassword('');
     setPrivateKey('');
     setComment('');
+    setFolderId('');
     setError('');
   };
 
@@ -44,6 +46,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
     Boolean(password) ||
     Boolean(privateKey) ||
     Boolean(comment.trim()) ||
+    Boolean(folderId) ||
     port !== '22' ||
     authType !== 'password';
 
@@ -79,6 +82,7 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
         authType,
         credentials,
         comment: comment.trim() || undefined,
+        folderId: folderId || null,
       });
       handleClose(true);
     } catch (err) {
@@ -237,6 +241,18 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
           onChange={(e) => setComment(e.target.value)}
           placeholder="Optional note about this server"
         />
+
+        {folders.length > 0 && (
+          <Select
+            label="Folder"
+            value={folderId}
+            onChange={(e) => setFolderId(e.target.value)}
+            options={[
+              { value: '', label: 'Ungrouped' },
+              ...folders.map((folder) => ({ value: folder.id, label: folder.name })),
+            ]}
+          />
+        )}
 
         {error && (
           <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">

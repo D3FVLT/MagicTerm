@@ -16,7 +16,7 @@ interface EditServerModalProps {
 }
 
 export function EditServerModal({ isOpen, onClose, server }: EditServerModalProps) {
-  const { editServer, removeServer, decryptServerHost, decryptServerUsername, decryptServerCredentials } = useServers();
+  const { editServer, removeServer, folders, decryptServerHost, decryptServerUsername, decryptServerCredentials } = useServers();
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
@@ -31,6 +31,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
   const [password, setPassword] = useState('');
   const [privateKey, setPrivateKey] = useState('');
   const [comment, setComment] = useState('');
+  const [folderId, setFolderId] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [currentCredentials, setCurrentCredentials] = useState('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
     username: string;
     authType: AuthType;
     comment: string;
+    folderId: string;
   } | null>(null);
 
   useEffect(() => {
@@ -51,6 +53,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
       setPort(String(server.port));
       setAuthType(server.authType);
       setComment(server.comment || '');
+      setFolderId(server.folderId || '');
       setPassword('');
       setPrivateKey('');
       setError('');
@@ -71,6 +74,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
           username: decryptedUsername,
           authType: server.authType,
           comment: server.comment || '',
+          folderId: server.folderId || '',
         });
       }).catch((err) => {
         setError('Failed to decrypt server data: ' + (err instanceof Error ? err.message : 'Unknown error'));
@@ -88,6 +92,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
       username !== initialForm.username ||
       authType !== initialForm.authType ||
       comment !== initialForm.comment ||
+      folderId !== initialForm.folderId ||
       Boolean(authType === 'password' ? password : privateKey));
 
   const handleClose = (force = false) => {
@@ -130,6 +135,10 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
         authType,
         comment: comment.trim() || null,
       };
+
+      if (folderId !== (initialForm?.folderId ?? '')) {
+        updates.folderId = folderId || null;
+      }
 
       const credentials = authType === 'password' ? password : privateKey;
       if (credentials.trim()) {
@@ -356,6 +365,18 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
           onChange={(e) => setComment(e.target.value)}
           placeholder="Optional note about this server"
         />
+
+        {folders.length > 0 && (
+          <Select
+            label="Folder"
+            value={folderId}
+            onChange={(e) => setFolderId(e.target.value)}
+            options={[
+              { value: '', label: 'Ungrouped' },
+              ...folders.map((folder) => ({ value: folder.id, label: folder.name })),
+            ]}
+          />
+        )}
 
         {error && (
           <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">

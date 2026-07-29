@@ -4,8 +4,11 @@ import type {
   EncryptedOrganization,
   EncryptedOrgMember,
   EncryptedSnippet,
+  EncryptedServerFolder,
   Server,
   ServerInput,
+  ServerFolder,
+  ServerFolderInput,
   Organization,
   OrganizationInput,
   OrgMember,
@@ -562,6 +565,19 @@ function mapToServer(row: EncryptedServer): Server {
     comment: row.comment ?? undefined,
     isPinned: row.is_pinned ?? false,
     sortOrder: row.sort_order ?? 0,
+    folderId: row.folder_id ?? null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapToServerFolder(row: EncryptedServerFolder): ServerFolder {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    orgId: row.org_id,
+    name: row.name,
+    sortOrder: row.sort_order ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -631,6 +647,10 @@ export async function createServer(
     comment: server.comment ?? null,
   };
 
+  // Omitted unless a folder was picked, so inserts keep working before
+  // add-server-folders.sql has been applied.
+  if (server.folderId) insertData.folder_id = server.folderId;
+
   if (server.orgId) {
     insertData.org_id = server.orgId;
   } else {
@@ -663,6 +683,7 @@ export async function updateServer(
   if (updates.connectionType !== undefined) updateData.connection_type = updates.connectionType;
   if (updates.credentials !== undefined) updateData.credentials = updates.credentials;
   if (updates.comment !== undefined) updateData.comment = updates.comment;
+  if (updates.folderId !== undefined) updateData.folder_id = updates.folderId;
 
   const { data, error } = await getSupabase()
     .from('servers')
@@ -691,6 +712,95 @@ export async function updateServerOrders(orders: { id: string; sort_order: numbe
   for (const { id, sort_order } of orders) {
     const { error } = await getSupabase()
       .from('servers')
+      .update({ sort_order, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+}
+
+/** folderId null moves the server back to the Ungrouped section. */
+export async function moveServerToFolder(id: string, folderId: string | null): Promise<Server> {
+  const { data, error } = await getSupabase()
+    .from('servers')
+    .update({ folder_id: folderId, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapToServer(data as EncryptedServer);
+}
+
+export async function listServerFolders(orgId?: string): Promise<ServerFolder[]> {
+  const user = await getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  let query = getSupabase().from('server_folders').select('*');
+
+  if (orgId) {
+    query = query.eq('org_id', orgId);
+  } else {
+    query = query.eq('user_id', user.id);
+  }
+
+  const { data, error } = await query
+    .order('sort_order', { ascending: true })
+    .order('name');
+
+  if (error) throw error;
+  return (data as EncryptedServerFolder[]).map(mapToServerFolder);
+}
+
+export async function createServerFolder(input: ServerFolderInput): Promise<ServerFolder> {
+  const user = await getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const insertData: Record<string, unknown> = { name: input.name };
+  if (input.orgId) {
+    insertData.org_id = input.orgId;
+  } else {
+    insertData.user_id = user.id;
+  }
+
+  const { data, error } = await getSupabase()
+    .from('server_folders')
+    .insert(insertData)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapToServerFolder(data as EncryptedServerFolder);
+}
+
+export async function renameServerFolder(id: string, name: string): Promise<ServerFolder> {
+  const { data, error } = await getSupabase()
+    .from('server_folders')
+    .update({ name, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapToServerFolder(data as EncryptedServerFolder);
+}
+
+/** Servers inside the folder are kept — the FK resets their folder_id to null. */
+export async function deleteServerFolder(id: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from('server_folders')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function updateServerFolderOrders(
+  orders: { id: string; sort_order: number }[]
+): Promise<void> {
+  for (const { id, sort_order } of orders) {
+    const { error } = await getSupabase()
+      .from('server_folders')
       .update({ sort_order, updated_at: new Date().toISOString() })
       .eq('id', id);
 

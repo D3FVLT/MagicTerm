@@ -48,6 +48,8 @@ export interface Server {
   comment?: string;
   isPinned: boolean;
   sortOrder: number;
+  /** null = Ungrouped. Pins and sortOrder apply within the folder. */
+  folderId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,6 +64,32 @@ export interface ServerInput {
   credentials: string;
   comment?: string;
   orgId?: string;
+  folderId?: string | null;
+}
+
+export interface ServerFolder {
+  id: string;
+  userId: string | null;
+  orgId: string | null;
+  name: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ServerFolderInput {
+  name: string;
+  orgId?: string;
+}
+
+export interface EncryptedServerFolder {
+  id: string;
+  user_id: string | null;
+  org_id: string | null;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface EncryptedServer {
@@ -78,6 +106,7 @@ export interface EncryptedServer {
   comment: string | null;
   is_pinned: boolean;
   sort_order: number;
+  folder_id: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -9,10 +9,30 @@ import { InviteMemberModal } from './InviteMemberModal';
 import { EditServerModal } from './EditServerModal';
 import { AddServerModal } from './AddServerModal';
 import { Button } from './ui/Button';
-import type { Server, SessionType, MemberRole } from '@magicterm/shared';
+import type { Server, ServerFolder, SessionType, MemberRole } from '@magicterm/shared';
+
+/** Section id for servers with folderId === null. */
+const UNGROUPED = '__ungrouped__';
+
+interface Section {
+  id: string;
+  folder: ServerFolder | null;
+  servers: Server[];
+}
 
 export function VaultsPage() {
-  const { servers, isLoading, decryptServerHost, pinServer, reorderServers } = useServers();
+  const {
+    servers,
+    folders,
+    isLoading,
+    decryptServerHost,
+    pinServer,
+    reorderServers,
+    addFolder,
+    renameFolder,
+    removeFolder,
+    moveServer,
+  } = useServers();
   const { connect, getServerSessions, disconnect, setActiveSession } = useTerminal();
   const { user } = useAuth();
   const { currentOrg, members, changeRole, remove } = useOrganizations();
@@ -27,10 +47,46 @@ export function VaultsPage() {
   const [decryptedHosts, setDecryptedHosts] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [dragInsert, setDragInsert] = useState<{ id: string; side: 'before' | 'after' } | null>(null);
+  const [dragOverSection, setDragOverSection] = useState<string | null>(null);
   const dragItemId = useRef<string | null>(null);
+
+  const [folderMenuId, setFolderMenuId] = useState<string | null>(null);
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [folderNameDraft, setFolderNameDraft] = useState('');
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const newFolderInputRef = useRef<HTMLInputElement>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const canManageMembers = currentOrg?.role === 'owner' || currentOrg?.role === 'admin';
   const canInvite = canManageMembers;
+  const scopeKey = currentOrg?.id ?? 'personal';
+  const collapsedStorageKey = `vault-folders-collapsed:${scopeKey}`;
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(collapsedStorageKey);
+      setCollapsed(raw ? (JSON.parse(raw) as Record<string, boolean>) : {});
+    } catch {
+      setCollapsed({});
+    }
+  }, [collapsedStorageKey]);
+
+  const toggleCollapsed = useCallback((id: string) => {
+    setCollapsed((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      try {
+        localStorage.setItem(collapsedStorageKey, JSON.stringify(next));
+      } catch {
+        // Collapsed state is a convenience only — ignore quota/private-mode errors.
+      }
+      return next;
+    });
+  }, [collapsedStorageKey]);
+
+  useEffect(() => {
+    if (isCreatingFolder) newFolderInputRef.current?.focus();
+  }, [isCreatingFolder]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,16 +105,55 @@ export function VaultsPage() {
     return () => { cancelled = true; };
   }, [servers, decryptServerHost]);
 
-  const filteredServers = useMemo(() => {
-    if (!searchQuery.trim()) return servers;
-    const q = searchQuery.toLowerCase();
-    return servers.filter((server) => {
+  const sections = useMemo<Section[]>(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const matches = (server: Server) => {
+      if (!q) return true;
       const name = server.name.toLowerCase();
       const host = (decryptedHosts[server.id] || '').toLowerCase();
       const comment = (server.comment || '').toLowerCase();
       return name.includes(q) || host.includes(q) || comment.includes(q);
+    };
+
+    const known = new Set(folders.map((f) => f.id));
+    const grouped = new Map<string, Server[]>();
+    for (const server of servers) {
+      if (!matches(server)) continue;
+      // A folder deleted by a teammate leaves servers pointing at a stale id.
+      const key = server.folderId && known.has(server.folderId) ? server.folderId : UNGROUPED;
+      const list = grouped.get(key);
+      if (list) list.push(server);
+      else grouped.set(key, [server]);
+    }
+
+    // Pins stick to the top of their own folder.
+    const sortSection = (list: Server[]) =>
+      [...list].sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return a.name.localeCompare(b.name);
+      });
+
+    const result: Section[] = folders.map((folder) => ({
+      id: folder.id,
+      folder,
+      servers: sortSection(grouped.get(folder.id) ?? []),
+    }));
+    result.push({
+      id: UNGROUPED,
+      folder: null,
+      servers: sortSection(grouped.get(UNGROUPED) ?? []),
     });
-  }, [servers, searchQuery, decryptedHosts]);
+    return result;
+  }, [servers, folders, searchQuery, decryptedHosts]);
+
+  const visibleCount = sections.reduce((total, section) => total + section.servers.length, 0);
+  const hasFolders = folders.length > 0;
+
+  const sectionIdOf = useCallback((server: Server) => {
+    if (!server.folderId) return UNGROUPED;
+    return folders.some((f) => f.id === server.folderId) ? server.folderId : UNGROUPED;
+  }, [folders]);
 
   const handleDragStart = useCallback((e: React.DragEvent, serverId: string) => {
     dragItemId.current = serverId;
@@ -76,6 +171,7 @@ export function VaultsPage() {
     }
     dragItemId.current = null;
     setDragInsert(null);
+    setDragOverSection(null);
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent, serverId: string) => {
@@ -91,24 +187,52 @@ export function VaultsPage() {
     setDragInsert({ id: serverId, side });
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, targetId: string) => {
+  const handleDrop = useCallback(async (e: React.DragEvent, targetId: string, sectionId: string) => {
     e.preventDefault();
     const insertInfo = dragInsert;
     setDragInsert(null);
+    setDragOverSection(null);
     const sourceId = dragItemId.current;
     if (!sourceId || sourceId === targetId) return;
 
-    const ids = servers.map((s) => s.id);
-    const fromIdx = ids.indexOf(sourceId);
-    let toIdx = ids.indexOf(targetId);
-    if (fromIdx === -1 || toIdx === -1) return;
+    const source = servers.find((s) => s.id === sourceId);
+    const section = sections.find((s) => s.id === sectionId);
+    if (!source || !section) return;
 
-    ids.splice(fromIdx, 1);
-    if (fromIdx < toIdx) toIdx--;
+    const ids = section.servers.map((s) => s.id).filter((id) => id !== sourceId);
+    let toIdx = ids.indexOf(targetId);
+    if (toIdx === -1) return;
     if (insertInfo?.side === 'after') toIdx++;
     ids.splice(toIdx, 0, sourceId);
-    reorderServers(ids);
-  }, [servers, reorderServers, dragInsert]);
+
+    try {
+      if (sectionIdOf(source) !== sectionId) {
+        await moveServer(sourceId, sectionId === UNGROUPED ? null : sectionId);
+      }
+      await reorderServers(ids);
+    } catch (err) {
+      console.error('Failed to move server:', err);
+    }
+  }, [servers, sections, sectionIdOf, dragInsert, moveServer, reorderServers]);
+
+  const handleSectionDrop = useCallback(async (e: React.DragEvent, sectionId: string) => {
+    e.preventDefault();
+    setDragInsert(null);
+    setDragOverSection(null);
+    const sourceId = dragItemId.current;
+    if (!sourceId) return;
+
+    const source = servers.find((s) => s.id === sourceId);
+    const section = sections.find((s) => s.id === sectionId);
+    if (!source || !section || sectionIdOf(source) === sectionId) return;
+
+    try {
+      await moveServer(sourceId, sectionId === UNGROUPED ? null : sectionId);
+      await reorderServers([...section.servers.map((s) => s.id), sourceId]);
+    } catch (err) {
+      console.error('Failed to move server:', err);
+    }
+  }, [servers, sections, sectionIdOf, moveServer, reorderServers]);
 
   useEffect(() => {
     if (!serverMenuId) return;
@@ -116,6 +240,13 @@ export function VaultsPage() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [serverMenuId]);
+
+  useEffect(() => {
+    if (!folderMenuId) return;
+    const handler = () => setFolderMenuId(null);
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [folderMenuId]);
 
   useEffect(() => {
     if (!memberMenuId) return;
@@ -133,6 +264,44 @@ export function VaultsPage() {
       await connect(server, type);
     } catch (err) {
       console.error('Connection failed:', err);
+    }
+  };
+
+  const handleCreateFolder = async () => {
+    const name = newFolderName.trim();
+    if (!name) {
+      setIsCreatingFolder(false);
+      return;
+    }
+    try {
+      await addFolder(name);
+      setNewFolderName('');
+      setIsCreatingFolder(false);
+    } catch (err) {
+      console.error('Failed to create folder:', err);
+    }
+  };
+
+  const handleRenameFolder = async (id: string) => {
+    const name = folderNameDraft.trim();
+    setRenamingFolderId(null);
+    if (!name) return;
+    try {
+      await renameFolder(id, name);
+    } catch (err) {
+      console.error('Failed to rename folder:', err);
+    }
+  };
+
+  const handleDeleteFolder = async (folder: ServerFolder, serverCount: number) => {
+    const message = serverCount > 0
+      ? `Delete "${folder.name}"? Its ${serverCount} server(s) will move to Ungrouped.`
+      : `Delete "${folder.name}"?`;
+    if (!window.confirm(message)) return;
+    try {
+      await removeFolder(folder.id);
+    } catch (err) {
+      console.error('Failed to delete folder:', err);
     }
   };
 
@@ -154,6 +323,365 @@ export function VaultsPage() {
     }
   };
 
+  const renderServerCard = (server: Server, index: number, sectionId: string) => {
+    const serverSessions = getServerSessions(server.id);
+    const terminalSession = serverSessions.find((s) => s.type === 'terminal');
+    const sftpSession = serverSessions.find((s) => s.type === 'sftp');
+    const isConnected = serverSessions.some((s) => s.status === 'connected');
+    const isConnecting = serverSessions.some((s) => s.status === 'connecting');
+    const insertBefore = dragInsert?.id === server.id && dragInsert.side === 'before';
+    const insertAfter = dragInsert?.id === server.id && dragInsert.side === 'after';
+
+    return (
+      <div
+        key={server.id}
+        className="animate-card-in relative"
+        style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
+      >
+        {insertBefore && (
+          <div className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-[var(--accent)] z-10 animate-pulse" />
+        )}
+        {insertAfter && (
+          <div className="absolute -right-2 top-0 bottom-0 w-1 rounded-full bg-[var(--accent)] z-10 animate-pulse" />
+        )}
+        <div
+          draggable={!searchQuery}
+          onDragStart={(e) => handleDragStart(e, server.id)}
+          onDragEnd={handleDragEnd}
+          onDragOver={(e) => handleDragOver(e, server.id)}
+          onDragLeave={() => setDragInsert(null)}
+          onDrop={(e) => { void handleDrop(e, server.id, sectionId); }}
+          className={`group relative flex h-full flex-col rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
+            isConnected
+              ? 'border-green-500/30 bg-green-500/5 hover:shadow-lg hover:shadow-green-500/5'
+              : 'border-[var(--border)] bg-[var(--surface-1)] hover:border-[var(--accent-hover)]/50 hover:shadow-lg hover:shadow-[var(--accent)]/5'
+          }`}
+          onClick={() => {
+            if (terminalSession) {
+              setActiveSession(terminalSession.id);
+            } else {
+              handleConnect(server, 'terminal');
+            }
+          }}
+        >
+          {/* Pin indicator */}
+          {server.isPinned && (
+            <div className="absolute right-2 top-2 text-[var(--accent)]">
+              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+            </div>
+          )}
+
+          {/* Status + Name */}
+          <div className="mb-2 flex items-start justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
+                isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-[var(--fg-subtle)]'
+              }`} />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-[var(--fg)]">{server.name}</div>
+                <div className="truncate text-xs text-[var(--fg-subtle)]">
+                  {decryptedHosts[server.id] || '...'}{server.port !== 22 ? `:${server.port}` : ''}
+                </div>
+              </div>
+            </div>
+
+            {/* More menu */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setServerMenuId(serverMenuId === server.id ? null : server.id);
+                }}
+                className="rounded p-1 text-[var(--fg-subtle)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--border)] hover:text-[var(--fg)]"
+              >
+                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+              {serverMenuId === server.id && (
+                <div
+                  className="animate-slide-down absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-xl"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setServerMenuId(null);
+                      pinServer(server.id, !server.isPinned);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
+                  >
+                    <svg className={`h-3.5 w-3.5 ${server.isPinned ? 'text-[var(--accent)]' : 'text-[var(--fg-subtle)]'}`} fill={server.isPinned ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    {server.isPinned ? 'Unpin' : 'Pin to top of folder'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setServerMenuId(null);
+                      setEditingServer(server);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
+                  >
+                    <svg className="h-3.5 w-3.5 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </button>
+
+                  <div className="my-1 border-t border-[var(--border)]" />
+                  <div className="px-3 py-1 text-xs text-[var(--fg-subtle)]">Move to</div>
+                  <div className="max-h-40 overflow-y-auto">
+                    {folders.map((folder) => (
+                      <button
+                        key={folder.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setServerMenuId(null);
+                          if (server.folderId !== folder.id) {
+                            void moveServer(server.id, folder.id).catch((moveErr) => {
+                              console.error('Failed to move server:', moveErr);
+                            });
+                          }
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
+                      >
+                        <svg className={`h-3.5 w-3.5 flex-shrink-0 ${server.folderId === folder.id ? 'text-[var(--accent)]' : 'text-[var(--fg-subtle)]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>
+                        <span className="truncate">{folder.name}</span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setServerMenuId(null);
+                        if (server.folderId !== null) {
+                          void moveServer(server.id, null).catch((moveErr) => {
+                            console.error('Failed to move server:', moveErr);
+                          });
+                        }
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
+                    >
+                      <svg className={`h-3.5 w-3.5 flex-shrink-0 ${server.folderId === null ? 'text-[var(--accent)]' : 'text-[var(--fg-subtle)]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
+                      </svg>
+                      Ungrouped
+                    </button>
+                  </div>
+
+                  {serverSessions.length > 0 && (
+                    <>
+                      <div className="my-1 border-t border-[var(--border)]" />
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          setServerMenuId(null);
+                          for (const session of serverSessions) {
+                            await disconnect(session.id);
+                          }
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-[var(--border)]"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Disconnect
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Comment */}
+          {server.comment && (
+            <p className="mb-3 line-clamp-2 text-xs text-[var(--fg-subtle)]" title={server.comment}>{server.comment}</p>
+          )}
+
+          {/* Action buttons */}
+          <div className="mt-auto flex items-center gap-1 pt-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (terminalSession) {
+                  setActiveSession(terminalSession.id);
+                } else {
+                  handleConnect(server, 'terminal');
+                }
+              }}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                terminalSession
+                  ? 'bg-green-500/10 text-green-400'
+                  : 'bg-[var(--border)] text-[var(--fg-subtle)] hover:text-[var(--fg)]'
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              SSH
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (sftpSession) {
+                  setActiveSession(sftpSession.id);
+                } else {
+                  handleConnect(server, 'sftp');
+                }
+              }}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                sftpSession
+                  ? 'bg-green-500/10 text-green-400'
+                  : 'bg-[var(--border)] text-[var(--fg-subtle)] hover:text-[var(--fg)]'
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              SFTP
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSection = (section: Section) => {
+    const { id, folder, servers: sectionServers } = section;
+    const isCollapsed = Boolean(collapsed[id]);
+    const isDropTarget = dragOverSection === id;
+
+    // Only Ungrouped can be empty-but-hidden: an empty folder still needs a
+    // header so servers can be dragged into it.
+    if (sectionServers.length === 0 && (id === UNGROUPED || searchQuery)) return null;
+
+    return (
+      <section
+        key={id}
+        onDragOver={(e) => {
+          if (!dragItemId.current) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          setDragOverSection(id);
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          setDragOverSection((prev) => (prev === id ? null : prev));
+        }}
+        onDrop={(e) => { void handleSectionDrop(e, id); }}
+        className={`rounded-xl transition-colors ${
+          isDropTarget ? 'bg-[var(--accent)]/5 ring-1 ring-[var(--accent)]/40' : ''
+        }`}
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <button
+            onClick={() => toggleCollapsed(id)}
+            className="flex min-w-0 items-center gap-2 text-[var(--fg-subtle)] transition-colors hover:text-[var(--fg)]"
+          >
+            <svg
+              className={`h-3 w-3 flex-shrink-0 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            {folder ? (
+              <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+              </svg>
+            ) : null}
+            {renamingFolderId === id ? null : (
+              <span className="truncate text-sm font-medium">
+                {folder ? folder.name : 'Ungrouped'}
+              </span>
+            )}
+            <span className="flex-shrink-0 text-xs opacity-60">{sectionServers.length}</span>
+          </button>
+
+          {renamingFolderId === id && folder && (
+            <input
+              autoFocus
+              value={folderNameDraft}
+              onChange={(e) => setFolderNameDraft(e.target.value)}
+              onBlur={() => void handleRenameFolder(folder.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleRenameFolder(folder.id);
+                if (e.key === 'Escape') setRenamingFolderId(null);
+              }}
+              className="w-40 rounded border border-[var(--accent)] bg-[var(--surface-1)] px-2 py-0.5 text-sm text-[var(--fg)] outline-none"
+            />
+          )}
+
+          {folder && renamingFolderId !== id && (
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFolderMenuId(folderMenuId === id ? null : id);
+                }}
+                className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
+              >
+                <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+              {folderMenuId === id && (
+                <div
+                  className="animate-slide-down absolute left-0 top-full z-50 mt-1 min-w-[150px] rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-xl"
+                  onMouseDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => {
+                      setFolderMenuId(null);
+                      setFolderNameDraft(folder.name);
+                      setRenamingFolderId(id);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
+                  >
+                    <svg className="h-3.5 w-3.5 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Rename
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFolderMenuId(null);
+                      void handleDeleteFolder(folder, sectionServers.length);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-[var(--border)]"
+                  >
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {!isCollapsed && (
+          sectionServers.length === 0 ? (
+            <div className="mb-6 rounded-xl border border-dashed border-[var(--border)] px-4 py-6 text-center text-xs text-[var(--fg-subtle)]">
+              Drag servers here
+            </div>
+          ) : (
+            <div className="mb-6 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+              {sectionServers.map((server, index) => renderServerCard(server, index, id))}
+            </div>
+          )
+        )}
+      </section>
+    );
+  };
+
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-[var(--bg)]">
       <div className="mx-auto w-full max-w-5xl px-8 py-8">
@@ -165,13 +693,51 @@ export function VaultsPage() {
               {currentOrg ? 'Team Servers' : 'Personal Servers'}
             </h1>
           </div>
-          <Button onClick={() => setShowAddServer(true)}>
-            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Server
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => setIsCreatingFolder(true)}>
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7zM12 11v4m-2-2h4" />
+              </svg>
+              New Folder
+            </Button>
+            <Button onClick={() => setShowAddServer(true)}>
+              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Server
+            </Button>
+          </div>
         </div>
+
+        {/* New folder input */}
+        {isCreatingFolder && (
+          <div className="mb-4 flex items-center gap-2">
+            <input
+              ref={newFolderInputRef}
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleCreateFolder();
+                if (e.key === 'Escape') {
+                  setNewFolderName('');
+                  setIsCreatingFolder(false);
+                }
+              }}
+              placeholder="Folder name (e.g. Hetzner, Staging)"
+              className="w-64 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-1.5 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none focus:border-[var(--accent-hover)]"
+            />
+            <Button onClick={() => void handleCreateFolder()}>Create</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setNewFolderName('');
+                setIsCreatingFolder(false);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
 
         {/* Search */}
         {servers.length > 0 && (
@@ -207,7 +773,7 @@ export function VaultsPage() {
           <div className="flex items-center justify-center py-20">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
           </div>
-        ) : servers.length === 0 ? (
+        ) : servers.length === 0 && !hasFolders ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] py-20">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--border)]">
               <svg className="h-8 w-8 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -219,200 +785,20 @@ export function VaultsPage() {
               Add your first server
             </Button>
           </div>
-        ) : filteredServers.length === 0 ? (
+        ) : visibleCount === 0 && searchQuery ? (
           <div className="flex flex-col items-center justify-center py-16">
             <svg className="mb-3 h-10 w-10 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <p className="text-sm text-[var(--fg-subtle)]">No servers match "{searchQuery}"</p>
           </div>
+        ) : hasFolders ? (
+          <div>{sections.map(renderSection)}</div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-            {filteredServers.map((server, index) => {
-              const serverSessions = getServerSessions(server.id);
-              const terminalSession = serverSessions.find((s) => s.type === 'terminal');
-              const sftpSession = serverSessions.find((s) => s.type === 'sftp');
-              const isConnected = serverSessions.some((s) => s.status === 'connected');
-              const isConnecting = serverSessions.some((s) => s.status === 'connecting');
-              const insertBefore = dragInsert?.id === server.id && dragInsert.side === 'before';
-              const insertAfter = dragInsert?.id === server.id && dragInsert.side === 'after';
-
-              return (
-                <div
-                  key={server.id}
-                  className="animate-card-in relative"
-                  style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
-                >
-                  {insertBefore && (
-                    <div className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-[var(--accent)] z-10 animate-pulse" />
-                  )}
-                  {insertAfter && (
-                    <div className="absolute -right-2 top-0 bottom-0 w-1 rounded-full bg-[var(--accent)] z-10 animate-pulse" />
-                  )}
-                <div
-                  draggable={!searchQuery}
-                  onDragStart={(e) => handleDragStart(e, server.id)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={(e) => handleDragOver(e, server.id)}
-                  onDragLeave={() => setDragInsert(null)}
-                  onDrop={(e) => handleDrop(e, server.id)}
-                  className={`group relative flex h-full flex-col rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
-                    isConnected
-                      ? 'border-green-500/30 bg-green-500/5 hover:shadow-lg hover:shadow-green-500/5'
-                      : 'border-[var(--border)] bg-[var(--surface-1)] hover:border-[var(--accent-hover)]/50 hover:shadow-lg hover:shadow-[var(--accent)]/5'
-                  }`}
-                  onClick={() => {
-                    if (terminalSession) {
-                      setActiveSession(terminalSession.id);
-                    } else {
-                      handleConnect(server, 'terminal');
-                    }
-                  }}
-                >
-                  {/* Pin indicator */}
-                  {server.isPinned && (
-                    <div className="absolute right-2 top-2 text-[var(--accent)]">
-                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* Status + Name */}
-                  <div className="mb-2 flex items-start justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
-                        isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-[var(--fg-subtle)]'
-                      }`} />
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-[var(--fg)]">{server.name}</div>
-                        <div className="truncate text-xs text-[var(--fg-subtle)]">
-                          {decryptedHosts[server.id] || '...'}{server.port !== 22 ? `:${server.port}` : ''}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* More menu */}
-                    <div className="relative flex-shrink-0">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setServerMenuId(serverMenuId === server.id ? null : server.id);
-                        }}
-                        className="rounded p-1 text-[var(--fg-subtle)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--border)] hover:text-[var(--fg)]"
-                      >
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                        </svg>
-                      </button>
-                      {serverMenuId === server.id && (
-                        <div
-                          className="animate-slide-down absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-1 shadow-xl"
-                          onMouseDown={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setServerMenuId(null);
-                              pinServer(server.id, !server.isPinned);
-                            }}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
-                          >
-                            <svg className={`h-3.5 w-3.5 ${server.isPinned ? 'text-[var(--accent)]' : 'text-[var(--fg-subtle)]'}`} fill={server.isPinned ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                            </svg>
-                            {server.isPinned ? 'Unpin' : 'Pin to top'}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setServerMenuId(null);
-                              setEditingServer(server);
-                            }}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
-                          >
-                            <svg className="h-3.5 w-3.5 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                            Edit
-                          </button>
-                          {serverSessions.length > 0 && (
-                            <>
-                              <div className="my-1 border-t border-[var(--border)]" />
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  setServerMenuId(null);
-                                  for (const session of serverSessions) {
-                                    await disconnect(session.id);
-                                  }
-                                }}
-                                className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-red-400 hover:bg-[var(--border)]"
-                              >
-                                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                </svg>
-                                Disconnect
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Comment */}
-                  {server.comment && (
-                    <p className="mb-3 line-clamp-2 text-xs text-[var(--fg-subtle)]" title={server.comment}>{server.comment}</p>
-                  )}
-
-                  {/* Action buttons */}
-                  <div className="mt-auto flex items-center gap-1 pt-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (terminalSession) {
-                          setActiveSession(terminalSession.id);
-                        } else {
-                          handleConnect(server, 'terminal');
-                        }
-                      }}
-                      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                        terminalSession
-                          ? 'bg-green-500/10 text-green-400'
-                          : 'bg-[var(--border)] text-[var(--fg-subtle)] hover:text-[var(--fg)]'
-                      }`}
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      SSH
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (sftpSession) {
-                          setActiveSession(sftpSession.id);
-                        } else {
-                          handleConnect(server, 'sftp');
-                        }
-                      }}
-                      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                        sftpSession
-                          ? 'bg-green-500/10 text-green-400'
-                          : 'bg-[var(--border)] text-[var(--fg-subtle)] hover:text-[var(--fg)]'
-                      }`}
-                    >
-                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                      </svg>
-                      SFTP
-                    </button>
-                  </div>
-                </div>
-                </div>
-              );
-            })}
+            {sections[sections.length - 1].servers.map((server, index) =>
+              renderServerCard(server, index, UNGROUPED)
+            )}
           </div>
         )}
 
