@@ -3,10 +3,15 @@
 A free SSH/SFTP client with end-to-end encrypted cloud sync. Cross-platform
 desktop app for macOS, Windows and Linux.
 
-[![version](https://img.shields.io/badge/version-0.5.8-blue)](https://github.com/D3FVLT/MagicTerm/releases)
+[![version](https://img.shields.io/github/v/release/D3FVLT/MagicTerm?color=blue&label=version)](https://github.com/D3FVLT/MagicTerm/releases)
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-[magicterm.app](https://magicterm.app) · [Roadmap](./ROADMAP.md) · [Donate](https://www.donationalerts.com/r/whitenobel)
+[magicterm.app](https://magicterm.app) ·
+[Changelog](https://magicterm.app/changelog) ·
+[Roadmap](./ROADMAP.md) ·
+[Telegram](https://t.me/magicterm) ·
+[Instagram](https://instagram.com/magic.term) ·
+[Donate](https://www.donationalerts.com/r/whitenobel)
 
 ---
 
@@ -18,10 +23,13 @@ the database is dumped.
 
 The desktop app is a regular Electron app (xterm.js + ssh2 + react). The
 terminal does what you'd expect: 256-color, splits, search, SFTP file
-manager with drag-and-drop, snippets you can paste with one click, SSH
-config import. There are three light/dark UI themes and a dozen terminal
-palettes. Multi-user organizations are supported if you want to share
-servers with a team.
+manager with drag-and-drop, SSH config import, and an HTTP or SOCKS5
+proxy if your network needs one. Servers can be grouped into folders and
+pinned. Snippets are encrypted commands you paste with one click, and
+they can ask for values first — write `{{app}}` in the command and you
+get a prompt before it runs. There are three light/dark UI themes and 13
+terminal palettes. Multi-user organizations are supported if you want to
+share servers with a team.
 
 Screenshots and a feature tour live on [magicterm.app](https://magicterm.app).
 
@@ -33,13 +41,16 @@ Grab the latest build from the [releases page](https://github.com/D3FVLT/MagicTe
   The app isn't notarized yet, so on first launch run
   `xattr -cr "/Applications/Magic Term.app"` once. Auto-updates show a
   notification with a download link.
-- **Windows** — `MagicTerm-x64.exe`. Silent auto-updates in the background.
+- **Windows** — `MagicTerm-x64.exe`. The app tells you when an update is
+  out, downloads it once you accept, and installs it silently on restart.
 - **Linux** — `.AppImage`, `.deb`, or `yay -S magicterm-bin` from the AUR.
-  No auto-updates yet.
+  Updates are manual for now: download the new build from the releases
+  page, or run `yay -Syu` if you installed from the AUR.
 
 ## Run from source
 
-You need Node 20+ and pnpm 9+.
+You need Node 20+ and pnpm 10 (the repo pins it via `packageManager`, so
+`corepack enable` is enough).
 
 ```bash
 git clone https://github.com/D3FVLT/MagicTerm.git
@@ -49,8 +60,9 @@ cp apps/desktop/.env.example apps/desktop/.env  # add your Supabase keys
 pnpm dev
 ```
 
-The Supabase setup (schema + RLS policies) is documented in
-[`supabase/`](./supabase/). For desktop builds:
+The SQL for the backend lives in [`supabase/`](./supabase/), and
+[`supabase/README.md`](./supabase/README.md) lists the order to apply it
+in. For desktop builds:
 
 ```bash
 pnpm --filter @magicterm/desktop dist:mac    # or dist:win / dist:linux
@@ -86,6 +98,18 @@ pre-1.0 — schema and APIs may change between minor versions. See
 [ROADMAP.md](./ROADMAP.md) for what's coming and what's already shipped.
 
 Feedback, bug reports and PRs are very welcome — open an issue on GitHub.
+
+## Follow along
+
+Release notes and write-ups about how things work go out on Telegram;
+screenshots and short clips on Instagram.
+
+- Telegram — [@magicterm](https://t.me/magicterm)
+- Instagram — [@magic.term](https://instagram.com/magic.term)
+
+Every release is also on
+[magicterm.app/changelog](https://magicterm.app/changelog) and in the app
+itself, under the account menu → What's new.
 
 ## Support the project
 

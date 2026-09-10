@@ -111,6 +111,7 @@ about **supply-chain trust**, not the runtime security model.
 
 ## Recently shipped
 
+- ✅ **v0.5.9** — snippet variables: `{{name}}` placeholders prompt for values before a snippet runs, with per-session recall and Docker/Go template strings left untouched; drag-to-reorder snippets driving the 1–9 paste shortcuts; proxy settings and retry on the startup screen after a bounded auth timeout; tooltips rendered by the app so icon-only buttons finally show them, plus accessible names on every icon button; a dismissible support card with a toggle in Settings; and one curated changelog feeding the website, the GitHub release body and a new in-app "What's new" modal.
 - ✅ **v0.5.8** — server folders for personal and org vaults ([#19](https://github.com/D3FVLT/MagicTerm/issues/19)): collapsible sections, drag-and-drop between folders, rename/delete without losing servers, pins scoped to their folder, and DB triggers enforcing folder/vault scope on top of RLS.
 - ✅ **v0.5.7** — vault switch keeps open-tab server names (no more "Unknown"); snippets keyboard workflow (Cmd/Ctrl+Shift+S, 1–9 paste, Esc) with discoverability in the shortcuts modal and panel UI.
 - ✅ **v0.5.6** — terminal reliability on macOS (PTY/xterm sync, history ↑, nano, docker compose output), Ctrl+R via physical key mapping, SSH connecting overlay, server modal UX ([#18](https://github.com/D3FVLT/MagicTerm/issues/18)); **hotfix rebuild** fixes Ctrl+R in production (electron-toolkit was blocking it outside dev).
