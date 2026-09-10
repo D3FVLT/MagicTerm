@@ -202,7 +202,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
                   type="button"
                   onClick={() => copyToClipboard(host, 'host')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
-                  title="Copy host"
+                  aria-label="Copy host" data-tooltip=""
                 >
                   {copiedField === 'host' ? (
                     <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +243,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
                 type="button"
                 onClick={() => copyToClipboard(username, 'username')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
-                title="Copy username"
+                aria-label="Copy username" data-tooltip=""
               >
                 {copiedField === 'username' ? (
                   <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,7 +286,7 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
                     type="button"
                     onClick={() => copyToClipboard(currentCredentials, 'password')}
                     className="rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
-                    title="Copy current password"
+                    aria-label="Copy current password" data-tooltip=""
                   >
                     {copiedField === 'password' ? (
                       <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -302,7 +302,8 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
-                    title={showPassword ? 'Hide password' : 'Show current password'}
+                    aria-label={showPassword ? 'Hide password' : 'Show current password'}
+                    data-tooltip=""
                   >
                     {showPassword ? (
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

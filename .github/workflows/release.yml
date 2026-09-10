@@ -135,10 +135,31 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Generate What's New from commits
+      - name: Generate What's New
         id: changelog
         shell: bash
         run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          CHANGELOG_FILE="packages/shared/src/changelog.json"
+
+          # Prefer the hand-written notes. They are the same source the website
+          # and the in-app changelog render, so all three stay in sync — and the
+          # app shows this section verbatim in its update dialog.
+          if [ -f "$CHANGELOG_FILE" ] && jq -e --arg v "$VERSION" \
+               '.releases[] | select(.version == $v)' "$CHANGELOG_FILE" >/dev/null; then
+            echo "Using curated notes for $VERSION from $CHANGELOG_FILE"
+            CURATED=$(jq -r --arg v "$VERSION" \
+              '.releases[] | select(.version == $v) | .items[] | "- **\(.label):** \(.text)"' \
+              "$CHANGELOG_FILE")
+            {
+              echo "WHATS_NEW<<EOF"
+              echo "$CURATED"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "No curated notes for $VERSION, falling back to commit subjects"
           CURRENT_TAG="v${{ steps.version.outputs.VERSION }}"
           PREV_TAG=$(git tag --sort=-v:refname | awk -v cur="$CURRENT_TAG" '$0!=cur{print; exit}')
 

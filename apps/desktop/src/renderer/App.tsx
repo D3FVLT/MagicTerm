@@ -5,22 +5,30 @@ import { TerminalProvider } from './contexts/TerminalContext';
 import { SnippetsProvider } from './contexts/SnippetsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { HostKeyProvider } from './contexts/HostKeyContext';
+import { StartupScreen } from './components/StartupScreen';
 import { LoginPage } from './pages/LoginPage';
 import { SetupMasterKeyPage } from './pages/SetupMasterKeyPage';
 import { MainLayout } from './layouts/MainLayout';
+import { TooltipLayer } from './components/ui/Tooltip';
 
 function AppContent() {
-  const { isAuthenticated, isLoading, hasMasterKey, needsMasterKeySetup } = useAuth();
+  const {
+    isAuthenticated,
+    isLoading,
+    hasMasterKey,
+    needsMasterKeySetup,
+    initTimedOut,
+    retryInitialize,
+  } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-app">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-          <span className="text-fg-muted">Loading...</span>
-        </div>
-      </div>
-    );
+    return <StartupScreen variant="loading" onRetry={retryInitialize} />;
+  }
+
+  // A timed-out start says nothing about whether the session is still good, so
+  // don't drop the user on the login form as if they had been signed out.
+  if (initTimedOut) {
+    return <StartupScreen variant="unreachable" onRetry={retryInitialize} />;
   }
 
   if (!isAuthenticated) {
@@ -52,6 +60,7 @@ export default function App() {
       <AuthProvider>
         <AppContent />
       </AuthProvider>
+      <TooltipLayer />
     </ThemeProvider>
   );
 }

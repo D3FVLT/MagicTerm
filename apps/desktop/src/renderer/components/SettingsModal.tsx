@@ -20,10 +20,8 @@ import {
   type TerminalSettings,
 } from '../lib/terminal-themes';
 import { APP_THEMES } from '../lib/app-themes';
+import { DONATE_URL, GITHUB_URL, GITHUB_ISSUES_URL, WEBSITE_URL } from '../lib/links';
 
-const DONATE_URL = 'https://www.donationalerts.com/r/whitenobel';
-const GITHUB_URL = 'https://github.com/D3FVLT/MagicTerm';
-const WEBSITE_URL = 'https://magicterm.app';
 declare const __APP_VERSION__: string;
 
 interface ProxyConfig {
@@ -202,6 +200,21 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </p>
                     </div>
                   </div>
+                </div>
+                <div className="border-t border-[var(--border)] pt-6">
+                  <h3 className="mb-4 text-sm font-medium text-[var(--fg)]">Interface</h3>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={termSettings.showSupportCard}
+                      onChange={(e) => setTermSettings({ ...termSettings, showSupportCard: e.target.checked })}
+                      className="h-4 w-4 rounded border-[var(--border-strong)] bg-[var(--bg)] text-[var(--accent)] focus:ring-[var(--accent)] focus:ring-offset-0"
+                    />
+                    <span className="text-sm text-[var(--fg-muted)]">Show the support card on the Vaults page</span>
+                  </label>
+                  <p className="mt-1 text-xs text-[var(--fg-subtle)]">
+                    Turn this off and the card at the bottom of Vaults stays hidden for good.
+                  </p>
                 </div>
               </div>
             )}
@@ -584,7 +597,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[var(--fg-subtle)]">Report a bug</span>
-                      <a href={`${GITHUB_URL}/issues/new`} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">
+                      <a href={GITHUB_ISSUES_URL} target="_blank" rel="noopener noreferrer" className="text-[var(--accent)] hover:underline">
                         Open an issue
                       </a>
                     </div>

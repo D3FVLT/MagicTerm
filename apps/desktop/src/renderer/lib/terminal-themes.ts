@@ -359,6 +359,12 @@ export const TERMINAL_THEMES: Record<string, TerminalTheme> = {
 
 export const DEFAULT_THEME_ID = 'tokyo-night';
 
+/**
+ * Despite the name this is the app's local preferences bag — the app theme and
+ * a few UI toggles ride along with the terminal settings in the same store.
+ * Keep new keys declared here: SettingsModal saves the whole object at once, so
+ * anything missing from this type gets wiped on the next save.
+ */
 export interface TerminalSettings {
   appThemeId?: string;
   themeId: string;
@@ -368,6 +374,7 @@ export interface TerminalSettings {
   cursorBlink: boolean;
   scrollback: number;
   lineHeight: number;
+  showSupportCard: boolean;
 }
 
 export const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
@@ -379,6 +386,7 @@ export const DEFAULT_TERMINAL_SETTINGS: TerminalSettings = {
   cursorBlink: true,
   scrollback: 10000,
   lineHeight: 1.2,
+  showSupportCard: true,
 };
 
 export const FONT_OPTIONS = [

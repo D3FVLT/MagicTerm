@@ -252,7 +252,7 @@ export function FilePanel({
           <button
             onClick={onRefresh}
             className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
-            title="Refresh"
+            aria-label="Refresh" data-tooltip=""
           >
             <svg
               className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`}
@@ -271,7 +271,7 @@ export function FilePanel({
           <button
             onClick={() => setCreatingFolder(true)}
             className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
-            title="New Folder"
+            aria-label="New Folder" data-tooltip=""
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -290,7 +290,7 @@ export function FilePanel({
         <button
           onClick={handleGoUp}
           className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
-          title="Go up"
+          aria-label="Go up" data-tooltip=""
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -322,7 +322,7 @@ export function FilePanel({
             setTimeout(() => setPathCopied(false), 1500);
           }}
           className="rounded p-1 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)] flex-shrink-0"
-          title="Copy path"
+          aria-label="Copy path" data-tooltip=""
         >
           {pathCopied ? (
             <svg className="h-3.5 w-3.5 text-[var(--success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -480,7 +480,7 @@ export function FilePanel({
                     <span className="text-xs text-[var(--fg-subtle)]">→</span>
                   )}
                   {!file.isDirectory && isTextFile(file.name) && type === 'remote' && onEditFile && (
-                    <span title="Editable - double-click to edit">
+                    <span data-tooltip="Editable — double-click to edit">
                       <svg
                         className="h-3 w-3 flex-shrink-0 text-[var(--success)] opacity-60"
                         fill="none"

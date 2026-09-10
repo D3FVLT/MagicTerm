@@ -1,0 +1,242 @@
+{
+  "$comment": "Single source of truth for release notes. Rendered on magicterm.app/changelog, shown in the desktop app, and pasted into the GitHub release body by .github/workflows/release.yml. Item text is Markdown-flavoured on purpose so CI can use it verbatim: only `code` and [links](url) are supported, and the label becomes a bold prefix. Newest release first — the first entry is automatically badged as the latest.",
+  "releases": [
+    {
+      "version": "0.5.9",
+      "date": "September 2026",
+      "items": [
+        {
+          "label": "Snippet variables",
+          "text": "A snippet can now ask for values before it runs. Write `{{name}}` where the value goes, or `{{name=default}}` to prefill one — for example `git pull && npm run build && pm2 restart {{app=1}}`. You get a small form with a live preview of the final command, and prefilled values start selected so typing replaces them instead of making you clear the field first."
+        },
+        {
+          "label": "Values are remembered per session",
+          "text": "Re-running the same snippet suggests what you typed last time. Nothing is written to disk — the values live in memory only and are gone when you close the app."
+        },
+        {
+          "label": "Docker and Go templates still work",
+          "text": "A placeholder has to start with a letter and cannot be a Go keyword, so format strings like `docker ps --format '{{.Names}}'` are left alone. Write `\\{{like this}}` if you ever need a literal `{{`."
+        },
+        {
+          "label": "Reorder snippets",
+          "text": "Drag a snippet to move it. The order syncs across your devices and drives the `1`–`9` paste shortcuts, so the snippets you use most can sit on the low digits."
+        },
+        {
+          "label": "Proxy settings on the loading screen",
+          "text": "A broken proxy used to leave the app on a spinner forever with no way to fix it, because the settings live behind the login screen. Start-up now gives up after 15 seconds and offers Proxy settings and Retry, and saving new settings retries immediately."
+        },
+        {
+          "label": "Tooltips actually appear",
+          "text": "Icon-only buttons across the app had tooltips that never showed. They are now rendered by the app itself rather than left to the OS, so they work everywhere — including inside scrolling lists and modals, where they used to be clipped. Every icon button also got a proper accessible name for screen readers."
+        },
+        {
+          "label": "Support the project",
+          "text": "A small card at the bottom of the Vaults page explains that Magic Term is built by one person and links to a donation, the GitHub star button, and a copyable link to share. It can be dismissed for good, and there is a toggle in Settings › General if you want it back."
+        },
+        {
+          "label": "Fixed",
+          "text": "The `⋮` menu on a server card no longer opens behind the neighbouring cards. The card animation left a permanent CSS transform behind, which trapped the menu in its own stacking context."
+        }
+      ]
+    },
+    {
+      "version": "0.5.8",
+      "date": "July 2026",
+      "items": [
+        {
+          "label": "Folders",
+          "text": "Group servers into folders — by hosting provider, client, project, or environment ([#19](https://github.com/D3FVLT/MagicTerm/issues/19)). Works in your personal vault and in shared organisation vaults, with collapsible sections that remember their state."
+        },
+        {
+          "label": "Organise however you like",
+          "text": "Drag a card into another folder, drop it on a folder header, or pick Move to from the card menu. Folders can be renamed, and deleting one keeps its servers — they simply move back to Ungrouped."
+        },
+        {
+          "label": "Pins now work per folder",
+          "text": "A pinned server sticks to the top of its own folder instead of jumping over the whole list."
+        },
+        {
+          "label": "Security",
+          "text": "Shared folders are protected by row-level security plus database triggers, so a teammate cannot attach a team server to a private folder or quietly take ownership of a shared one."
+        }
+      ]
+    },
+    {
+      "version": "0.5.7",
+      "date": "July 2026",
+      "items": [
+        {
+          "label": "Fixed",
+          "text": "Open session tabs no longer rename to \"Unknown\" when switching between organization and personal vaults — the server name is kept on the tab."
+        },
+        {
+          "label": "Snippets",
+          "text": "Open the panel with `Cmd/Ctrl+Shift+S`; press `1`–`9` to paste a snippet without using the mouse. Documented in Keyboard shortcuts and the panel footer."
+        }
+      ]
+    },
+    {
+      "version": "0.5.6",
+      "date": "June 2026",
+      "items": [
+        {
+          "label": "Fixed",
+          "text": "Terminal prompt corruption when browsing command history (↑), `nano` status bar glitches, and stale progress lines (e.g. `docker compose down`) on macOS — caused by PTY and on-screen terminal size getting out of sync."
+        },
+        {
+          "label": "Fixed",
+          "text": "`Ctrl+R` and other readline shortcuts (`Ctrl+L`, `Ctrl+A`, …) now work reliably on macOS and non-Latin keyboard layouts."
+        },
+        {
+          "label": "SSH UX",
+          "text": "Connecting overlay with spinner, error message, and Retry (same as SFTP)."
+        },
+        {
+          "label": "Fixed",
+          "text": "Add/Edit Server modal no longer closes when clicking outside; warns before discarding unsaved changes ([#18](https://github.com/D3FVLT/MagicTerm/issues/18))."
+        },
+        {
+          "label": "Hotfix (rebuild)",
+          "text": "`Ctrl+R` and other readline shortcuts work in production builds — dev-only behavior from `electron-toolkit` was swallowing `Ctrl+R` before it reached the terminal."
+        }
+      ]
+    },
+    {
+      "version": "0.5.5",
+      "date": "June 2026",
+      "items": [
+        {
+          "label": "Verify downloads",
+          "text": "The [Download](https://magicterm.app/download) page now lists a SHA256 hash for every installer (macOS, Windows, Linux). Each GitHub release ships a `SHA256SUMS.txt` with the same values."
+        },
+        {
+          "label": "Connection UX",
+          "text": "SSH and SFTP show a clear \"Connecting…\" state instead of a blank screen, friendly error messages when a host is unreachable, and a Retry button. Timeout shortened to 15 seconds."
+        },
+        {
+          "label": "Fixed",
+          "text": "Closing a tab while a connection is still handshaking no longer leaves a stray timeout error in the console."
+        },
+        {
+          "label": "Fixed",
+          "text": "Broken Linux `.deb` download link on the website."
+        },
+        {
+          "label": "Security",
+          "text": "Electron upgraded to 42, runtime dependency patches (`ws`, build tooling), and Dependabot enabled for automated update PRs."
+        }
+      ]
+    },
+    {
+      "version": "0.5.4",
+      "date": "May 2026",
+      "items": [
+        {
+          "label": "TOFU prompt",
+          "text": "First-time host key now asks for explicit confirmation with the SHA-256 fingerprint instead of silently trusting it. Mismatched fingerprints (possible MITM) get a separate red dialog showing both the old and new keys."
+        },
+        {
+          "label": "Keyboard shortcuts cheatsheet",
+          "text": "Floating \"?\" button in the terminal toolbar opens a modal with all shortcuts grouped by category and rendered with the right modifier key for your OS."
+        },
+        {
+          "label": "Fixed",
+          "text": "Long commands from history no longer corrupt the prompt or eat the line above on retina macOS."
+        },
+        {
+          "label": "Fixed",
+          "text": "`nano`'s status bar stops disappearing on the same setup."
+        },
+        {
+          "label": "Fixed",
+          "text": "`Ctrl+R`, `Ctrl+L`, `Ctrl+A`, `Ctrl+E` and the rest of readline's shortcuts now work on non-Latin keyboard layouts (Cyrillic, German, Greek, …) — previously the terminal silently swallowed them."
+        },
+        {
+          "label": "Fixed",
+          "text": "`Ctrl+Shift+C` / `Ctrl+Shift+V` copy-paste also works regardless of layout."
+        }
+      ]
+    },
+    {
+      "version": "0.5.3",
+      "date": "May 2026",
+      "items": [
+        {
+          "label": "Auth flow",
+          "text": "Proper \"check your inbox\" banner after sign-up, working password reset, and an account-deletion flow with org ownership transfer / safe dissolution."
+        },
+        {
+          "label": "Email templates",
+          "text": "Branded sign-up confirmation, password reset and invite emails."
+        },
+        {
+          "label": "Settings",
+          "text": "New Account tab with version, links to website / GitHub / bug report, and a donate link."
+        },
+        {
+          "label": "Fixed",
+          "text": "Recover gracefully when the cached session belongs to a user that no longer exists on the server (no more being trapped on the master-password screen)."
+        },
+        {
+          "label": "Fixed",
+          "text": "Password-reset page on the website now actually applies the new password and shows a clear success state."
+        },
+        {
+          "label": "Fixed",
+          "text": "Sign-up confirmation links now point to magicterm.app instead of `localhost`."
+        }
+      ]
+    },
+    {
+      "version": "0.5.2",
+      "date": "May 2026",
+      "items": [
+        {
+          "label": "Fixed",
+          "text": "Selected app theme now persists across restarts."
+        }
+      ]
+    },
+    {
+      "version": "0.5.1",
+      "date": "May 2026",
+      "items": [
+        {
+          "label": "Themes",
+          "text": "Three app themes (Midnight, Onyx, Daylight) with paired terminal palettes."
+        },
+        {
+          "label": "Fixed",
+          "text": "Snippet copy and server password copy after the security audit refactor."
+        },
+        {
+          "label": "Fixed",
+          "text": "Proxy configuration now stored encrypted via OS keychain."
+        }
+      ]
+    },
+    {
+      "version": "0.5.0",
+      "date": "April 2026",
+      "badge": "security",
+      "items": [
+        {
+          "label": "Security audit",
+          "text": "KDF upgraded to scrypt, master password verifier, RLS hardened."
+        },
+        {
+          "label": "Renderer sandbox",
+          "text": "Enabled, IPC surface minimised, CSP tightened."
+        },
+        {
+          "label": "SSH host key pinning",
+          "text": "TOFU — manual confirmation on fingerprint change."
+        },
+        {
+          "label": "Auto-clear clipboard",
+          "text": "Sensitive copies are cleared after 30 seconds."
+        }
+      ]
+    }
+  ]
+}

@@ -900,6 +900,7 @@ function mapToSnippet(row: EncryptedSnippet): Snippet {
     userId: row.user_id,
     name: row.name,
     value: row.value,
+    sortOrder: row.sort_order ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -913,13 +914,16 @@ export async function listSnippets(): Promise<Snippet[]> {
     .from('snippets')
     .select('*')
     .eq('user_id', user.id)
+    .order('sort_order', { ascending: true })
     .order('name');
 
   if (error) throw error;
   return (data as EncryptedSnippet[]).map(mapToSnippet);
 }
 
-export async function createSnippet(input: SnippetInput & { value: string }): Promise<Snippet> {
+export async function createSnippet(
+  input: SnippetInput & { value: string; sortOrder?: number }
+): Promise<Snippet> {
   const user = await getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -929,12 +933,24 @@ export async function createSnippet(input: SnippetInput & { value: string }): Pr
       user_id: user.id,
       name: input.name,
       value: input.value,
+      sort_order: input.sortOrder ?? 0,
     })
     .select()
     .single();
 
   if (error) throw error;
   return mapToSnippet(data as EncryptedSnippet);
+}
+
+export async function updateSnippetOrders(orders: { id: string; sort_order: number }[]): Promise<void> {
+  for (const { id, sort_order } of orders) {
+    const { error } = await getSupabase()
+      .from('snippets')
+      .update({ sort_order, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+  }
 }
 
 export async function updateSnippet(id: string, input: Partial<SnippetInput> & { value?: string }): Promise<Snippet> {

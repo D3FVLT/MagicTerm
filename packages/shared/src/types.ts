@@ -231,6 +231,8 @@ export interface Snippet {
   userId: string;
   name: string;
   value: string;
+  /** Manual list position. Lower value = earlier. Drives the 1-9 shortcuts. */
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -245,6 +247,7 @@ export interface EncryptedSnippet {
   user_id: string;
   name: string;
   value: string;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }

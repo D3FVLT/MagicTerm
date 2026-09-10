@@ -332,7 +332,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                   ? 'bg-[var(--accent-hover)] text-white' 
                   : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
               }`}
-              title="Snippets (Cmd/Ctrl+Shift+S)"
+              aria-label="Snippets (Cmd/Ctrl+Shift+S)" data-tooltip=""
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -363,7 +363,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                 ? 'bg-[var(--accent-hover)] text-white' 
                 : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
             }`}
-            title="Search (Cmd/Ctrl+F)"
+            aria-label="Search (Cmd/Ctrl+F)" data-tooltip=""
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -374,7 +374,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
           <button
             onClick={() => setShowShortcuts(true)}
             className="rounded-md p-2 text-[var(--fg-subtle)] transition-colors hover:bg-[var(--border)] hover:text-[var(--fg)]"
-            title="Keyboard shortcuts"
+            aria-label="Keyboard shortcuts" data-tooltip=""
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M8 14h8M5 4h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
@@ -441,7 +441,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
             <button
               onClick={() => handleSearch('prev')}
               className="rounded p-1.5 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
-              title="Previous"
+              aria-label="Previous" data-tooltip=""
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
@@ -450,7 +450,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
             <button
               onClick={() => handleSearch('next')}
               className="rounded p-1.5 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
-              title="Next"
+              aria-label="Next" data-tooltip=""
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -463,7 +463,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                 terminalRef.current?.focus();
               }}
               className="rounded p-1.5 text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]"
-              title="Close (Esc)"
+              aria-label="Close (Esc)" data-tooltip=""
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

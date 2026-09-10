@@ -53,6 +53,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: ['Mod+Shift+S'], description: 'Open / close snippets panel' },
       { keys: ['1'], description: 'Paste 1st snippet (while panel is open)' },
       { keys: ['2'], description: 'Paste 2nd snippet … up to 9' },
+      { keys: ['Enter'], description: 'Confirm values for a snippet with {{variables}}' },
       { keys: ['Esc'], description: 'Close snippets panel' },
     ],
   },

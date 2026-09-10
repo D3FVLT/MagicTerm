@@ -3,6 +3,9 @@ import Base from '~/layouts/Base.astro';
 import Header from '~/components/Header.astro';
 import Footer from '~/components/Footer.astro';
 import { SITE } from '~/data/site';
+import { CHANGELOG, parseInline } from '@magicterm/shared';
+
+const isExternal = (href: string) => /^https?:\/\//.test(href) && !href.includes(SITE.domain);
 ---
 
 <Base
@@ -14,129 +17,41 @@ import { SITE } from '~/data/site';
     <header class="changelog-page__header">
       <h1>Changelog</h1>
       <p>
-        Curated release notes live on <a href={SITE.releasesUrl} target="_blank" rel="noopener">GitHub Releases</a>.
-        Quick highlights below — full details (with download artefacts) are one click away.
+        What changed in every release, newest first. Installers and checksums for each version
+        live on <a href={SITE.releasesUrl} target="_blank" rel="noopener">GitHub Releases</a>.
       </p>
     </header>
 
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.8</h2>
-        <span class="release__date">July 2026</span>
-        <span class="release__tag">Latest</span>
-      </header>
-      <ul>
-        <li><strong>Folders:</strong> group servers into folders — by hosting provider, client, project, or environment (<a href="https://github.com/D3FVLT/MagicTerm/issues/19">#19</a>). Works in your personal vault and in shared organisation vaults, with collapsible sections that remember their state.</li>
-        <li><strong>Organise however you like:</strong> drag a card into another folder, drop it on a folder header, or pick <em>Move to</em> from the card menu. Folders can be renamed, and deleting one keeps its servers — they simply move back to <em>Ungrouped</em>.</li>
-        <li><strong>Pins now work per folder:</strong> a pinned server sticks to the top of its own folder instead of jumping over the whole list.</li>
-        <li><strong>Security:</strong> shared folders are protected by row-level security plus database triggers, so a teammate cannot attach a team server to a private folder or quietly take ownership of a shared one.</li>
-      </ul>
-    </section>
-
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.7</h2>
-        <span class="release__date">July 2026</span>
-      </header>
-      <ul>
-        <li><strong>Fixed:</strong> open session tabs no longer rename to "Unknown" when switching between organization and personal vaults — the server name is kept on the tab.</li>
-        <li><strong>Snippets:</strong> open the panel with <kbd>Cmd/Ctrl+Shift+S</kbd>; press <kbd>1</kbd>–<kbd>9</kbd> to paste a snippet without using the mouse. Documented in Keyboard shortcuts and the panel footer.</li>
-      </ul>
-    </section>
-
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.6</h2>
-        <span class="release__date">June 2026</span>
-      </header>
-      <ul>
-        <li><strong>Fixed:</strong> terminal prompt corruption when browsing command history (↑), <code>nano</code> status bar glitches, and stale progress lines (e.g. <code>docker compose down</code>) on macOS — caused by PTY and on-screen terminal size getting out of sync.</li>
-        <li><strong>Fixed:</strong> <kbd>Ctrl+R</kbd> and other readline shortcuts (<kbd>Ctrl+L</kbd>, <kbd>Ctrl+A</kbd>, …) now work reliably on macOS and non-Latin keyboard layouts.</li>
-        <li><strong>SSH UX:</strong> connecting overlay with spinner, error message, and Retry (same as SFTP).</li>
-        <li><strong>Fixed:</strong> Add/Edit Server modal no longer closes when clicking outside; warns before discarding unsaved changes (<a href="https://github.com/D3FVLT/MagicTerm/issues/18">#18</a>).</li>
-        <li><strong>Hotfix (rebuild):</strong> <kbd>Ctrl+R</kbd> and other readline shortcuts work in production builds — dev-only behavior from <code>electron-toolkit</code> was swallowing <kbd>Ctrl+R</kbd> before it reached the terminal.</li>
-      </ul>
-    </section>
-
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.5</h2>
-        <span class="release__date">June 2026</span>
-      </header>
-      <ul>
-        <li><strong>Verify downloads:</strong> the <a href="/download">Download</a> page now lists a SHA256 hash for every installer (macOS, Windows, Linux). Each GitHub release ships a <code>SHA256SUMS.txt</code> with the same values.</li>
-        <li><strong>Connection UX:</strong> SSH and SFTP show a clear "Connecting…" state instead of a blank screen, friendly error messages when a host is unreachable, and a Retry button. Timeout shortened to 15 seconds.</li>
-        <li><strong>Fixed:</strong> closing a tab while a connection is still handshaking no longer leaves a stray timeout error in the console.</li>
-        <li><strong>Fixed:</strong> broken Linux <code>.deb</code> download link on the website.</li>
-        <li><strong>Security:</strong> Electron upgraded to 42, runtime dependency patches (<code>ws</code>, build tooling), and Dependabot enabled for automated update PRs.</li>
-      </ul>
-    </section>
-
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.4</h2>
-        <span class="release__date">May 2026</span>
-      </header>
-      <ul>
-        <li><strong>TOFU prompt:</strong> first-time host key now asks for explicit confirmation with the SHA-256 fingerprint instead of silently trusting it. Mismatched fingerprints (possible MITM) get a separate red dialog showing both the old and new keys.</li>
-        <li><strong>Keyboard shortcuts cheatsheet:</strong> floating "?" button in the terminal toolbar opens a modal with all shortcuts grouped by category and rendered with the right modifier key for your OS.</li>
-        <li><strong>Fixed:</strong> long commands from history no longer corrupt the prompt or eat the line above on retina macOS.</li>
-        <li><strong>Fixed:</strong> <code>nano</code>'s status bar stops disappearing on the same setup.</li>
-        <li><strong>Fixed:</strong> Ctrl+R, Ctrl+L, Ctrl+A, Ctrl+E and the rest of readline's shortcuts now work on non-Latin keyboard layouts (Cyrillic, German, Greek, …) — previously the terminal silently swallowed them.</li>
-        <li><strong>Fixed:</strong> Ctrl+Shift+C / Ctrl+Shift+V copy-paste also works regardless of layout.</li>
-      </ul>
-    </section>
-
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.3</h2>
-        <span class="release__date">May 2026</span>
-      </header>
-      <ul>
-        <li><strong>Auth flow:</strong> proper "check your inbox" banner after sign-up, working password reset, and an account-deletion flow with org ownership transfer / safe dissolution.</li>
-        <li><strong>Email templates:</strong> branded sign-up confirmation, password reset and invite emails.</li>
-        <li><strong>Settings:</strong> new <em>Account</em> tab with version, links to website / GitHub / bug report, and a donate link.</li>
-        <li><strong>Fixed:</strong> recover gracefully when the cached session belongs to a user that no longer exists on the server (no more being trapped on the master-password screen).</li>
-        <li><strong>Fixed:</strong> password-reset page on the website now actually applies the new password and shows a clear success state.</li>
-        <li><strong>Fixed:</strong> sign-up confirmation links now point to magicterm.app instead of <code>localhost</code>.</li>
-      </ul>
-    </section>
-
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.2</h2>
-        <span class="release__date">May 2026</span>
-      </header>
-      <ul>
-        <li><strong>Fixed:</strong> selected app theme now persists across restarts.</li>
-      </ul>
-    </section>
-
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.1</h2>
-        <span class="release__date">May 2026</span>
-      </header>
-      <ul>
-        <li><strong>Themes:</strong> three app themes (Midnight, Onyx, Daylight) with paired terminal palettes.</li>
-        <li><strong>Fixed:</strong> snippet copy and server password copy after the security audit refactor.</li>
-        <li><strong>Fixed:</strong> proxy configuration now stored encrypted via OS keychain.</li>
-      </ul>
-    </section>
-
-    <section class="release">
-      <header class="release__head">
-        <h2>v0.5.0</h2>
-        <span class="release__date">April 2026</span>
-        <span class="release__tag release__tag--security">Security</span>
-      </header>
-      <ul>
-        <li><strong>Security audit:</strong> KDF upgraded to scrypt, master password verifier, RLS hardened.</li>
-        <li><strong>Renderer sandbox</strong> enabled, IPC surface minimised, CSP tightened.</li>
-        <li><strong>SSH host key pinning</strong> (TOFU) — manual confirmation on fingerprint change.</li>
-        <li><strong>Auto-clear clipboard</strong> for sensitive copies (30s).</li>
-      </ul>
-    </section>
+    {CHANGELOG.map((release, index) => (
+      <section class="release">
+        <header class="release__head">
+          <h2>v{release.version}</h2>
+          <span class="release__date">{release.date}</span>
+          {index === 0 && <span class="release__tag">Latest</span>}
+          {release.badge === 'security' && (
+            <span class="release__tag release__tag--security">Security</span>
+          )}
+        </header>
+        <ul>
+          {release.items.map((item) => (
+            <li>
+              <strong>{item.label}:</strong>{' '}
+              {parseInline(item.text).map((token) =>
+                token.kind === 'code' ? (
+                  <code>{token.value}</code>
+                ) : token.kind === 'link' ? (
+                  // Kept on one line: Astro preserves JSX whitespace, so a
+                  // wrapped child would render as " #19 " inside the link.
+                  <a href={token.href} {...(isExternal(token.href) ? { target: '_blank', rel: 'noopener' } : {})}>{token.value}</a>
+                ) : (
+                  token.value
+                )
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
 
     <footer class="changelog-page__footer">
       <a href={SITE.releasesUrl} target="_blank" rel="noopener" class="btn-cta btn-cta--ghost">
@@ -261,6 +176,25 @@ import { SITE } from '~/data/site';
   .release strong {
     color: var(--fg);
     font-weight: 600;
+  }
+
+  .release code {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.88em;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 5px;
+    color: var(--fg);
+  }
+
+  .release a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .release a:hover {
+    text-decoration: underline;
   }
 
   .changelog-page__footer {

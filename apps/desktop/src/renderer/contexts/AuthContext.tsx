@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import {
   initSupabase,
   signIn,
@@ -16,8 +16,12 @@ import {
   type Session,
 } from '@magicterm/supabase-client';
 import { cryptoManager } from '@magicterm/crypto';
+import { withTimeout, isTimeoutError } from '../lib/with-timeout';
 
 const WEB_BASE_URL = 'https://magicterm.app';
+
+/** Matches the SSH connect budget, for the same reason: past this, it's broken. */
+const AUTH_INIT_TIMEOUT_MS = 15000;
 const EMAIL_CONFIRM_REDIRECT = `${WEB_BASE_URL}/auth/confirmed`;
 const PASSWORD_RESET_REDIRECT = `${WEB_BASE_URL}/auth/reset-password`;
 
@@ -95,6 +99,8 @@ interface AuthContextValue {
   needsMasterKeySetup: boolean;
   isConfigured: boolean;
   configError: string | null;
+  initTimedOut: boolean;
+  retryInitialize: () => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<RegisterResult>;
   logout: () => Promise<void>;
@@ -125,6 +131,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [hasMasterKey, setHasMasterKey] = useState(false);
   const [hasVerifier, setHasVerifier] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [initTimedOut, setInitTimedOut] = useState(false);
+  const [initAttempt, setInitAttempt] = useState(0);
+
+  const retryInitialize = useCallback(() => {
+    setInitTimedOut(false);
+    setIsLoading(true);
+    setInitAttempt((attempt) => attempt + 1);
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !supabaseInitialized) {
@@ -150,12 +164,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function initialize() {
       try {
-        const currentSession = await getSession();
+        const currentSession = await withTimeout(getSession(), AUTH_INIT_TIMEOUT_MS, 'getSession');
         if (cancelled) return;
 
         let currentUser: User | null = null;
         try {
-          currentUser = await getUser();
+          currentUser = await withTimeout(getUser(), AUTH_INIT_TIMEOUT_MS, 'getUser');
         } catch (error) {
           if (isStaleSessionError(error)) {
             console.warn('[auth] Stored session is invalid (user deleted or JWT revoked); clearing.');
@@ -179,7 +193,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (currentUser && !cancelled) {
           try {
-            const cloudVerifier = await getMasterKeyVerifier();
+            const cloudVerifier = await withTimeout(
+              getMasterKeyVerifier(),
+              AUTH_INIT_TIMEOUT_MS,
+              'getMasterKeyVerifier'
+            );
             if (cancelled) return;
 
             if (cloudVerifier) {
@@ -192,10 +210,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
               await clearLocalSession();
               return;
             }
+            // Not knowing the verifier is very different from knowing there
+            // isn't one: falling through here would offer to create a master
+            // key for a vault that already has one.
+            if (isTimeoutError(error)) throw error;
           }
         }
       } catch (error) {
-        console.error('Failed to initialize auth', error);
+        if (isTimeoutError(error)) {
+          console.warn('[auth] Startup could not reach Supabase in time.', error);
+          if (!cancelled) setInitTimedOut(true);
+        } else {
+          console.error('Failed to initialize auth', error);
+        }
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -223,7 +250,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       cancelled = true;
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [initAttempt]);
 
   const login = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {
@@ -381,6 +408,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     needsMasterKeySetup: !!session && !hasVerifier,
     isConfigured: isSupabaseConfigured,
     configError,
+    initTimedOut,
+    retryInitialize,
     login,
     register,
     logout,

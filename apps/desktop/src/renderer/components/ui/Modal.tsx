@@ -8,9 +8,23 @@ interface ModalProps {
   children: ReactNode;
   /** When false, clicking the backdrop does nothing. Default: true. */
   closeOnBackdropClick?: boolean;
+  /** Wider variant for content that reads badly in a narrow column. */
+  size?: 'md' | 'lg';
 }
 
-export function Modal({ isOpen, onClose, title, children, closeOnBackdropClick = true }: ModalProps) {
+const SIZES = {
+  md: 'max-w-md',
+  lg: 'max-w-2xl',
+} as const;
+
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  closeOnBackdropClick = true,
+  size = 'md',
+}: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -40,7 +54,7 @@ export function Modal({ isOpen, onClose, title, children, closeOnBackdropClick =
     >
       <div className="animate-fade-in pointer-events-none absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="animate-scale-in relative z-10 flex max-h-[90vh] w-full max-w-md flex-col rounded-xl bg-surface-1 shadow-2xl"
+        className={`animate-scale-in relative z-10 flex max-h-[90vh] w-full ${SIZES[size]} flex-col rounded-xl bg-surface-1 shadow-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-shrink-0 items-center justify-between border-b border-edge px-6 py-4">

@@ -8,6 +8,7 @@ import { PendingInvites } from './PendingInvites';
 import { InviteMemberModal } from './InviteMemberModal';
 import { EditServerModal } from './EditServerModal';
 import { AddServerModal } from './AddServerModal';
+import { SupportCard } from './SupportCard';
 import { Button } from './ui/Button';
 import type { Server, ServerFolder, SessionType, MemberRole } from '@magicterm/shared';
 
@@ -335,7 +336,10 @@ export function VaultsPage() {
     return (
       <div
         key={server.id}
-        className="animate-card-in relative"
+        // card-in ends on a transform, which leaves every card as its own
+        // stacking context — the menu's own z-index can't escape it. Lift the
+        // whole card instead, so it also clears the cards later in the grid.
+        className={`animate-card-in relative ${serverMenuId === server.id ? 'z-50' : ''}`}
         style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
       >
         {insertBefore && (
@@ -501,7 +505,7 @@ export function VaultsPage() {
 
           {/* Comment */}
           {server.comment && (
-            <p className="mb-3 line-clamp-2 text-xs text-[var(--fg-subtle)]" title={server.comment}>{server.comment}</p>
+            <p className="mb-3 line-clamp-2 text-xs text-[var(--fg-subtle)]" data-tooltip={server.comment}>{server.comment}</p>
           )}
 
           {/* Action buttons */}
@@ -916,6 +920,8 @@ export function VaultsPage() {
             )}
           </div>
         )}
+
+        <SupportCard />
       </div>
 
       <AddServerModal isOpen={showAddServer} onClose={() => setShowAddServer(false)} />

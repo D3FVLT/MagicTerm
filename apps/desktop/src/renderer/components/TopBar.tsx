@@ -4,6 +4,8 @@ import { useServers } from '../contexts/ServersContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrganizations } from '../contexts/OrganizationsContext';
 import { SettingsModal } from './SettingsModal';
+import { ChangelogModal } from './ChangelogModal';
+import { DONATE_URL } from '../lib/links';
 
 declare const __APP_VERSION__: string;
 
@@ -21,6 +23,7 @@ export function TopBar() {
   const { currentOrg, members } = useOrganizations();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showChangelogModal, setShowChangelogModal] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const currentUserNickname = members.find((m) => m.userId === user?.id)?.nickname;
@@ -104,7 +107,7 @@ export function TopBar() {
                     disconnect(tab.rootSessionId);
                   }}
                   className="ml-0.5 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--border)]"
-                  title="Close"
+                  aria-label="Close" data-tooltip=""
                 >
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -134,7 +137,7 @@ export function TopBar() {
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-medium text-fg uppercase transition-opacity hover:opacity-90"
-              title={displayName}
+              data-tooltip={displayName}
             >
               {displayName[0]}
             </button>
@@ -170,6 +173,30 @@ export function TopBar() {
                   </svg>
                   Check for Updates
                 </button>
+                <button
+                  onClick={() => {
+                    setShowChangelogModal(true);
+                    setShowUserMenu(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
+                >
+                  <svg className="h-4 w-4 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  What&apos;s new
+                </button>
+                <a
+                  href={DONATE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setShowUserMenu(false)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--fg)] hover:bg-[var(--border)]"
+                >
+                  <svg className="h-4 w-4 text-[var(--accent)]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                  </svg>
+                  Support the project
+                </a>
                 <div className="my-1 border-t border-[var(--border)]" />
                 <button
                   onClick={() => {
@@ -190,6 +217,7 @@ export function TopBar() {
       </div>
 
       <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
+      <ChangelogModal isOpen={showChangelogModal} onClose={() => setShowChangelogModal(false)} />
     </>
   );
 }

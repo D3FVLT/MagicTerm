@@ -203,7 +203,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                       group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors
                       ${hasActiveSession ? 'bg-primary-500/20 text-primary-400' : 'text-fg-muted hover:bg-surface-2'}
                     `}
-                    title={server.comment || undefined}
+                    data-tooltip={server.comment || undefined}
                   >
                     <div
                       className={`
@@ -245,7 +245,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             ? 'text-green-400 hover:bg-surface-3'
                             : 'text-fg-muted hover:bg-surface-3 hover:text-fg'
                         }`}
-                        title={terminalSession ? 'Switch to Terminal' : 'Connect Terminal'}
+                        aria-label={terminalSession ? 'Switch to Terminal' : 'Connect Terminal'}
+                        data-tooltip=""
                       >
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -269,7 +270,8 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             ? 'text-green-400 hover:bg-surface-3'
                             : 'text-fg-muted hover:bg-surface-3 hover:text-fg'
                         }`}
-                        title={sftpSession ? 'Switch to SFTP' : 'Connect SFTP'}
+                        aria-label={sftpSession ? 'Switch to SFTP' : 'Connect SFTP'}
+                        data-tooltip=""
                       >
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
@@ -285,7 +287,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                             setServerMenuId(serverMenuId === server.id ? null : server.id);
                           }}
                           className="rounded p-1 cursor-pointer transition-all text-fg-subtle hover:bg-surface-3 hover:text-fg-muted opacity-0 group-hover/item:opacity-100"
-                          title="More actions"
+                          aria-label="More actions" data-tooltip=""
                         >
                           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />

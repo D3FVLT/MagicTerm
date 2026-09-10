@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from './ui/Button';
+import { extractReleaseHighlights } from '../lib/release-notes';
+import { GITHUB_URL } from '../lib/links';
 
 interface UpdateInfo {
   version: string;
@@ -21,6 +23,11 @@ export function UpdateBanner() {
   const [isMac, setIsMac] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const [shownVersion, setShownVersion] = useState<string | null>(null);
+
+  const highlights = useMemo(
+    () => extractReleaseHighlights(updateStatus?.info?.releaseNotes ?? ''),
+    [updateStatus?.info?.releaseNotes]
+  );
 
   useEffect(() => {
     window.electronAPI.updater.getPlatform().then((info) => {
@@ -193,16 +200,26 @@ export function UpdateBanner() {
               </button>
             </div>
             <div className="overflow-y-auto px-4 py-3">
-              {updateStatus.info?.releaseNotes?.trim() ? (
+              {highlights ? (
                 <div
-                  className="release-notes prose-sm text-sm leading-relaxed text-[var(--fg)]"
-                  dangerouslySetInnerHTML={{ __html: updateStatus.info.releaseNotes.trim() }}
+                  className="release-notes text-sm leading-relaxed text-[var(--fg-muted)]"
+                  dangerouslySetInnerHTML={{ __html: highlights }}
                 />
               ) : (
-                <p className="text-sm text-[var(--fg-subtle)]">Changelog is not available for this release.</p>
+                <p className="text-sm text-[var(--fg-subtle)]">
+                  Changelog is not available for this release.
+                </p>
               )}
             </div>
-            <div className="flex justify-end border-t border-[var(--border)] px-4 py-3">
+            <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-3">
+              <a
+                href={`${GITHUB_URL}/releases/tag/v${updateStatus.info?.version ?? ''}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-[var(--accent)] hover:underline"
+              >
+                Full release notes and downloads →
+              </a>
               <Button size="sm" onClick={() => setShowChangelog(false)}>
                 Close
               </Button>
