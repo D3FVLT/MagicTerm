@@ -329,7 +329,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
               onClick={toggleSnippets}
               className={`rounded-md p-2 transition-colors ${
                 showSnippets 
-                  ? 'bg-[var(--accent-hover)] text-white' 
+                  ? 'bg-[var(--accent-hover)] text-[var(--accent-fg)]' 
                   : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
               }`}
               aria-label="Snippets (Cmd/Ctrl+Shift+S)" data-tooltip=""
@@ -360,7 +360,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
             onClick={toggleSearch}
             className={`rounded-md p-2 transition-colors ${
               showSearch 
-                ? 'bg-[var(--accent-hover)] text-white' 
+                ? 'bg-[var(--accent-hover)] text-[var(--accent-fg)]' 
                 : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
             }`}
             aria-label="Search (Cmd/Ctrl+F)" data-tooltip=""
@@ -404,7 +404,7 @@ export function TerminalView({ sessionId, serverName, isActive = true, onReconne
                   terminalRef.current?.write('\r\n\x1b[38;5;203m✖ Reconnect failed.\x1b[0m\r\n');
                 }
               }}
-              className="rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
+              className="rounded-md bg-[var(--accent)] px-3 py-1 text-xs font-medium text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
             >
               Reconnect
             </button>

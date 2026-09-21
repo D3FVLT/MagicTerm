@@ -99,11 +99,11 @@ export function UpdateBanner() {
   }
 
   return (
-    <div className="border-b border-primary-500/30 bg-primary-500/10 px-4 py-2">
+    <div className="border-b border-edge bg-surface-1 px-4 py-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <svg
-            className="h-5 w-5 text-primary-400"
+            className="h-5 w-5 text-accent"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -130,7 +130,7 @@ export function UpdateBanner() {
               </span>
               <div className="h-1.5 w-24 overflow-hidden rounded-full bg-surface-3">
                 <div
-                  className="h-full bg-primary-500 transition-all"
+                  className="h-full bg-accent transition-all"
                   style={{ width: `${updateStatus.progress}%` }}
                 />
               </div>

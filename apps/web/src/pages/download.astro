@@ -26,7 +26,7 @@ const downloads = [
   {
     os: 'Windows',
     icon: 'windows',
-    description: 'Windows 10 and 11 (x64). Auto-updates after first install.',
+    description: 'Windows 10 and 11, x64. The build is not signed, so SmartScreen may warn. After you accept an update, the installer downloads and runs on restart.',
     primary: {
       label: 'Installer (.exe)',
       href: `${RELEASE_BASE}/MagicTerm-${VERSION}-x64.exe`,
@@ -36,7 +36,7 @@ const downloads = [
   {
     os: 'Linux',
     icon: 'linux',
-    description: 'Universal AppImage, .deb for Debian/Ubuntu, and AUR package for Arch.',
+    description: 'AppImage, a .deb for Debian and Ubuntu, and an AUR package. Updates are manual.',
     primary: {
       label: 'AppImage (x64)',
       href: `${RELEASE_BASE}/MagicTerm-${VERSION}-x86_64.AppImage`,
@@ -81,13 +81,13 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
 
 <Base
   title="Download"
-  description="Download Magic Term for macOS, Windows or Linux. Free, open-source, end-to-end encrypted SSH/SFTP client."
+  description="Download Magic Term for macOS, Windows, or Linux. Builds are not signed. SHA256 for each installer is listed on this page."
 >
   <Header />
   <main class="download-page">
     <header class="download-page__header">
-      <h1>Download Magic Term</h1>
-      <p>Version {VERSION} — released for macOS, Windows and Linux. Always free, always open-source.</p>
+      <h1>Download</h1>
+      <p>Version {VERSION} for macOS, Windows, and Linux. The builds are not signed.</p>
     </header>
 
     <div class="download-grid">
@@ -142,10 +142,10 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
 
     <section class="verify" data-sums-url={sumsUrl}>
       <header class="verify__head">
-        <h2>Verify your download</h2>
+        <h2>SHA256</h2>
         <p>
-          Every build is open-source and reproducible. Before installing, power users can confirm
-          the file wasn't tampered with by comparing its SHA256 hash to the value below.
+          Compare the file you downloaded with the hash published for this release.
+          The same list is attached to the GitHub release as SHA256SUMS.txt.
         </p>
       </header>
 
@@ -226,17 +226,17 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
   .download-page {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 80px 24px 0;
+    padding: 40px 24px 0;
   }
 
   .download-page__header {
-    text-align: center;
-    max-width: 720px;
-    margin: 0 auto 64px;
+    text-align: left;
+    max-width: 40rem;
+    margin: 0 0 32px;
   }
 
   .download-page__header h1 {
-    font-size: clamp(36px, 6vw, 64px);
+    font-size: 32px;
     font-weight: 700;
     letter-spacing: -0.03em;
     line-height: 1.05;
@@ -263,7 +263,7 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
   .download-card {
     background: var(--surface-1);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 0;
     padding: 28px;
     display: flex;
     flex-direction: column;
@@ -283,8 +283,8 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: color-mix(in oklab, var(--accent) 15%, transparent);
-    color: var(--accent);
+    background: var(--surface-2);
+    color: var(--fg-muted);
   }
 
   .download-card__head h2 {
@@ -357,6 +357,8 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
     padding: 10px 14px;
     margin: 0;
     overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .download-card__note code {
@@ -369,7 +371,7 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
     margin-top: 72px;
     background: var(--surface-1);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 0;
     padding: 28px;
   }
 
@@ -467,14 +469,10 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
     transition: all 0.15s ease;
   }
 
-  .verify__copy:hover {
-    color: var(--fg);
-    border-color: var(--accent);
-  }
-
+  .verify__copy:hover,
   .verify__copy.is-copied {
-    color: var(--accent);
-    border-color: var(--accent);
+    color: var(--fg);
+    border-color: var(--border-strong);
   }
 
   .verify__fallback {
@@ -523,6 +521,8 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
     padding: 10px 14px;
     margin: 0;
     overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
 
   .verify__how-body code {

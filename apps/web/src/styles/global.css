@@ -61,8 +61,8 @@
   --fg: #e6edf3;
   --fg-muted: #b1bac4;
   --fg-subtle: #6e7681;
-  --accent: #79c0ff;
-  --accent-hover: #58a6ff;
+  --accent: #f4f1ea;
+  --accent-hover: #e4dfd4;
   --accent-fg: #000000;
   --success: #56d364;
   --warning: #e3b341;
@@ -108,64 +108,11 @@ body {
   color: var(--accent-fg);
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
-}
-
-@keyframes shimmer {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
-}
-
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-float { animation: float 6s ease-in-out infinite; }
-.animate-fade-up { animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
-
-.gradient-mesh {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in oklab, var(--accent) 25%, transparent), transparent 70%),
-    radial-gradient(ellipse 60% 40% at 20% 30%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 60%),
-    radial-gradient(ellipse 70% 50% at 90% 50%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%);
-}
-
-.text-gradient {
-  background: linear-gradient(180deg, var(--fg) 0%, color-mix(in oklab, var(--fg) 70%, transparent) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.text-gradient-accent {
-  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in oklab, var(--accent) 60%, var(--fg)) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.glass {
-  background: color-mix(in oklab, var(--surface-1) 60%, transparent);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent);
-}
-
-.product-shadow {
-  box-shadow:
-    0 10px 30px -10px color-mix(in oklab, var(--accent) 30%, transparent),
-    0 30px 80px -20px color-mix(in oklab, #000 60%, transparent),
-    0 0 0 1px color-mix(in oklab, var(--fg) 5%, transparent);
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+  html { scroll-behavior: auto; }
 }

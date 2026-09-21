@@ -141,7 +141,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
     >
       {/* Resize handle */}
       <div
-        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary-500/50 transition-colors"
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-accent transition-colors"
         onMouseDown={handleMouseDown}
       />
       
@@ -175,7 +175,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           </div>
         ) : servers.length === 0 ? (
           <div className="rounded-lg bg-surface-2/50 p-4 text-center">
@@ -201,7 +201,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
                   <div
                     className={`
                       group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors
-                      ${hasActiveSession ? 'bg-primary-500/20 text-primary-400' : 'text-fg-muted hover:bg-surface-2'}
+                      ${hasActiveSession ? 'bg-surface-3 text-accent' : 'text-fg-muted hover:bg-surface-2'}
                     `}
                     data-tooltip={server.comment || undefined}
                   >
@@ -476,7 +476,7 @@ export function Sidebar({ onAddServer }: SidebarProps) {
           onClick={() => setShowUserMenu(!showUserMenu)}
           className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-2"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-fg uppercase">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-medium text-accent-fg uppercase">
             {(currentUserNickname || user?.email)?.[0] || '?'}
           </div>
           <div className="flex-1 min-w-0">

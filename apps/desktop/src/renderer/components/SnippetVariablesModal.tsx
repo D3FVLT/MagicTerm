@@ -8,7 +8,6 @@ interface SnippetVariablesModalProps {
   snippetName: string;
   template: string;
   variables: SnippetVariable[];
-  /** Pre-fill, typically the last values used for this snippet in this session. */
   initialValues: Record<string, string>;
   submitLabel: string;
   onSubmit: (result: string, values: Record<string, string>) => void;
@@ -50,8 +49,6 @@ export function SnippetVariablesModal({
             value={values[variable.name] ?? ''}
             placeholder={variable.defaultValue || variable.name}
             autoFocus={index === 0}
-            // Pre-filled text starts selected so typing replaces it outright —
-            // otherwise every reuse begins with clearing the previous value.
             onFocus={(e) => e.currentTarget.select()}
             onChange={(e) =>
               setValues((prev) => ({ ...prev, [variable.name]: e.target.value }))

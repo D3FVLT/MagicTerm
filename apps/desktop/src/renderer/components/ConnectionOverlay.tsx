@@ -40,7 +40,7 @@ export function ConnectionOverlay({ status, serverName, error, onRetry, backgrou
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-1 rounded-md bg-[var(--accent)] px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)]"
+              className="mt-1 rounded-md bg-[var(--accent)] px-4 py-1.5 text-xs font-medium text-[var(--accent-fg)] transition-colors hover:bg-[var(--accent-hover)]"
             >
               Retry
             </button>

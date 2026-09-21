@@ -48,14 +48,14 @@
   --fg: #e6edf3;
   --fg-muted: #b1bac4;
   --fg-subtle: #6e7681;
-  --accent: #79c0ff;
-  --accent-hover: #58a6ff;
+  --accent: #f4f1ea;
+  --accent-hover: #e4dfd4;
   --accent-fg: #000000;
   --success: #56d364;
   --warning: #e3b341;
   --danger: #ff7b72;
   --scrollbar-thumb: #2a2a33;
-  --scrollbar-thumb-hover: #79c0ff;
+  --scrollbar-thumb-hover: #f4f1ea;
 }
 
 [data-theme='daylight'] {
@@ -134,15 +134,6 @@ body {
 
 .animate-slide-up {
   animation: slide-up 0.15s ease-out;
-}
-
-.animate-card-in {
-  animation: card-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes card-in {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .drag-region {

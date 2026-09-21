@@ -2,12 +2,32 @@ import { useState, useEffect } from 'react';
 import { useServers } from '../contexts/ServersContext';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
-import { Input } from './ui/Input';
-import { Select } from './ui/Select';
 import { copySecretToClipboard } from '../lib/secret-clipboard';
 import type { Server, AuthType } from '@magicterm/shared';
 
 const SECRET_FIELDS = new Set(['password', 'key']);
+const controlClass = 'w-full bg-transparent text-[13px] text-fg outline-none placeholder:text-fg-subtle';
+
+function Field({
+  label,
+  htmlFor,
+  align = 'center',
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  align?: 'center' | 'start';
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`flex gap-4 border-b border-edge px-6 py-2 ${align === 'start' ? 'items-start' : 'items-center'}`}>
+      <label htmlFor={htmlFor} className={`w-28 shrink-0 text-[13px] text-fg-subtle ${align === 'start' ? 'pt-1' : ''}`}>
+        {label}
+      </label>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
 
 interface EditServerModalProps {
   isOpen: boolean;
@@ -169,265 +189,137 @@ export function EditServerModal({ isOpen, onClose, server }: EditServerModalProp
 
   if (!server) return null;
 
+  const copyButton = (text: string, field: string, label: string) => (
+    <button
+      type="button"
+      onClick={() => { void copyToClipboard(text, field); }}
+      className="shrink-0 text-xs text-fg-subtle hover:text-fg"
+    >
+      {copiedField === field ? 'Copied' : label}
+    </button>
+  );
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Edit Server" closeOnBackdropClick={false}>
       {isDecrypting ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-          <span className="ml-3 text-fg-muted">Decrypting server data...</span>
-        </div>
+        <p className="py-6 text-[13px] text-fg-subtle">Reading...</p>
       ) : (
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="My Server"
-          required
-        />
-
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2 space-y-1">
-            <label className="block text-sm font-medium text-fg-muted">Host</label>
-            <div className="relative">
-              <input
-                value={host}
-                onChange={(e) => setHost(e.target.value)}
-                placeholder="192.168.1.100"
-                required
-                className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 pr-9 text-fg placeholder-fg-subtle transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              {host && (
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(host, 'host')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
-                  aria-label="Copy host" data-tooltip=""
-                >
-                  {copiedField === 'host' ? (
-                    <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  )}
-                </button>
-              )}
-            </div>
+      <form onSubmit={handleSubmit} className="-mx-6 -mt-2">
+        <Field label="Name" htmlFor="edit-name">
+          <input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} required className={controlClass} />
+        </Field>
+        <Field label="Host" htmlFor="edit-host">
+          <div className="flex items-center gap-2">
+            <input id="edit-host" value={host} onChange={(e) => setHost(e.target.value)} required className={`${controlClass} min-w-0 flex-1`} />
+            {host && copyButton(host, 'host', 'Copy')}
           </div>
-          <Input
-            label="Port"
-            type="number"
-            value={port}
-            onChange={(e) => setPort(e.target.value)}
-            placeholder="22"
-            min={1}
-            max={65535}
-          />
-        </div>
-
-        <div className="space-y-1">
-          <label className="block text-sm font-medium text-fg-muted">Username</label>
-          <div className="relative">
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="root"
-              required
-              className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 pr-9 text-fg placeholder-fg-subtle transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            />
-            {username && (
-              <button
-                type="button"
-                onClick={() => copyToClipboard(username, 'username')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
-                aria-label="Copy username" data-tooltip=""
-              >
-                {copiedField === 'username' ? (
-                  <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012-2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                )}
-              </button>
-            )}
+        </Field>
+        <Field label="Port" htmlFor="edit-port">
+          <input id="edit-port" type="number" value={port} onChange={(e) => setPort(e.target.value)} min={1} max={65535} className={controlClass} />
+        </Field>
+        <Field label="User" htmlFor="edit-user">
+          <div className="flex items-center gap-2">
+            <input id="edit-user" value={username} onChange={(e) => setUsername(e.target.value)} required className={`${controlClass} min-w-0 flex-1`} />
+            {username && copyButton(username, 'username', 'Copy')}
           </div>
-        </div>
-
-        <Select
-          label="Authentication"
-          value={authType}
-          onChange={(e) => setAuthType(e.target.value as AuthType)}
-          options={[
-            { value: 'password', label: 'Password' },
-            { value: 'key', label: 'Private Key' },
-          ]}
-        />
-
+        </Field>
+        <Field label="Auth" htmlFor="edit-auth">
+          <select
+            id="edit-auth"
+            value={authType}
+            onChange={(e) => setAuthType(e.target.value as AuthType)}
+            className={controlClass}
+          >
+            <option value="password">Password</option>
+            <option value="key">Private key</option>
+          </select>
+        </Field>
         {authType === 'password' ? (
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-fg-muted">Password</label>
-            <div className="relative">
+          <Field label="Password" htmlFor="edit-password">
+            <div className="flex items-center gap-2">
               <input
+                id="edit-password"
                 type={showPassword ? 'text' : 'password'}
                 value={password || (showPassword ? currentCredentials : '')}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={currentCredentials ? 'Leave empty to keep current' : 'Enter password'}
-                className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 pr-16 text-fg placeholder-fg-subtle transition-colors focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                placeholder={currentCredentials ? 'Leave empty to keep' : ''}
+                className={`${controlClass} min-w-0 flex-1`}
               />
-              {currentCredentials && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(currentCredentials, 'password')}
-                    className="rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
-                    aria-label="Copy current password" data-tooltip=""
-                  >
-                    {copiedField === 'password' ? (
-                      <svg className="h-4 w-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    ) : (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="rounded p-1 text-fg-subtle hover:text-fg-muted transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show current password'}
-                    data-tooltip=""
-                  >
-                    {showPassword ? (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l18 18" />
-                      </svg>
-                    ) : (
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-fg-muted">
-                Private Key
-              </label>
+              {currentCredentials && copyButton(currentCredentials, 'password', 'Copy')}
               {currentCredentials && (
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(currentCredentials, 'key')}
-                  className="flex items-center gap-1 text-xs text-fg-subtle hover:text-fg-muted transition-colors"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="shrink-0 text-xs text-fg-subtle hover:text-fg"
                 >
-                  {copiedField === 'key' ? (
-                    <>
-                      <svg className="h-3 w-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="text-green-400">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      <span>Copy current key</span>
-                    </>
-                  )}
+                  {showPassword ? 'Hide' : 'Show'}
                 </button>
               )}
             </div>
-            <textarea
-              value={privateKey}
-              onChange={(e) => setPrivateKey(e.target.value)}
-              placeholder="Leave empty to keep current key"
-              rows={5}
-              className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 font-mono text-sm text-fg placeholder-fg-subtle focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            />
-          </div>
+          </Field>
+        ) : (
+          <Field label="Private key" htmlFor="edit-key" align="start">
+            <div>
+              {currentCredentials && (
+                <div className="mb-1 flex justify-end">
+                  {copyButton(currentCredentials, 'key', 'Copy')}
+                </div>
+              )}
+              <textarea
+                id="edit-key"
+                value={privateKey}
+                onChange={(e) => setPrivateKey(e.target.value)}
+                placeholder="Leave empty to keep"
+                rows={4}
+                className={`${controlClass} font-mono text-xs`}
+              />
+            </div>
+          </Field>
         )}
+        <Field label="Comment" htmlFor="edit-comment">
+          <input id="edit-comment" value={comment} onChange={(e) => setComment(e.target.value)} className={controlClass} />
+        </Field>
+        <Field label="Folder" htmlFor="edit-folder">
+          <select id="edit-folder" value={folderId} onChange={(e) => setFolderId(e.target.value)} className={controlClass}>
+            <option value="">Ungrouped</option>
+            {folders.map((folder) => (
+              <option key={folder.id} value={folder.id}>{folder.name}</option>
+            ))}
+          </select>
+        </Field>
 
-        <Input
-          label="Comment"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Optional note about this server"
-        />
+        {error && <p className="px-6 pt-3 text-[13px] text-danger">{error}</p>}
 
-        {folders.length > 0 && (
-          <Select
-            label="Folder"
-            value={folderId}
-            onChange={(e) => setFolderId(e.target.value)}
-            options={[
-              { value: '', label: 'Ungrouped' },
-              ...folders.map((folder) => ({ value: folder.id, label: folder.name })),
-            ]}
-          />
-        )}
-
-        {error && (
-          <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-2">
-          <div>
-            {!showDeleteConfirm ? (
-              <Button 
-                type="button" 
-                variant="ghost" 
-                onClick={() => setShowDeleteConfirm(true)}
-                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-              >
-                Delete Server
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-red-400">Delete?</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                >
-                  {isDeleting ? 'Deleting...' : 'Yes'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setShowDeleteConfirm(false)}
-                >
-                  No
-                </Button>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex gap-3">
-            <Button type="button" variant="ghost" onClick={() => handleClose()}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
+        <div className="flex justify-end gap-2 px-6 pt-4">
+          <Button type="button" variant="ghost" size="sm" onClick={() => handleClose()}>
+            Cancel
+          </Button>
+          <Button type="submit" size="sm" disabled={isLoading}>
+            {isLoading ? 'Saving...' : 'Save'}
+          </Button>
         </div>
+
+        {showDeleteConfirm ? (
+          <div className="mt-4 border-t border-edge px-6 pt-3">
+            <p className="text-[13px] text-fg">Delete {server.name}?</p>
+            <div className="mt-3 flex justify-end gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </Button>
+              <Button type="button" variant="danger" size="sm" onClick={() => { void handleDelete(); }} disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="mt-4 px-6 text-left text-[13px] text-fg-subtle hover:text-danger"
+          >
+            Delete server
+          </button>
+        )}
       </form>
       )}
     </Modal>

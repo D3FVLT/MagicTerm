@@ -31,19 +31,18 @@ import { SITE, NAV } from '~/data/site';
     position: sticky;
     top: 0;
     z-index: 50;
-    background: color-mix(in oklab, var(--bg) 70%, transparent);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border-bottom: 1px solid color-mix(in oklab, var(--fg) 6%, transparent);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
   }
 
   .site-header__inner {
-    max-width: 1200px;
+    max-width: 1080px;
     margin: 0 auto;
-    padding: 14px 24px;
+    padding: 12px 24px;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 32px;
+    gap: 12px 24px;
   }
 
   .site-header__brand {
@@ -62,14 +61,17 @@ import { SITE, NAV } from '~/data/site';
   }
 
   .site-header__nav {
-    display: none;
-    gap: 28px;
-    flex: 1;
+    display: flex;
+    gap: 16px;
+    order: 3;
+    flex: 1 1 100%;
+    overflow-x: auto;
   }
 
   @media (min-width: 768px) {
     .site-header__nav {
-      display: flex;
+      order: 0;
+      flex: 1;
     }
   }
 
@@ -98,9 +100,7 @@ import { SITE, NAV } from '~/data/site';
     justify-content: center;
     width: 36px;
     height: 36px;
-    border-radius: 8px;
     color: var(--fg-muted);
-    transition: all 0.15s ease;
   }
 
   .site-header__github:hover {
@@ -114,7 +114,6 @@ import { SITE, NAV } from '~/data/site';
     justify-content: center;
     height: 36px;
     padding: 0 16px;
-    border-radius: 8px;
     background: var(--accent);
     color: var(--accent-fg);
     font-size: 14px;

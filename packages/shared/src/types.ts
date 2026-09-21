@@ -251,3 +251,11 @@ export interface EncryptedSnippet {
   created_at: string;
   updated_at: string;
 }
+
+/** Personal vault file. Secret fields are ciphertext from encrypt(), same as the Supabase columns. */
+export interface LocalVaultDocument {
+  version: 1;
+  servers: Server[];
+  folders: ServerFolder[];
+  snippets: Snippet[];
+}

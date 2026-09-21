@@ -47,3 +47,13 @@ apps/web/dist/
 
 # Testing
 coverage/
+apps/desktop/test/test-dist/
+
+# Local Remotion / agent tooling — not part of the product
+# (promo video project, installed Remotion agent skills, skills lockfile)
+tools/promo-video/
+.agents/
+skills-lock.json
+
+# Local agent checklist for shipping a release. Stays on this machine.
+.cursor/rules/release.mdc

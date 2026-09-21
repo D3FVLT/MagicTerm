@@ -2,13 +2,34 @@ import { useState } from 'react';
 import { useServers } from '../contexts/ServersContext';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
-import { Input } from './ui/Input';
-import { Select } from './ui/Select';
 import type { AuthType } from '@magicterm/shared';
 
 interface AddServerModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+const controlClass = 'w-full bg-transparent text-[13px] text-fg outline-none placeholder:text-fg-subtle';
+
+function Field({
+  label,
+  htmlFor,
+  align = 'center',
+  children,
+}: {
+  label: string;
+  htmlFor?: string;
+  align?: 'center' | 'start';
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`flex gap-4 border-b border-edge px-6 py-2 ${align === 'start' ? 'items-start' : 'items-center'}`}>
+      <label htmlFor={htmlFor} className={`w-28 shrink-0 text-[13px] text-fg-subtle ${align === 'start' ? 'pt-1' : ''}`}>
+        {label}
+      </label>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
 }
 
 export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
@@ -132,140 +153,91 @@ export function AddServerModal({ isOpen, onClose }: AddServerModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Add Server" closeOnBackdropClick={false}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={handleImport}
-            disabled={importLoading}
-            className="flex items-center gap-1.5 rounded-lg border border-[var(--border-strong)] px-2.5 py-1.5 text-xs text-[var(--accent)] transition-colors hover:bg-[var(--border)] disabled:opacity-50"
-          >
-            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            {importLoading ? 'Reading...' : 'Import from ~/.ssh/config'}
-          </button>
-        </div>
+      <form onSubmit={handleSubmit} className="-mx-6 -mt-2">
+        <button
+          type="button"
+          onClick={() => { void handleImport(); }}
+          disabled={importLoading}
+          className="flex h-9 w-full items-center border-b border-edge px-6 text-left text-[13px] text-fg-subtle hover:text-fg disabled:opacity-50"
+        >
+          {importLoading ? 'Reading...' : 'Import from ~/.ssh/config'}
+        </button>
 
         {showImport && importHosts.length > 0 && (
-          <div className="max-h-32 space-y-1 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--bg)] p-2">
+          <div className="max-h-40 overflow-y-auto">
             {importHosts.map((h, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => fillFromImport(h)}
-                className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-xs text-[var(--fg)] hover:bg-[var(--border)]"
+                className="flex h-9 w-full items-center justify-between gap-3 border-b border-edge px-6 text-left text-[13px] hover:bg-surface-1"
               >
-                <span className="font-medium">{h.name}</span>
-                <span className="text-[var(--fg-subtle)]">{h.username}@{h.host}:{h.port}</span>
+                <span className="truncate text-fg">{h.name}</span>
+                <span className="truncate text-xs text-fg-subtle">{h.username}@{h.host}:{h.port}</span>
               </button>
             ))}
           </div>
         )}
 
-        <Input
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="My Server"
-          required
-        />
-
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2">
-            <Input
-              label="Host"
-              value={host}
-              onChange={(e) => setHost(e.target.value)}
-              placeholder="192.168.1.100"
-              required
-            />
-          </div>
-          <Input
-            label="Port"
-            type="number"
-            value={port}
-            onChange={(e) => setPort(e.target.value)}
-            placeholder="22"
-            min={1}
-            max={65535}
-          />
-        </div>
-
-        <Input
-          label="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="root"
-          required
-        />
-
-        <Select
-          label="Authentication"
-          value={authType}
-          onChange={(e) => setAuthType(e.target.value as AuthType)}
-          options={[
-            { value: 'password', label: 'Password' },
-            { value: 'key', label: 'Private Key' },
-          ]}
-        />
-
+        <Field label="Name" htmlFor="add-name">
+          <input id="add-name" value={name} onChange={(e) => setName(e.target.value)} required className={controlClass} />
+        </Field>
+        <Field label="Host" htmlFor="add-host">
+          <input id="add-host" value={host} onChange={(e) => setHost(e.target.value)} required className={controlClass} />
+        </Field>
+        <Field label="Port" htmlFor="add-port">
+          <input id="add-port" type="number" value={port} onChange={(e) => setPort(e.target.value)} min={1} max={65535} className={controlClass} />
+        </Field>
+        <Field label="User" htmlFor="add-user">
+          <input id="add-user" value={username} onChange={(e) => setUsername(e.target.value)} required className={controlClass} />
+        </Field>
+        <Field label="Auth" htmlFor="add-auth">
+          <select
+            id="add-auth"
+            value={authType}
+            onChange={(e) => setAuthType(e.target.value as AuthType)}
+            className={controlClass}
+          >
+            <option value="password">Password</option>
+            <option value="key">Private key</option>
+          </select>
+        </Field>
         {authType === 'password' ? (
-          <Input
-            type="password"
-            label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-          />
+          <Field label="Password" htmlFor="add-password">
+            <input id="add-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className={controlClass} />
+          </Field>
         ) : (
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-fg-muted">
-              Private Key
-            </label>
+          <Field label="Private key" htmlFor="add-key" align="start">
             <textarea
+              id="add-key"
               value={privateKey}
               onChange={(e) => setPrivateKey(e.target.value)}
-              placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
-              rows={5}
-              className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 font-mono text-sm text-fg placeholder-fg-subtle focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              rows={4}
               required
+              className={`${controlClass} font-mono text-xs`}
             />
-          </div>
+          </Field>
         )}
+        <Field label="Comment" htmlFor="add-comment">
+          <input id="add-comment" value={comment} onChange={(e) => setComment(e.target.value)} className={controlClass} />
+        </Field>
+        <Field label="Folder" htmlFor="add-folder">
+          <select id="add-folder" value={folderId} onChange={(e) => setFolderId(e.target.value)} className={controlClass}>
+            <option value="">Ungrouped</option>
+            {folders.map((folder) => (
+              <option key={folder.id} value={folder.id}>{folder.name}</option>
+            ))}
+          </select>
+        </Field>
 
-        <Input
-          label="Comment"
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Optional note about this server"
-        />
+        {error && <p className="px-6 pt-3 text-[13px] text-danger">{error}</p>}
 
-        {folders.length > 0 && (
-          <Select
-            label="Folder"
-            value={folderId}
-            onChange={(e) => setFolderId(e.target.value)}
-            options={[
-              { value: '', label: 'Ungrouped' },
-              ...folders.map((folder) => ({ value: folder.id, label: folder.name })),
-            ]}
-          />
-        )}
-
-        {error && (
-          <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="ghost" onClick={() => handleClose()}>
+        <div className="flex justify-end gap-2 px-6 pt-4">
+          <Button type="button" variant="ghost" size="sm" onClick={() => handleClose()}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Adding...' : 'Add Server'}
+          <Button type="submit" size="sm" disabled={isLoading}>
+            {isLoading ? 'Adding...' : 'Add'}
           </Button>
         </div>
       </form>

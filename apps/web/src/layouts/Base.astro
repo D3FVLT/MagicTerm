@@ -19,7 +19,7 @@ const {
   noindex = false,
 } = Astro.props;
 
-const fullTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
+const fullTitle = title ? `${title} - ${SITE.name}` : `${SITE.name} - ${SITE.tagline}`;
 const canonicalUrl = canonical ?? new URL(Astro.url.pathname, SITE.url).toString();
 const ogImageUrl = new URL(image, SITE.url).toString();
 
@@ -46,25 +46,25 @@ const softwareApp = {
     url: SITE.githubUrl,
   },
   license: `https://github.com/${SITE.githubRepo}/blob/main/LICENSE`,
-  screenshot: new URL('/screenshots/vaults.webp', SITE.url).toString(),
   featureList: [
-    'End-to-end encrypted credentials (AES-256-GCM)',
-    'Master password with scrypt KDF, never sent to the server',
-    'Cloud sync across devices via Supabase',
-    'Split terminal panes with horizontal and vertical layouts',
-    'Built-in SFTP file manager with drag and drop',
-    'Snippet manager for tokens and frequently used commands',
-    'TOFU host-key verification with explicit fingerprint prompts',
-    'Import hosts from ~/.ssh/config',
-    'Organizations and team-shared vaults',
-    'Cross-platform: macOS (Apple Silicon and Intel), Windows, Linux',
-    'No telemetry, no tracking',
+    'SSH and SFTP client',
+    'AES-256-GCM on device, key from PBKDF2-SHA-256',
+    'Master password is not uploaded. Account stores a scrypt verifier',
+    'Local mode with no account. Sync is optional',
+    'Split terminal panes and scrollback search',
+    'SFTP file manager',
+    'Snippets with {{name}} prompts',
+    'TOFU host-key check. Fingerprints stay on this machine',
+    'Import host, port, and user from ~/.ssh/config',
+    'macOS, Windows, Linux',
+    'Builds are not signed. SHA256 is published',
+    'No telemetry SDK',
   ],
 };
 ---
 
 <!doctype html>
-<html lang="en" data-theme="midnight">
+<html lang="en" data-theme="onyx">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -85,7 +85,7 @@ const softwareApp = {
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content={`${SITE.name} — ${SITE.tagline}`} />
+    <meta property="og:image:alt" content={`${SITE.name}. ${SITE.tagline}`} />
     <meta property="og:site_name" content={SITE.name} />
     <meta property="og:locale" content="en_US" />
 
@@ -94,10 +94,9 @@ const softwareApp = {
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
-    <meta name="twitter:image:alt" content={`${SITE.name} — ${SITE.tagline}`} />
+    <meta name="twitter:image:alt" content={`${SITE.name}. ${SITE.tagline}`} />
 
-    <meta name="theme-color" content="#0a0b14" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" />
 
     <script type="application/ld+json" set:html={JSON.stringify(softwareApp)} />
 

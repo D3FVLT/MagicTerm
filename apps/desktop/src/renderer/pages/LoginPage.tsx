@@ -10,7 +10,7 @@ const AUTH_TIMEOUT_MS = 15000;
 type Mode = 'signin' | 'signup' | 'forgot';
 
 export function LoginPage() {
-  const { login, register, requestPasswordReset, isConfigured, configError } = useAuth();
+  const { login, register, requestPasswordReset, startLocalMode, isConfigured, configError } = useAuth();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -198,6 +198,16 @@ export function LoginPage() {
                 : 'Sign In'}
             </Button>
           </form>
+
+          {mode === 'signin' && (
+            <button
+              type="button"
+              onClick={() => { void startLocalMode(); }}
+              className="mt-4 w-full text-sm text-fg-muted hover:text-fg"
+            >
+              Continue without an account
+            </button>
+          )}
 
           <div className="mt-6 text-center">
             {mode === 'signin' && (

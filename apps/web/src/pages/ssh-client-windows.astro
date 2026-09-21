@@ -2,137 +2,54 @@
 import Base from '~/layouts/Base.astro';
 import Header from '~/components/Header.astro';
 import Footer from '~/components/Footer.astro';
+import Shot from '~/components/Shot.astro';
 import { SITE } from '~/data/site';
 import '~/styles/landing.css';
 
-const title = 'Free SSH Client for Windows — Magic Term';
+const title = 'SSH client for Windows';
 const description =
-  'Magic Term is a free, open-source SSH and SFTP client for Windows 10 and 11 with end-to-end encrypted credentials, cloud sync, split panes and a built-in SFTP file manager. No subscription.';
+  'Magic Term is a free SSH and SFTP client for Windows 10 and 11. The build is not signed. SHA256 is on the download page.';
 
 const VERSION = SITE.version;
-const REPO = SITE.githubRepo;
-const RELEASE_BASE = `https://github.com/${REPO}/releases/download/v${VERSION}`;
+const RELEASE_BASE = `https://github.com/${SITE.githubRepo}/releases/download/v${VERSION}`;
 ---
 
 <Base title={title} description={description}>
   <Header />
   <main class="landing">
     <header class="landing__header">
-      <p class="landing__eyebrow">Windows</p>
-      <h1>A free, open-source SSH client for Windows 10 and 11</h1>
+      <h1>SSH client for Windows</h1>
       <p class="landing__lead">
-        Magic Term is a native installer for Windows 10 and 11 (x64) with
-        first-class PuTTY-key import, an SFTP file manager, split panes,
-        snippet manager, and end-to-end encrypted cloud sync. MIT-licensed
-        and free forever.
+        Free SSH and SFTP client for Windows 10 and 11, x64. Encryption stays on this device. Local mode needs no account.
       </p>
       <div class="landing__cta">
-        <a
-          href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x64.exe`}
-          class="landing__button landing__button--primary"
-        >
-          Download installer (.exe)
+        <a href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x64.exe`} class="landing__button landing__button--primary">
+          Installer (.exe)
         </a>
-        <a
-          href="/download"
-          class="landing__button landing__button--secondary"
-        >
-          All downloads
-        </a>
+        <a href="/download" class="landing__button landing__button--secondary">All downloads</a>
       </div>
     </header>
 
-    <img
-      src="/screenshots/terminal.webp"
-      alt="Magic Term on Windows with a connected SSH session and split terminal panes"
-      class="landing__screenshot"
-      loading="lazy"
-      decoding="async"
-    />
+    <Shot src="/screenshots/terminal.webp" alt="Terminal session in Magic Term" />
 
     <section class="landing__section">
-      <h2>Why use Magic Term on Windows</h2>
-      <ul class="landing__list">
-        <li>
-          <strong>Real terminal emulator</strong> built on xterm.js — handles
-          full-screen TUIs like <code>htop</code>, <code>nano</code> and
-          <code>vim</code> correctly, unlike a basic
-          <code>cmd.exe</code>-style fallback.
-        </li>
-        <li>
-          <strong>Imports OpenSSH config</strong> from
-          <code>%USERPROFILE%\.ssh\config</code> if you have it, plus
-          PuTTY <code>.ppk</code> keys.
-        </li>
-        <li>
-          <strong>Auto-update</strong> after the first install — no manual
-          re-downloading every release.
-        </li>
-        <li>
-          <strong>SFTP file manager</strong> with drag-and-drop to Explorer.
-        </li>
-        <li>
-          <strong>Split panes</strong>, snippet manager and a dozen terminal
-          themes (Tokyo Night, Dracula, Nord, Catppuccin, …).
-        </li>
-        <li>
-          <strong>End-to-end encrypted cloud sync</strong> — your servers and
-          credentials are encrypted on this machine before they reach the
-          server, with a master password the sync backend never sees.
-        </li>
-      </ul>
-    </section>
-
-    <section class="landing__section">
-      <h2>Installation</h2>
+      <h2>Install</h2>
       <ol class="landing__list">
-        <li>
-          <a href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x64.exe`}>Download
-          the installer</a> (about 90 MB).
-        </li>
-        <li>
-          Run <code>MagicTerm-{VERSION}-x64.exe</code>. SmartScreen may show
-          an "unrecognized publisher" warning — Magic Term isn't EV-signed
-          yet (we're saving up). Click "More info" then "Run anyway".
-        </li>
-        <li>The installer puts Magic Term in <code>%LOCALAPPDATA%\Programs\MagicTerm</code> by default and creates a Start Menu shortcut.</li>
-        <li>
-          Launch <strong>Magic Term</strong> from the Start Menu. Updates are
-          checked automatically on launch and applied silently.
-        </li>
+        <li>Run MagicTerm-{VERSION}-x64.exe.</li>
+        <li>The build is not signed. SmartScreen may say the publisher is unrecognized.</li>
+        <li>After you accept an update, the installer downloads and runs on restart.</li>
+        <li>SHA256 is on the <a href="/download">download page</a>.</li>
       </ol>
     </section>
 
     <section class="landing__section">
-      <h2>Alternatives on Windows</h2>
-      <p>
-        Windows users typically choose between PuTTY (free but spartan and
-        no sync), MobaXterm (powerful, freemium), and Termius (modern but
-        paywalls cloud sync). Magic Term sits closer to Termius in scope
-        but is fully free and open-source. If you want a side-by-side
-        comparison: <a href="/termius-alternative">Magic Term vs Termius</a>.
-      </p>
-    </section>
-
-    <section class="landing__section">
-      <h2>System requirements</h2>
+      <h2>On this PC</h2>
       <ul class="landing__list">
-        <li>Windows 10 (build 1809+) or Windows 11</li>
-        <li>x64 CPU (ARM build is on the roadmap)</li>
-        <li>~200 MB of disk space</li>
+        <li>Import reads host, port, and user from the OpenSSH config, if you have one.</li>
+        <li>SFTP is on the same SSH connection.</li>
+        <li>Sync is optional. Without an account the vault stays in a local file.</li>
       </ul>
     </section>
-
-    <footer class="landing__footer">
-      <h2>Get started</h2>
-      <p>Free, open-source, no telemetry. Works offline; cloud sync is opt-in.</p>
-      <a
-        href={`${RELEASE_BASE}/MagicTerm-${VERSION}-x64.exe`}
-        class="landing__button landing__button--primary"
-      >
-        Download for Windows
-      </a>
-    </footer>
   </main>
   <Footer />
 </Base>

@@ -1,6 +1,6 @@
 {
   "name": "magicterm",
-  "version": "0.5.9",
+  "version": "0.6.0",
   "private": true,
   "description": "Cross-platform SSH/SFTP client with E2E encryption",
   "scripts": {

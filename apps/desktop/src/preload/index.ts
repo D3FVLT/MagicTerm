@@ -140,6 +140,20 @@ const api = {
       ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_CREATE_VERIFIER, password),
     verify: (password: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_VERIFY_MASTER_PASSWORD, password),
+    getVerifier: () =>
+      ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_GET_VERIFIER),
+    checkVerifier: (password: string, verifier: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_CHECK_VERIFIER, password, verifier),
+  },
+  localVault: {
+    status: () => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_VAULT_STATUS),
+    setMode: (enabled: boolean) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_VAULT_SET_MODE, enabled),
+    create: () => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_VAULT_CREATE),
+    unlock: (password: string) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_VAULT_UNLOCK, password),
+    open: () => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_VAULT_OPEN),
+    replace: (document: unknown) => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_VAULT_REPLACE, document),
+    lock: () => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_VAULT_LOCK),
+    delete: () => ipcRenderer.invoke(IPC_CHANNELS.LOCAL_VAULT_DELETE),
   },
   sshHostKeys: {
     list: () => ipcRenderer.invoke('sshHostKeys:list'),

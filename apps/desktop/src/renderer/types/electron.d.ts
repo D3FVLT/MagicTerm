@@ -3,6 +3,7 @@ import type {
   TerminalSize,
   FileEntry,
   TransferProgress,
+  LocalVaultDocument,
 } from '@magicterm/shared';
 
 export type SSHDataCallback = (sessionId: string, data: string) => void;
@@ -100,6 +101,18 @@ export interface ElectronAPI {
       verifier?: string;
       error?: string;
     }>;
+    getVerifier: () => Promise<{ verifier: string | null }>;
+    checkVerifier: (password: string, verifier: string) => Promise<{ success: boolean; valid: boolean }>;
+  };
+  localVault: {
+    status: () => Promise<{ localOnly: boolean; exists: boolean; hasVerifier: boolean }>;
+    setMode: (enabled: boolean) => Promise<{ success: boolean; error?: string }>;
+    create: () => Promise<{ success: boolean; error?: string }>;
+    unlock: (password: string) => Promise<{ success: boolean; valid: boolean }>;
+    open: () => Promise<{ success: boolean; vault?: LocalVaultDocument; error?: string }>;
+    replace: (document: LocalVaultDocument) => Promise<{ success: boolean; error?: string }>;
+    lock: () => Promise<{ success: boolean }>;
+    delete: () => Promise<{ success: boolean; error?: string }>;
   };
   sshHostKeys: {
     list: () => Promise<{ hostPort: string; fingerprint: string; addedAt: string }[]>;

@@ -16,7 +16,7 @@ export const APP_THEMES: Record<string, AppThemeMeta> = {
   midnight: {
     id: 'midnight',
     name: 'Midnight',
-    description: 'Soft blue-tinted dark — Tokyo Night vibes',
+    description: 'Dark, blue tint',
     defaultTerminalThemeId: 'tokyo-night',
     isDark: true,
     preview: {
@@ -29,20 +29,20 @@ export const APP_THEMES: Record<string, AppThemeMeta> = {
   onyx: {
     id: 'onyx',
     name: 'Onyx',
-    description: 'True black, OLED-friendly, high contrast',
+    description: 'Black, high contrast',
     defaultTerminalThemeId: 'github-dark',
     isDark: true,
     preview: {
       bg: '#000000',
       surface: '#0d0d10',
-      accent: '#79c0ff',
+      accent: '#f4f1ea',
       text: '#e6edf3',
     },
   },
   daylight: {
     id: 'daylight',
     name: 'Daylight',
-    description: 'Light surfaces for bright environments',
+    description: 'Light',
     defaultTerminalThemeId: 'github-light',
     isDark: false,
     preview: {

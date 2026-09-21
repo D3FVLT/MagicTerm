@@ -312,7 +312,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
             }}
             className={`rounded p-1 transition-colors ${
               showSnippets
-                ? 'bg-[var(--accent-hover)] text-white'
+                ? 'bg-[var(--accent-hover)] text-[var(--accent-fg)]'
                 : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
             }`}
             aria-label="Snippets (Cmd/Ctrl+Shift+S)" data-tooltip=""
@@ -401,7 +401,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
                   terminalRef.current?.write('\r\n\x1b[38;5;203m✖ Reconnect failed.\x1b[0m\r\n');
                 }
               }}
-              className="rounded bg-[var(--accent)] px-2 py-0.5 text-xs font-medium text-white hover:bg-[var(--accent-hover)]"
+              className="rounded bg-[var(--accent)] px-2 py-0.5 text-xs font-medium text-[var(--accent-fg)] hover:bg-[var(--accent-hover)]"
             >
               Reconnect
             </button>

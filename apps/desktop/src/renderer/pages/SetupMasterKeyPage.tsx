@@ -5,7 +5,17 @@ import { Input } from '../components/ui/Input';
 import { MASTER_PASSWORD_MIN_LENGTH } from '@magicterm/shared';
 
 export function SetupMasterKeyPage() {
-  const { setupMasterKey, unlockWithMasterKey, needsMasterKeySetup, logout, user } = useAuth();
+  const {
+    setupMasterKey,
+    setupLocalMasterKey,
+    unlockWithMasterKey,
+    unlockLocalMasterKey,
+    needsMasterKeySetup,
+    isLocalOnly,
+    leaveLocalSetup,
+    logout,
+    user,
+  } = useAuth();
   const [masterPassword, setMasterPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberPassword, setRememberPassword] = useState(false);
@@ -16,7 +26,7 @@ export function SetupMasterKeyPage() {
   const isSetup = needsMasterKeySetup;
 
   useEffect(() => {
-    if (isSetup) return;
+    if (isSetup || isLocalOnly) return;
     let cancelled = false;
     setIsAutoUnlocking(true);
     window.electronAPI.masterPassword.get().then(async (result) => {
@@ -34,7 +44,7 @@ export function SetupMasterKeyPage() {
       if (!cancelled) setIsAutoUnlocking(false);
     });
     return () => { cancelled = true; };
-  }, [isSetup, unlockWithMasterKey]);
+  }, [isSetup, isLocalOnly, unlockWithMasterKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +62,14 @@ export function SetupMasterKeyPage() {
 
     setIsLoading(true);
     try {
-      if (isSetup) {
+      if (isLocalOnly) {
+        if (isSetup) {
+          await setupLocalMasterKey(masterPassword);
+        } else {
+          const success = await unlockLocalMasterKey(masterPassword);
+          if (!success) setError('Invalid master password');
+        }
+      } else if (isSetup) {
         await setupMasterKey(masterPassword);
         if (rememberPassword) {
           await window.electronAPI.masterPassword.save(masterPassword);
@@ -76,7 +93,7 @@ export function SetupMasterKeyPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           <span className="text-gray-400">Unlocking vault...</span>
         </div>
       </div>
@@ -87,9 +104,9 @@ export function SetupMasterKeyPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-950 p-4">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-500/10">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-surface-3">
             <svg
-              className="h-8 w-8 text-primary-500"
+              className="h-8 w-8 text-accent"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -137,15 +154,17 @@ export function SetupMasterKeyPage() {
               />
             )}
 
+            {!isLocalOnly && (
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={rememberPassword}
                 onChange={(e) => setRememberPassword(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-primary-500 focus:ring-primary-500 focus:ring-offset-0"
+                className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-accent focus:ring-accent focus:ring-offset-0"
               />
               <span className="text-sm text-gray-400">Remember on this device</span>
             </label>
+            )}
 
             {error && (
               <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
@@ -174,15 +193,23 @@ export function SetupMasterKeyPage() {
           ) : (
             <span />
           )}
-          <button
-            type="button"
-            onClick={() => {
-              void logout();
-            }}
-            className="text-fg-subtle hover:text-fg transition-colors"
-          >
-            Sign out
-          </button>
+          {isLocalOnly && isSetup ? (
+            <button
+              type="button"
+              onClick={() => { void leaveLocalSetup(); }}
+              className="text-fg-subtle hover:text-fg transition-colors"
+            >
+              Back
+            </button>
+          ) : !isLocalOnly ? (
+            <button
+              type="button"
+              onClick={() => { void logout(); }}
+              className="text-fg-subtle hover:text-fg transition-colors"
+            >
+              Sign out
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

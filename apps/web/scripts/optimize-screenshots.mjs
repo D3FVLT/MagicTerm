@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // Optimizes the static screenshots used on the marketing site.
 // PNG → WebP at quality 82, max 1800px wide. Run with: node scripts/optimize-screenshots.mjs
-import { readdir, stat } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import { join, dirname, basename, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, '..', 'public', 'screenshots');
+const ROOT = join(__dirname, '..', '..', '..');
+const OUT = join(__dirname, '..', 'public', 'screenshots');
 
-const TARGETS = ['vaults.png', 'vaults-midnight.png', 'terminal.png', 'sftp.png', 'snippets.png'];
+const TARGETS = ['servers.png', 'terminal.png', 'sftp.png', 'snippets.png'];
 
 async function fmt(bytes) {
   return `${(bytes / 1024).toFixed(1)} KB`;
@@ -17,7 +18,7 @@ async function fmt(bytes) {
 
 for (const file of TARGETS) {
   const src = join(ROOT, file);
-  const dst = join(ROOT, basename(file, extname(file)) + '.webp');
+  const dst = join(OUT, basename(file, extname(file)) + '.webp');
   const before = (await stat(src)).size;
   await sharp(src)
     .resize({ width: 1800, withoutEnlargement: true })

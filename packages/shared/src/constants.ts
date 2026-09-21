@@ -61,6 +61,17 @@ export const IPC_CHANNELS = {
   CRYPTO_CREATE_VERIFIER: 'crypto:createVerifier',
   CRYPTO_VERIFY_MASTER_PASSWORD: 'crypto:verifyMasterPassword',
   CRYPTO_SET_VERIFIER: 'crypto:setVerifier',
+  CRYPTO_GET_VERIFIER: 'crypto:getVerifier',
+  CRYPTO_CHECK_VERIFIER: 'crypto:checkVerifier',
+
+  LOCAL_VAULT_STATUS: 'localVault:status',
+  LOCAL_VAULT_SET_MODE: 'localVault:setMode',
+  LOCAL_VAULT_CREATE: 'localVault:create',
+  LOCAL_VAULT_UNLOCK: 'localVault:unlock',
+  LOCAL_VAULT_OPEN: 'localVault:open',
+  LOCAL_VAULT_REPLACE: 'localVault:replace',
+  LOCAL_VAULT_LOCK: 'localVault:lock',
+  LOCAL_VAULT_DELETE: 'localVault:delete',
 
   SECURE_STORAGE_GET: 'secureStorage:get',
   SECURE_STORAGE_SET: 'secureStorage:set',
@@ -88,4 +99,5 @@ export const STORAGE_KEYS = {
   PROXY_CONFIG_ENCRYPTED: 'proxyConfigEncrypted',
   TERMINAL_SETTINGS: 'terminalSettings',
   SSH_KNOWN_HOSTS: 'sshKnownHosts',
+  LOCAL_ONLY: 'localOnly',
 } as const;

@@ -1,21 +1,29 @@
 import { useState } from 'react';
 import { useOrganizations } from '../contexts/OrganizationsContext';
-import { Button } from './ui/Button';
 import { CreateOrgModal } from './CreateOrgModal';
 import type { OrganizationWithRole } from '@magicterm/shared';
 
 interface OrganizationSwitcherProps {
   onSelect?: () => void;
+  onShowInvites?: () => void;
 }
 
-export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
-  const { organizations, currentOrg, setCurrentOrg, pendingInvites, deleteOrg } = useOrganizations();
+function Check({ on }: { on: boolean }) {
+  return (
+    <span className="flex h-4 w-4 shrink-0 items-center justify-center text-accent">
+      {on && (
+        <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+export function OrganizationSwitcher({ onSelect, onShowInvites }: OrganizationSwitcherProps) {
+  const { organizations, currentOrg, setCurrentOrg, pendingInvites } = useOrganizations();
   const [isOpen, setIsOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [deletingOrg, setDeletingOrg] = useState<OrganizationWithRole | null>(null);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSelect = (org: OrganizationWithRole | null) => {
     setCurrentOrg(org);
@@ -23,189 +31,93 @@ export function OrganizationSwitcher({ onSelect }: OrganizationSwitcherProps) {
     onSelect?.();
   };
 
-  const handleDeleteOrg = async () => {
-    if (!deletingOrg || deleteConfirmText !== deletingOrg.name) return;
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await deleteOrg(deletingOrg.id);
-      setDeletingOrg(null);
-      setDeleteConfirmText('');
-    } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Failed to delete');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-left text-sm hover:bg-surface-3"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        className="flex h-8 w-full items-center justify-between gap-2 rounded-md px-1 text-left text-[13px] hover:bg-surface-2"
       >
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded bg-primary-500/20 text-xs font-medium text-primary-400">
-            {currentOrg ? currentOrg.name[0].toUpperCase() : 'P'}
-          </div>
-          <span className="truncate text-fg">
-            {currentOrg ? currentOrg.name : 'Personal'}
-          </span>
-        </div>
+        <span className="truncate text-fg">
+          {currentOrg ? currentOrg.name : 'Personal'}
+        </span>
         <svg
-          className={`h-4 w-4 text-fg-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 shrink-0 text-fg-subtle transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
-        {pendingInvites.length > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-fg">
-            {pendingInvites.length}
-          </span>
-        )}
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="animate-slide-down absolute left-0 top-full z-50 mt-1 min-w-[220px] rounded-lg border border-edge bg-surface-1 py-1 shadow-xl">
+          <div
+            role="menu"
+            className="animate-slide-down absolute left-0 top-full z-50 mt-1 w-full min-w-[220px] rounded-lg border border-edge bg-surface-1 py-1 shadow-xl"
+          >
             <button
+              type="button"
+              role="menuitem"
               onClick={() => handleSelect(null)}
-              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface-2 ${
-                !currentOrg ? 'bg-surface-2' : ''
-              }`}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-surface-2"
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded bg-surface-3 text-xs">
-                P
-              </div>
-              <span className="text-fg">Personal</span>
+              <Check on={!currentOrg} />
+              <span className="truncate text-fg">Personal</span>
             </button>
 
-            {organizations.length > 0 && (
-              <div className="my-1 border-t border-edge" />
-            )}
-
             {organizations.map((org) => (
-              <div
+              <button
                 key={org.id}
-                className={`group/org flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-surface-2 ${
-                  currentOrg?.id === org.id ? 'bg-surface-2' : ''
-                }`}
+                type="button"
+                role="menuitem"
+                onClick={() => handleSelect(org)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-surface-2"
               >
-                <button
-                  onClick={() => handleSelect(org)}
-                  className="flex flex-1 items-center gap-2 text-left min-w-0"
-                >
-                  <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-primary-500/20 text-xs font-medium text-primary-400">
-                    {org.name[0].toUpperCase()}
-                  </div>
-                  <div className="flex-1 truncate">
-                    <span className="text-fg">{org.name}</span>
-                    <span className="ml-2 text-xs text-fg-subtle">{org.role}</span>
-                  </div>
-                </button>
-                {org.role === 'owner' && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsOpen(false);
-                      setDeletingOrg(org);
-                      setDeleteConfirmText('');
-                      setDeleteError(null);
-                    }}
-                    className="flex-shrink-0 rounded p-1 text-fg-subtle opacity-0 group-hover/org:opacity-100 hover:text-red-400 transition-all"
-                    aria-label="Delete organization" data-tooltip=""
-                  >
-                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                )}
-              </div>
+                <Check on={currentOrg?.id === org.id} />
+                <span className="min-w-0 flex-1 truncate text-fg">{org.name}</span>
+                <span className="shrink-0 text-xs text-fg-subtle">{org.role}</span>
+              </button>
             ))}
 
             <div className="my-1 border-t border-edge" />
 
             <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setIsOpen(false);
+                onShowInvites?.();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-surface-2"
+            >
+              <Check on={false} />
+              <span className="flex-1 text-fg">Invites</span>
+              <span className="tabular-nums text-xs text-fg-subtle">{pendingInvites.length}</span>
+            </button>
+
+            <button
+              type="button"
+              role="menuitem"
               onClick={() => {
                 setIsOpen(false);
                 setShowCreateModal(true);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-primary-400 hover:bg-surface-2"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-fg hover:bg-surface-2"
             >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create Organization
+              <Check on={false} />
+              Create organization
             </button>
           </div>
         </>
       )}
 
       <CreateOrgModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
-
-      {/* Delete confirmation modal */}
-      {deletingOrg && (
-        <>
-          <div className="fixed inset-0 z-50 bg-black/60" onClick={() => setDeletingOrg(null)} />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md rounded-xl border border-edge bg-surface-1 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/10">
-                  <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-fg">Delete Organization</h3>
-                  <p className="text-sm text-fg-muted">This action cannot be undone</p>
-                </div>
-              </div>
-
-              <p className="mb-4 text-sm text-fg-muted">
-                This will permanently delete <strong className="text-fg">{deletingOrg.name}</strong>, all its servers and member associations.
-              </p>
-
-              <p className="mb-2 text-sm text-fg-muted">
-                Type <strong className="text-fg">{deletingOrg.name}</strong> to confirm:
-              </p>
-              <input
-                type="text"
-                value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleDeleteOrg()}
-                placeholder={deletingOrg.name}
-                className="mb-4 w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-                autoFocus
-              />
-
-              {deleteError && (
-                <p className="mb-4 text-sm text-red-400">{deleteError}</p>
-              )}
-
-              <div className="flex justify-end gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDeletingOrg(null)}
-                  disabled={isDeleting}
-                >
-                  Cancel
-                </Button>
-                <button
-                  onClick={handleDeleteOrg}
-                  disabled={deleteConfirmText !== deletingOrg.name || isDeleting}
-                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isDeleting ? 'Deleting...' : 'Delete Organization'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

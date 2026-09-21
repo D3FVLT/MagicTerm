@@ -75,7 +75,7 @@ export function ProxySettingsModal({ isOpen, onClose, onSaved }: ProxySettingsMo
                 type="checkbox"
                 checked={config.enabled}
                 onChange={(e) => setConfig({ ...config, enabled: e.target.checked })}
-                className="h-4 w-4 rounded border-edge-strong bg-surface-2 text-primary-500 focus:ring-primary-500 focus:ring-offset-0"
+                className="h-4 w-4 rounded border-edge-strong bg-surface-2 text-accent focus:ring-accent focus:ring-offset-0"
               />
               <span className="text-sm text-fg-muted">Enable proxy</span>
             </label>
@@ -87,7 +87,7 @@ export function ProxySettingsModal({ isOpen, onClose, onSaved }: ProxySettingsMo
                   <select
                     value={config.type}
                     onChange={(e) => setConfig({ ...config, type: e.target.value as 'http' | 'socks5' })}
-                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg outline-none focus:border-primary-500"
+                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg outline-none focus:border-accent"
                   >
                     <option value="http">HTTP</option>
                     <option value="socks5">SOCKS5</option>
@@ -102,7 +102,7 @@ export function ProxySettingsModal({ isOpen, onClose, onSaved }: ProxySettingsMo
                       value={config.host}
                       onChange={(e) => setConfig({ ...config, host: e.target.value })}
                       placeholder="127.0.0.1"
-                      className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-primary-500"
+                      className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-accent"
                     />
                   </div>
                   <div className="w-24">
@@ -111,7 +111,7 @@ export function ProxySettingsModal({ isOpen, onClose, onSaved }: ProxySettingsMo
                       type="number"
                       value={config.port}
                       onChange={(e) => setConfig({ ...config, port: Number(e.target.value) })}
-                      className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg outline-none focus:border-primary-500"
+                      className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg outline-none focus:border-accent"
                     />
                   </div>
                 </div>
@@ -122,7 +122,7 @@ export function ProxySettingsModal({ isOpen, onClose, onSaved }: ProxySettingsMo
                     type="text"
                     value={config.username}
                     onChange={(e) => setConfig({ ...config, username: e.target.value })}
-                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-primary-500"
+                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-accent"
                   />
                 </div>
 
@@ -132,7 +132,7 @@ export function ProxySettingsModal({ isOpen, onClose, onSaved }: ProxySettingsMo
                     type="password"
                     value={config.password}
                     onChange={(e) => setConfig({ ...config, password: e.target.value })}
-                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-primary-500"
+                    className="w-full rounded-lg border border-edge bg-surface-2 px-3 py-2 text-sm text-fg placeholder-fg-subtle outline-none focus:border-accent"
                   />
                 </div>
               </>
@@ -152,7 +152,7 @@ export function ProxySettingsModal({ isOpen, onClose, onSaved }: ProxySettingsMo
                   setTimeout(() => setTestResult({ status: 'idle' }), 5000);
                 }}
                 disabled={testResult.status === 'testing'}
-                className="rounded-lg border border-edge bg-surface-2 px-3 py-1.5 text-xs font-medium text-fg transition-colors hover:border-primary-500 hover:text-primary-400 disabled:opacity-50"
+                className="rounded-lg border border-edge bg-surface-2 px-3 py-1.5 text-xs font-medium text-fg transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
               >
                 {testResult.status === 'testing' ? 'Testing...' : 'Test Connection'}
               </button>
@@ -175,7 +175,7 @@ export function ProxySettingsModal({ isOpen, onClose, onSaved }: ProxySettingsMo
             <button
               onClick={handleSave}
               disabled={saving}
-              className="rounded-lg bg-primary-500 px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-primary-600 disabled:opacity-50"
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-hover disabled:opacity-50"
             >
               {saved ? 'Saved!' : saving ? 'Saving...' : 'Save'}
             </button>

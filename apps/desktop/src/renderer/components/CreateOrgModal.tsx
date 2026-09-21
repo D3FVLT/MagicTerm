@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useOrganizations } from '../contexts/OrganizationsContext';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
-import { Input } from './ui/Input';
 
 interface CreateOrgModalProps {
   isOpen: boolean;
@@ -20,7 +19,7 @@ export function CreateOrgModal({ isOpen, onClose }: CreateOrgModalProps) {
     setError('');
 
     if (!name.trim()) {
-      setError('Organization name is required');
+      setError('Name is required');
       return;
     }
 
@@ -44,28 +43,23 @@ export function CreateOrgModal({ isOpen, onClose }: CreateOrgModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Create Organization">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Organization Name"
+    <Modal isOpen={isOpen} onClose={handleClose} title="Create organization">
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="org-name" className="mb-1 block text-xs text-fg-subtle">Name</label>
+        <input
+          id="org-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="My Team"
           autoFocus
           required
+          className="w-full border-b border-edge bg-transparent py-1 text-[13px] text-fg outline-none focus:border-accent"
         />
-
-        {error && (
-          <div className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="ghost" onClick={handleClose}>
+        {error && <p className="mt-2 text-[13px] text-danger">{error}</p>}
+        <div className="mt-4 flex justify-end gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={handleClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" size="sm" disabled={isLoading}>
             {isLoading ? 'Creating...' : 'Create'}
           </Button>
         </div>

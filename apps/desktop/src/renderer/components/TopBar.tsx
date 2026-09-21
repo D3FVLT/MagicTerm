@@ -19,7 +19,7 @@ function countPanes(node: { type: string; children?: unknown[] }): number {
 export function TopBar() {
   const { tabs, activeView, setActiveView, disconnect, getSession } = useTerminal();
   const { servers } = useServers();
-  const { logout, user } = useAuth();
+  const { logout, lockLocal, isLocalOnly, user } = useAuth();
   const { currentOrg, members } = useOrganizations();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -27,7 +27,7 @@ export function TopBar() {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const currentUserNickname = members.find((m) => m.userId === user?.id)?.nickname;
-  const displayName = currentUserNickname || user?.email || 'User';
+  const displayName = isLocalOnly ? 'Local' : (currentUserNickname || user?.email || 'User');
 
   useEffect(() => {
     if (!showUserMenu) return;
@@ -125,7 +125,7 @@ export function TopBar() {
         <div className="no-drag flex items-center gap-2 pr-4">
           {currentOrg && (
             <div className="flex items-center gap-1.5 rounded-md bg-[var(--border)] px-2 py-1">
-              <div className="flex h-4 w-4 items-center justify-center rounded bg-primary-500/20 text-[10px] font-medium text-primary-400">
+              <div className="flex h-4 w-4 items-center justify-center rounded bg-accent text-[10px] font-medium text-accent-fg">
                 {currentOrg.name[0].toUpperCase()}
               </div>
                    <span className="text-xs text-[var(--fg-subtle)]">{currentOrg.name}</span>
@@ -136,7 +136,7 @@ export function TopBar() {
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-xs font-medium text-fg uppercase transition-opacity hover:opacity-90"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-xs font-medium text-accent-fg uppercase transition-opacity hover:opacity-90"
               data-tooltip={displayName}
             >
               {displayName[0]}
@@ -200,7 +200,11 @@ export function TopBar() {
                 <div className="my-1 border-t border-[var(--border)]" />
                 <button
                   onClick={() => {
-                    logout();
+                    if (isLocalOnly) {
+                      void lockLocal();
+                    } else {
+                      void logout();
+                    }
                     setShowUserMenu(false);
                   }}
                   className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-[var(--border)]"
@@ -208,7 +212,7 @@ export function TopBar() {
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  Sign Out
+                  {isLocalOnly ? 'Lock' : 'Sign Out'}
                 </button>
               </div>
             )}

@@ -8,6 +8,7 @@ import { setupAuthHandlers } from './auth';
 import { setupServerHandlers } from './servers';
 import { setupAutoUpdater, setupUpdaterHandlers } from './updater';
 import { setupMasterKeyHandlers } from './master-key';
+import { setupLocalVaultHandlers } from './local-vault-ipc';
 import { setupKnownHostsHandlers } from './known-hosts';
 import { setupSecureStorageHandlers } from './secure-storage';
 import { setupClipboardHandlers } from './clipboard';
@@ -150,6 +151,7 @@ app.whenReady().then(() => {
   applyProxySettings();
 
   setupMasterKeyHandlers(ipcMain);
+  setupLocalVaultHandlers(ipcMain);
   setupKnownHostsHandlers(ipcMain);
   setupSecureStorageHandlers(ipcMain);
   setupClipboardHandlers(ipcMain);

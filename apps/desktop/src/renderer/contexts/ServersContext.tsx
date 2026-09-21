@@ -16,6 +16,19 @@ import {
 } from '@magicterm/supabase-client';
 import { cryptoManager } from '@magicterm/crypto';
 import { useOrganizations } from './OrganizationsContext';
+import { useAuth } from './AuthContext';
+import { getLocalDocument } from '../lib/local-vault-session';
+import {
+  addLocalFolder,
+  addLocalServer,
+  editLocalServer,
+  moveLocalServer,
+  pinLocalServer,
+  removeLocalFolder,
+  removeLocalServer,
+  renameLocalFolder,
+  reorderLocalServers,
+} from '../lib/local-vault-data';
 
 interface ServersContextValue {
   servers: Server[];
@@ -62,6 +75,7 @@ interface ServersProviderProps {
 }
 
 export function ServersProvider({ children }: ServersProviderProps) {
+  const { isLocalOnly } = useAuth();
   const { currentOrg } = useOrganizations();
   const [servers, setServers] = useState<Server[]>([]);
   const [folders, setFolders] = useState<ServerFolder[]>([]);
@@ -71,6 +85,14 @@ export function ServersProvider({ children }: ServersProviderProps) {
   const realtimeDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refreshServers = async () => {
+    if (isLocalOnly) {
+      const doc = getLocalDocument();
+      setServers(doc?.servers ?? []);
+      setFolders(doc?.folders ?? []);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
@@ -90,7 +112,12 @@ export function ServersProvider({ children }: ServersProviderProps) {
   };
 
   useEffect(() => {
-    refreshServers();
+    if (isLocalOnly) {
+      void refreshServers();
+      return;
+    }
+
+    void refreshServers();
 
     const unsubscribe = subscribeToServers((updatedServers) => {
       if (realtimeDebounce.current) clearTimeout(realtimeDebounce.current);
@@ -111,9 +138,14 @@ export function ServersProvider({ children }: ServersProviderProps) {
       unsubscribe();
       if (realtimeDebounce.current) clearTimeout(realtimeDebounce.current);
     };
-  }, [currentOrg]);
+  }, [currentOrg, isLocalOnly]);
 
   const addServer = async (input: ServerInput): Promise<Server> => {
+    if (isLocalOnly) {
+      const server = await addLocalServer(input);
+      setServers(getLocalDocument()?.servers ?? []);
+      return server;
+    }
     // Check for duplicate host in current scope
     for (const existingServer of servers) {
       try {
@@ -149,6 +181,11 @@ export function ServersProvider({ children }: ServersProviderProps) {
   };
 
   const editServer = async (id: string, input: Partial<ServerInput>): Promise<Server> => {
+    if (isLocalOnly) {
+      const updated = await editLocalServer(id, input);
+      setServers(getLocalDocument()?.servers ?? []);
+      return updated;
+    }
     const updates: Record<string, unknown> = {};
 
     // Check for duplicate host if host is being changed
@@ -187,6 +224,11 @@ export function ServersProvider({ children }: ServersProviderProps) {
   };
 
   const removeServer = async (id: string): Promise<void> => {
+    if (isLocalOnly) {
+      await removeLocalServer(id);
+      setServers(getLocalDocument()?.servers ?? []);
+      return;
+    }
     await deleteServer(id);
     setServers((prev) => prev.filter((s) => s.id !== id));
   };
@@ -205,12 +247,22 @@ export function ServersProvider({ children }: ServersProviderProps) {
   };
 
   const pinServer = async (id: string, isPinned: boolean): Promise<void> => {
+    if (isLocalOnly) {
+      await pinLocalServer(id, isPinned);
+      setServers(getLocalDocument()?.servers ?? []);
+      return;
+    }
     setServers((prev) => sortWithinFolder(prev.map((s) => (s.id === id ? { ...s, isPinned } : s))));
     reorderLockUntil.current = Date.now() + 3000;
     await toggleServerPin(id, isPinned);
   };
 
   const reorderServers = async (orderedIds: string[]): Promise<void> => {
+    if (isLocalOnly) {
+      await reorderLocalServers(orderedIds);
+      setServers(getLocalDocument()?.servers ?? []);
+      return;
+    }
     const orders = orderedIds.map((id, index) => ({ id, sort_order: index }));
     const orderMap = new Map(orders.map((o) => [o.id, o.sort_order]));
     setServers((prev) =>
@@ -225,12 +277,30 @@ export function ServersProvider({ children }: ServersProviderProps) {
   };
 
   const addFolder = async (name: string): Promise<ServerFolder> => {
+    if (isLocalOnly) {
+      const folder = await addLocalFolder(name);
+      setFolders(getLocalDocument()?.folders ?? []);
+      return folder;
+    }
     const folder = await createServerFolder({ name, orgId: currentOrg?.id });
     setFolders((prev) => [...prev, folder]);
     return folder;
   };
 
   const renameFolder = async (id: string, name: string): Promise<void> => {
+    if (isLocalOnly) {
+      const previousName = folders.find((f) => f.id === id)?.name;
+      try {
+        await renameLocalFolder(id, name);
+        setFolders(getLocalDocument()?.folders ?? []);
+      } catch (err) {
+        if (previousName !== undefined) {
+          setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name: previousName } : f)));
+        }
+        throw err;
+      }
+      return;
+    }
     const previousName = folders.find((f) => f.id === id)?.name;
     setFolders((prev) => prev.map((f) => (f.id === id ? { ...f, name } : f)));
     try {
@@ -244,12 +314,24 @@ export function ServersProvider({ children }: ServersProviderProps) {
   };
 
   const removeFolder = async (id: string): Promise<void> => {
+    if (isLocalOnly) {
+      await removeLocalFolder(id);
+      const doc = getLocalDocument();
+      setFolders(doc?.folders ?? []);
+      setServers(doc?.servers ?? []);
+      return;
+    }
     await deleteServerFolder(id);
     setFolders((prev) => prev.filter((f) => f.id !== id));
     setServers((prev) => prev.map((s) => (s.folderId === id ? { ...s, folderId: null } : s)));
   };
 
   const moveServer = async (id: string, folderId: string | null): Promise<void> => {
+    if (isLocalOnly) {
+      await moveLocalServer(id, folderId);
+      setServers(getLocalDocument()?.servers ?? []);
+      return;
+    }
     const previousFolderId = servers.find((s) => s.id === id)?.folderId ?? null;
     setServers((prev) => prev.map((s) => (s.id === id ? { ...s, folderId } : s)));
     reorderLockUntil.current = Date.now() + 3000;

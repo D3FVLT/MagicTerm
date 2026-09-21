@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import {
   initSupabase,
   signIn,
@@ -17,6 +17,8 @@ import {
 } from '@magicterm/supabase-client';
 import { cryptoManager } from '@magicterm/crypto';
 import { withTimeout, isTimeoutError } from '../lib/with-timeout';
+import { shouldContactSupabase } from '../lib/vault-mode';
+import { clearLocalDocument, setLocalDocument } from '../lib/local-vault-session';
 
 const WEB_BASE_URL = 'https://magicterm.app';
 
@@ -73,15 +75,20 @@ const supabaseStorage = {
 };
 
 let supabaseInitialized = false;
-if (isSupabaseConfigured && !supabaseInitialized) {
+
+function ensureSupabase(): boolean {
+  if (!isSupabaseConfigured) return false;
+  if (supabaseInitialized) return true;
   try {
     initSupabase(SUPABASE_URL, SUPABASE_ANON_KEY, {
       storage: supabaseStorage,
       storageKey: 'magicterm.supabase.auth',
     });
     supabaseInitialized = true;
+    return true;
   } catch (err) {
     console.error('Failed to initialize Supabase:', err);
+    return false;
   }
 }
 
@@ -101,11 +108,18 @@ interface AuthContextValue {
   configError: string | null;
   initTimedOut: boolean;
   retryInitialize: () => void;
+  isLocalOnly: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<RegisterResult>;
   logout: () => Promise<void>;
+  startLocalMode: () => Promise<void>;
+  leaveLocalSetup: () => Promise<void>;
+  lockLocal: () => Promise<void>;
   setupMasterKey: (masterPassword: string) => Promise<void>;
+  setupLocalMasterKey: (masterPassword: string) => Promise<void>;
   unlockWithMasterKey: (masterPassword: string) => Promise<boolean>;
+  unlockLocalMasterKey: (masterPassword: string) => Promise<boolean>;
+  finishLocalMove: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
@@ -133,6 +147,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [configError, setConfigError] = useState<string | null>(null);
   const [initTimedOut, setInitTimedOut] = useState(false);
   const [initAttempt, setInitAttempt] = useState(0);
+  const [isLocalOnly, setIsLocalOnly] = useState(false);
+  const isLocalOnlyRef = useRef(false);
+  isLocalOnlyRef.current = isLocalOnly;
+  const cloudAuthUnsub = useRef<(() => void) | null>(null);
 
   const retryInitialize = useCallback(() => {
     setInitTimedOut(false);
@@ -141,14 +159,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabaseInitialized) {
-      console.error('Supabase not configured. VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are required.');
-      setConfigError('Supabase is not configured. Please check environment variables.');
-      setIsLoading(false);
-      return;
-    }
-
     let cancelled = false;
+    let unsubscribe = () => {};
 
     async function clearLocalSession() {
       try { await signOut(); } catch { /* server may already be gone */ }
@@ -164,6 +176,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function initialize() {
       try {
+        const vaultStatus = await window.electronAPI.localVault.status();
+        if (!shouldContactSupabase(vaultStatus.localOnly)) {
+          if (cancelled) return;
+          if (!vaultStatus.exists) {
+            await window.electronAPI.localVault.setMode(false);
+          } else {
+            setIsLocalOnly(true);
+            setHasVerifier(vaultStatus.hasVerifier);
+            setSession(null);
+            setUser(null);
+            return;
+          }
+        }
+
+        if (!ensureSupabase()) {
+          setConfigError('Supabase is not configured. Please check environment variables.');
+          return;
+        }
+
+        const { data } = onAuthStateChange((event, newSession) => {
+          if (cancelled) return;
+          setSession(newSession);
+          setUser(newSession?.user ?? null);
+          if (event === 'SIGNED_OUT' && !isLocalOnlyRef.current) {
+            setHasVerifier(false);
+            setHasMasterKey(false);
+            cryptoManager.clearMasterPassword();
+            window.electronAPI.masterKey.setVerifier(null).catch(() => {});
+          }
+        });
+        unsubscribe = () => data.subscription.unsubscribe();
+
         const currentSession = await withTimeout(getSession(), AUTH_INIT_TIMEOUT_MS, 'getSession');
         if (cancelled) return;
 
@@ -219,7 +263,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (error) {
         if (isTimeoutError(error)) {
           console.warn('[auth] Startup could not reach Supabase in time.', error);
-          if (!cancelled) setInitTimedOut(true);
+          if (!cancelled && !isLocalOnlyRef.current) setInitTimedOut(true);
         } else {
           console.error('Failed to initialize auth', error);
         }
@@ -230,30 +274,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     }
 
-    initialize();
-
-    const { data } = onAuthStateChange((event, newSession) => {
-      if (cancelled) return;
-      
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      
-      if (event === 'SIGNED_OUT') {
-        setHasVerifier(false);
-        setHasMasterKey(false);
-        cryptoManager.clearMasterPassword();
-        window.electronAPI.masterKey.setVerifier(null).catch(() => {});
-      }
-    });
+    void initialize();
 
     return () => {
       cancelled = true;
-      data.subscription.unsubscribe();
+      unsubscribe();
+      cloudAuthUnsub.current?.();
+      cloudAuthUnsub.current = null;
     };
   }, [initAttempt]);
 
   const login = async (email: string, password: string) => {
-    if (!isSupabaseConfigured) {
+    if (!ensureSupabase()) {
       throw new Error('Supabase is not configured');
     }
     const { session: newSession, user: newUser } = await signIn(email, password);
@@ -268,7 +300,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch {
     }
 
-    if (newUser) {
+    if (newUser && !isLocalOnlyRef.current) {
       try {
         const cloudVerifier = await getMasterKeyVerifier();
         if (cloudVerifier) {
@@ -277,11 +309,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch {
       }
+    } else if (isLocalOnlyRef.current && !cloudAuthUnsub.current) {
+      const { data } = onAuthStateChange((event, newSession) => {
+        if (isLocalOnlyRef.current) {
+          if (event === 'SIGNED_OUT') {
+            setSession(null);
+            setUser(null);
+          }
+          return;
+        }
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        if (event === 'SIGNED_OUT') {
+          setHasVerifier(false);
+          setHasMasterKey(false);
+          cryptoManager.clearMasterPassword();
+          window.electronAPI.masterKey.setVerifier(null).catch(() => {});
+        }
+      });
+      cloudAuthUnsub.current = () => data.subscription.unsubscribe();
     }
   };
 
   const register = async (email: string, password: string): Promise<RegisterResult> => {
-    if (!isSupabaseConfigured) {
+    if (!ensureSupabase()) {
       throw new Error('Supabase is not configured');
     }
     const { session: newSession, user: newUser } = await signUp(email, password, {
@@ -314,14 +365,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const requestPasswordReset = async (email: string) => {
-    if (!isSupabaseConfigured) {
+    if (!ensureSupabase()) {
       throw new Error('Supabase is not configured');
     }
     await requestPasswordResetApi(email, PASSWORD_RESET_REDIRECT);
   };
 
   const deleteAccount = async () => {
-    if (!isSupabaseConfigured) {
+    if (!ensureSupabase()) {
       throw new Error('Supabase is not configured');
     }
     await deleteCurrentAccount();
@@ -337,6 +388,85 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
     setHasMasterKey(false);
     setHasVerifier(false);
+  };
+
+  const startLocalMode = async () => {
+    await window.electronAPI.localVault.setMode(true);
+    const status = await window.electronAPI.localVault.status();
+    clearLocalDocument();
+    cryptoManager.clearMasterPassword();
+    setIsLocalOnly(true);
+    setHasVerifier(status.hasVerifier);
+    setHasMasterKey(false);
+    setSession(null);
+    setUser(null);
+  };
+
+  const leaveLocalSetup = async () => {
+    const status = await window.electronAPI.localVault.status();
+    if (status.exists) return;
+    await window.electronAPI.localVault.setMode(false);
+    setIsLocalOnly(false);
+    setHasMasterKey(false);
+  };
+
+  const lockLocal = async () => {
+    cryptoManager.clearMasterPassword();
+    clearLocalDocument();
+    await window.electronAPI.localVault.lock();
+    await window.electronAPI.masterPassword.clear();
+    setHasMasterKey(false);
+  };
+
+  const setupLocalMasterKey = async (masterPassword: string) => {
+    const status = await window.electronAPI.localVault.status();
+    if (status.exists) throw new Error('A local vault already exists');
+    const created = await window.electronAPI.masterKey.createVerifier(masterPassword);
+    if (!created.success || !created.verifier) {
+      throw new Error(created.error || 'Could not create the verifier');
+    }
+    const file = await window.electronAPI.localVault.create();
+    if (!file.success) throw new Error(file.error || 'Could not create the vault');
+    const unlocked = await window.electronAPI.localVault.unlock(masterPassword);
+    if (!unlocked.valid) throw new Error('Could not unlock the new vault');
+    const opened = await window.electronAPI.localVault.open();
+    if (!opened.success || !opened.vault) throw new Error('Could not open the vault');
+    setLocalDocument(opened.vault);
+    cryptoManager.setMasterPassword(masterPassword);
+    setHasVerifier(true);
+    setHasMasterKey(true);
+  };
+
+  const unlockLocalMasterKey = async (masterPassword: string): Promise<boolean> => {
+    const unlocked = await window.electronAPI.localVault.unlock(masterPassword);
+    if (!unlocked.success || !unlocked.valid) return false;
+    const status = await window.electronAPI.localVault.status();
+    if (!status.exists) {
+      const created = await window.electronAPI.localVault.create();
+      if (!created.success) {
+        await window.electronAPI.localVault.lock();
+        return false;
+      }
+    }
+    const opened = await window.electronAPI.localVault.open();
+    if (!opened.success || !opened.vault) {
+      await window.electronAPI.localVault.lock();
+      return false;
+    }
+    setLocalDocument(opened.vault);
+    cryptoManager.setMasterPassword(masterPassword);
+    setHasMasterKey(true);
+    return true;
+  };
+
+  const finishLocalMove = async () => {
+    try {
+      await window.electronAPI.localVault.setMode(false);
+    } finally {
+      clearLocalDocument();
+      await window.electronAPI.localVault.lock().catch(() => {});
+      setIsLocalOnly(false);
+    }
   };
 
   const setupMasterKey = async (masterPassword: string) => {
@@ -402,10 +532,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value: AuthContextValue = {
     user,
     session,
-    isAuthenticated: !!session,
+    isAuthenticated: isLocalOnly || !!session,
+    isLocalOnly,
     isLoading,
     hasMasterKey,
-    needsMasterKeySetup: !!session && !hasVerifier,
+    needsMasterKeySetup: (isLocalOnly || !!session) && !hasVerifier,
     isConfigured: isSupabaseConfigured,
     configError,
     initTimedOut,
@@ -413,8 +544,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     register,
     logout,
+    startLocalMode,
+    leaveLocalSetup,
+    lockLocal,
     setupMasterKey,
+    setupLocalMasterKey,
     unlockWithMasterKey,
+    unlockLocalMasterKey,
+    finishLocalMove,
     requestPasswordReset,
     deleteAccount,
   };

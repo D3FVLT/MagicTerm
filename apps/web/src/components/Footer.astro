@@ -16,7 +16,6 @@ import { SITE } from '~/data/site';
       <div>
         <h4>Product</h4>
         <a href="/#features">Features</a>
-        <a href="/#themes">Themes</a>
         <a href="/#security">Security</a>
         <a href="/download">Download</a>
         <a href="/changelog">Changelog</a>
@@ -58,14 +57,14 @@ import { SITE } from '~/data/site';
 
 <style>
   .site-footer {
-    margin-top: 120px;
-    padding: 64px 24px 32px;
-    border-top: 1px solid color-mix(in oklab, var(--fg) 6%, transparent);
-    background: var(--surface-1);
+    margin-top: 64px;
+    padding: 40px 24px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
   }
 
   .site-footer__inner {
-    max-width: 1200px;
+    max-width: 1080px;
     margin: 0 auto;
     display: grid;
     gap: 48px;
@@ -154,10 +153,10 @@ import { SITE } from '~/data/site';
   }
 
   .site-footer__bottom {
-    max-width: 1200px;
+    max-width: 1080px;
     margin: 48px auto 0;
     padding-top: 24px;
-    border-top: 1px solid color-mix(in oklab, var(--fg) 6%, transparent);
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     color: var(--fg-subtle);

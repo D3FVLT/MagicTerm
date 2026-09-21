@@ -61,14 +61,14 @@ export function StartupScreen({ variant, onRetry }: StartupScreenProps) {
               <button
                 type="button"
                 onClick={() => setShowProxy(true)}
-                className="rounded-lg border border-edge bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg transition-colors hover:border-primary-500 hover:text-primary-400"
+                className="rounded-lg border border-edge bg-surface-2 px-3 py-1.5 text-sm font-medium text-fg transition-colors hover:border-accent hover:text-accent"
               >
                 Proxy settings
               </button>
               <button
                 type="button"
                 onClick={onRetry}
-                className="rounded-lg bg-primary-500 px-3 py-1.5 text-sm font-medium text-fg transition-colors hover:bg-primary-600"
+                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-fg transition-colors hover:bg-accent-hover"
               >
                 Retry
               </button>

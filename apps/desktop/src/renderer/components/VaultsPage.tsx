@@ -10,6 +10,7 @@ import { EditServerModal } from './EditServerModal';
 import { AddServerModal } from './AddServerModal';
 import { SupportCard } from './SupportCard';
 import { Button } from './ui/Button';
+import { Modal } from './ui/Modal';
 import type { Server, ServerFolder, SessionType, MemberRole } from '@magicterm/shared';
 
 /** Section id for servers with folderId === null. */
@@ -35,8 +36,8 @@ export function VaultsPage() {
     moveServer,
   } = useServers();
   const { connect, getServerSessions, disconnect, setActiveSession } = useTerminal();
-  const { user } = useAuth();
-  const { currentOrg, members, changeRole, remove } = useOrganizations();
+  const { user, isLocalOnly } = useAuth();
+  const { currentOrg, members, changeRole, remove, deleteOrg } = useOrganizations();
 
   const [showAddServer, setShowAddServer] = useState(false);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
@@ -46,6 +47,7 @@ export function VaultsPage() {
   const [memberMenuId, setMemberMenuId] = useState<string | null>(null);
   const memberMenuRef = useRef<HTMLDivElement>(null);
   const [decryptedHosts, setDecryptedHosts] = useState<Record<string, string>>({});
+  const [copiedServerId, setCopiedServerId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [dragInsert, setDragInsert] = useState<{ id: string; side: 'before' | 'after' } | null>(null);
   const [dragOverSection, setDragOverSection] = useState<string | null>(null);
@@ -56,7 +58,11 @@ export function VaultsPage() {
   const [folderNameDraft, setFolderNameDraft] = useState('');
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
-  const newFolderInputRef = useRef<HTMLInputElement>(null);
+  const [folderError, setFolderError] = useState('');
+  const [deleteOrgOpen, setDeleteOrgOpen] = useState(false);
+  const [deleteOrgText, setDeleteOrgText] = useState('');
+  const [deleteOrgError, setDeleteOrgError] = useState<string | null>(null);
+  const [deleteOrgBusy, setDeleteOrgBusy] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const canManageMembers = currentOrg?.role === 'owner' || currentOrg?.role === 'admin';
@@ -84,10 +90,6 @@ export function VaultsPage() {
       return next;
     });
   }, [collapsedStorageKey]);
-
-  useEffect(() => {
-    if (isCreatingFolder) newFolderInputRef.current?.focus();
-  }, [isCreatingFolder]);
 
   useEffect(() => {
     let cancelled = false;
@@ -270,16 +272,35 @@ export function VaultsPage() {
 
   const handleCreateFolder = async () => {
     const name = newFolderName.trim();
-    if (!name) {
-      setIsCreatingFolder(false);
-      return;
-    }
+    if (!name) return;
+    setFolderError('');
     try {
       await addFolder(name);
       setNewFolderName('');
       setIsCreatingFolder(false);
     } catch (err) {
-      console.error('Failed to create folder:', err);
+      setFolderError(err instanceof Error ? err.message : 'Failed to create folder');
+    }
+  };
+
+  const closeFolderDialog = () => {
+    setNewFolderName('');
+    setFolderError('');
+    setIsCreatingFolder(false);
+  };
+
+  const handleDeleteOrg = async () => {
+    if (!currentOrg || deleteOrgText !== currentOrg.name) return;
+    setDeleteOrgBusy(true);
+    setDeleteOrgError(null);
+    try {
+      await deleteOrg(currentOrg.id);
+      setDeleteOrgOpen(false);
+      setDeleteOrgText('');
+    } catch (err) {
+      setDeleteOrgError(err instanceof Error ? err.message : 'Failed to delete');
+    } finally {
+      setDeleteOrgBusy(false);
     }
   };
 
@@ -324,7 +345,7 @@ export function VaultsPage() {
     }
   };
 
-  const renderServerCard = (server: Server, index: number, sectionId: string) => {
+  const renderServerCard = (server: Server, sectionId: string) => {
     const serverSessions = getServerSessions(server.id);
     const terminalSession = serverSessions.find((s) => s.type === 'terminal');
     const sftpSession = serverSessions.find((s) => s.type === 'sftp');
@@ -333,20 +354,18 @@ export function VaultsPage() {
     const insertBefore = dragInsert?.id === server.id && dragInsert.side === 'before';
     const insertAfter = dragInsert?.id === server.id && dragInsert.side === 'after';
 
+    const hostLabel = `${decryptedHosts[server.id] || '...'}${server.port !== 22 ? `:${server.port}` : ''}`;
+
     return (
       <div
         key={server.id}
-        // card-in ends on a transform, which leaves every card as its own
-        // stacking context — the menu's own z-index can't escape it. Lift the
-        // whole card instead, so it also clears the cards later in the grid.
-        className={`animate-card-in relative ${serverMenuId === server.id ? 'z-50' : ''}`}
-        style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
+        className={`relative ${serverMenuId === server.id ? 'z-50' : ''}`}
       >
         {insertBefore && (
-          <div className="absolute -left-2 top-0 bottom-0 w-1 rounded-full bg-[var(--accent)] z-10 animate-pulse" />
+          <div className="absolute inset-x-0 top-0 z-10 h-0.5 bg-accent" />
         )}
         {insertAfter && (
-          <div className="absolute -right-2 top-0 bottom-0 w-1 rounded-full bg-[var(--accent)] z-10 animate-pulse" />
+          <div className="absolute inset-x-0 bottom-0 z-10 h-0.5 bg-accent" />
         )}
         <div
           draggable={!searchQuery}
@@ -355,11 +374,7 @@ export function VaultsPage() {
           onDragOver={(e) => handleDragOver(e, server.id)}
           onDragLeave={() => setDragInsert(null)}
           onDrop={(e) => { void handleDrop(e, server.id, sectionId); }}
-          className={`group relative flex h-full flex-col rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
-            isConnected
-              ? 'border-green-500/30 bg-green-500/5 hover:shadow-lg hover:shadow-green-500/5'
-              : 'border-[var(--border)] bg-[var(--surface-1)] hover:border-[var(--accent-hover)]/50 hover:shadow-lg hover:shadow-[var(--accent)]/5'
-          }`}
+          className="group flex h-9 cursor-pointer items-center gap-3 border-b border-edge px-2 hover:bg-surface-1"
           onClick={() => {
             if (terminalSession) {
               setActiveSession(terminalSession.id);
@@ -368,28 +383,41 @@ export function VaultsPage() {
             }
           }}
         >
-          {/* Pin indicator */}
-          {server.isPinned && (
-            <div className="absolute right-2 top-2 text-[var(--accent)]">
-              <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+              isConnected ? 'bg-success' : isConnecting ? 'bg-warning animate-pulse' : 'bg-fg-subtle'
+            }`} />
+            <span className="w-48 shrink-0 truncate text-[13px] font-medium text-fg">{server.name}</span>
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                const host = decryptedHosts[server.id];
+                if (!host) return;
+                void window.electronAPI.clipboard.writeText(hostLabel).then(() => {
+                  setCopiedServerId(server.id);
+                  window.setTimeout(() => {
+                    setCopiedServerId((cur) => (cur === server.id ? null : cur));
+                  }, 1200);
+                });
+              }}
+              className="w-36 shrink-0 truncate text-left text-xs tabular-nums text-fg-subtle hover:text-fg"
+            >
+              {copiedServerId === server.id ? 'Copied' : hostLabel}
+            </button>
+            {server.comment ? (
+              <span className="min-w-0 flex-1 truncate text-xs text-fg-subtle" data-tooltip={server.comment}>
+                {server.comment}
+              </span>
+            ) : (
+              <span className="min-w-0 flex-1" />
+            )}
+            {server.isPinned && (
+              <svg className="h-3 w-3 shrink-0 text-fg-subtle" viewBox="0 0 24 24" fill="currentColor" aria-label="Pinned" data-tooltip="Pinned">
+                <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5v6l1 2 1-2v-6h5v-2l-2-2z" />
               </svg>
-            </div>
-          )}
-
-          {/* Status + Name */}
-          <div className="mb-2 flex items-start justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
-                isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-[var(--fg-subtle)]'
-              }`} />
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-[var(--fg)]">{server.name}</div>
-                <div className="truncate text-xs text-[var(--fg-subtle)]">
-                  {decryptedHosts[server.id] || '...'}{server.port !== 22 ? `:${server.port}` : ''}
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* More menu */}
             <div className="relative flex-shrink-0">
@@ -398,7 +426,9 @@ export function VaultsPage() {
                   e.stopPropagation();
                   setServerMenuId(serverMenuId === server.id ? null : server.id);
                 }}
-                className="rounded p-1 text-[var(--fg-subtle)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--border)] hover:text-[var(--fg)]"
+                className={`rounded p-1 text-fg-subtle hover:bg-surface-2 hover:text-fg ${
+                  serverMenuId === server.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                }`}
               >
                 <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -503,54 +533,42 @@ export function VaultsPage() {
             </div>
           </div>
 
-          {/* Comment */}
-          {server.comment && (
-            <p className="mb-3 line-clamp-2 text-xs text-[var(--fg-subtle)]" data-tooltip={server.comment}>{server.comment}</p>
-          )}
-
-          {/* Action buttons */}
-          <div className="mt-auto flex items-center gap-1 pt-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (terminalSession) {
-                  setActiveSession(terminalSession.id);
-                } else {
-                  handleConnect(server, 'terminal');
-                }
-              }}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                terminalSession
-                  ? 'bg-green-500/10 text-green-400'
-                  : 'bg-[var(--border)] text-[var(--fg-subtle)] hover:text-[var(--fg)]'
-              }`}
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              SSH
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (sftpSession) {
-                  setActiveSession(sftpSession.id);
-                } else {
-                  handleConnect(server, 'sftp');
-                }
-              }}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                sftpSession
-                  ? 'bg-green-500/10 text-green-400'
-                  : 'bg-[var(--border)] text-[var(--fg-subtle)] hover:text-[var(--fg)]'
-              }`}
-            >
-              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-              </svg>
-              SFTP
-            </button>
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (terminalSession) {
+                setActiveSession(terminalSession.id);
+              } else {
+                handleConnect(server, 'terminal');
+              }
+            }}
+            className={`flex shrink-0 items-center gap-1 text-xs ${
+              terminalSession ? 'text-success' : 'text-fg-subtle hover:text-fg'
+            }`}
+          >
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            SSH
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (sftpSession) {
+                setActiveSession(sftpSession.id);
+              } else {
+                handleConnect(server, 'sftp');
+              }
+            }}
+            className={`flex shrink-0 items-center gap-1 text-xs ${
+              sftpSession ? 'text-success' : 'text-fg-subtle hover:text-fg'
+            }`}
+          >
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            SFTP
+          </button>
         </div>
       </div>
     );
@@ -579,14 +597,12 @@ export function VaultsPage() {
           setDragOverSection((prev) => (prev === id ? null : prev));
         }}
         onDrop={(e) => { void handleSectionDrop(e, id); }}
-        className={`rounded-xl transition-colors ${
-          isDropTarget ? 'bg-[var(--accent)]/5 ring-1 ring-[var(--accent)]/40' : ''
-        }`}
+        className={`pt-3 ${isDropTarget ? 'bg-surface-2' : ''}`}
       >
-        <div className="mb-3 flex items-center gap-2">
+        <div className="flex h-8 items-center gap-2">
           <button
             onClick={() => toggleCollapsed(id)}
-            className="flex min-w-0 items-center gap-2 text-[var(--fg-subtle)] transition-colors hover:text-[var(--fg)]"
+            className="flex min-w-0 items-center gap-2 text-[13px] font-medium text-fg-subtle hover:text-fg"
           >
             <svg
               className={`h-3 w-3 flex-shrink-0 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
@@ -595,17 +611,12 @@ export function VaultsPage() {
             >
               <path d="M8 5v14l11-7z" />
             </svg>
-            {folder ? (
-              <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-              </svg>
-            ) : null}
             {renamingFolderId === id ? null : (
-              <span className="truncate text-sm font-medium">
+              <span className="truncate">
                 {folder ? folder.name : 'Ungrouped'}
               </span>
             )}
-            <span className="flex-shrink-0 text-xs opacity-60">{sectionServers.length}</span>
+            <span className="flex-shrink-0 text-xs text-fg-subtle">{sectionServers.length}</span>
           </button>
 
           {renamingFolderId === id && folder && (
@@ -618,7 +629,7 @@ export function VaultsPage() {
                 if (e.key === 'Enter') void handleRenameFolder(folder.id);
                 if (e.key === 'Escape') setRenamingFolderId(null);
               }}
-              className="w-40 rounded border border-[var(--accent)] bg-[var(--surface-1)] px-2 py-0.5 text-sm text-[var(--fg)] outline-none"
+              className="w-40 border-b border-accent bg-transparent px-0 py-0.5 text-[13px] text-fg outline-none"
             />
           )}
 
@@ -673,12 +684,12 @@ export function VaultsPage() {
 
         {!isCollapsed && (
           sectionServers.length === 0 ? (
-            <div className="mb-6 rounded-xl border border-dashed border-[var(--border)] px-4 py-6 text-center text-xs text-[var(--fg-subtle)]">
-              Drag servers here
+            <div className="border-b border-edge px-2 py-2 text-xs text-fg-subtle">
+              Empty
             </div>
           ) : (
-            <div className="mb-6 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-              {sectionServers.map((server, index) => renderServerCard(server, index, id))}
+            <div>
+              {sectionServers.map((server) => renderServerCard(server, id))}
             </div>
           )
         )}
@@ -687,142 +698,96 @@ export function VaultsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-[var(--bg)]">
-      <div className="mx-auto w-full max-w-5xl px-8 py-8">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <OrganizationSwitcher />
-            <h1 className="text-xl font-bold text-[var(--fg)]">
-              {currentOrg ? 'Team Servers' : 'Personal Servers'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => setIsCreatingFolder(true)}>
-              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7zM12 11v4m-2-2h4" />
-              </svg>
-              New Folder
-            </Button>
-            <Button onClick={() => setShowAddServer(true)}>
-              <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add Server
-            </Button>
-          </div>
+    <div className="flex h-full flex-col overflow-y-auto bg-app">
+      <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-edge bg-app px-4 py-2">
+        <div className="w-52 shrink-0">
+          {isLocalOnly ? (
+            <div className="flex h-8 items-center text-sm text-fg">Personal</div>
+          ) : (
+            <OrganizationSwitcher
+              onShowInvites={() => {
+                document.getElementById('vault-invites')?.scrollIntoView({ block: 'nearest' });
+              }}
+            />
+          )}
         </div>
-
-        {/* New folder input */}
-        {isCreatingFolder && (
-          <div className="mb-4 flex items-center gap-2">
-            <input
-              ref={newFolderInputRef}
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void handleCreateFolder();
-                if (e.key === 'Escape') {
-                  setNewFolderName('');
-                  setIsCreatingFolder(false);
-                }
-              }}
-              placeholder="Folder name (e.g. Hetzner, Staging)"
-              className="w-64 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-1.5 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none focus:border-[var(--accent-hover)]"
-            />
-            <Button onClick={() => void handleCreateFolder()}>Create</Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setNewFolderName('');
-                setIsCreatingFolder(false);
-              }}
+        <div className="relative min-w-0 flex-1">
+          <svg className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full border-b border-edge bg-transparent py-1 pl-6 pr-6 text-[13px] text-fg placeholder-fg-subtle outline-none focus:border-accent"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-0 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg"
+              aria-label="Clear search"
             >
-              Cancel
-            </Button>
-          </div>
-        )}
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => { setFolderError(''); setIsCreatingFolder(true); }}>
+            New Folder
+          </Button>
+          <Button size="sm" onClick={() => setShowAddServer(true)}>
+            Add Server
+          </Button>
+        </div>
+      </div>
 
-        {/* Search */}
-        {servers.length > 0 && (
-          <div className="relative mb-6">
-            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by name, IP, or comment..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-1)] py-2 pl-10 pr-4 text-sm text-[var(--fg)] placeholder-[var(--fg-subtle)] outline-none transition-colors focus:border-[var(--accent-hover)]"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--fg-subtle)] hover:text-[var(--fg)]"
-              >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
+      <div className="px-4">
+        {!isLocalOnly && <PendingInvites />}
 
-        {/* Pending invites */}
-        <PendingInvites />
-
-        {/* Server grid */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--accent)] border-t-transparent" />
+          <div className="flex items-center justify-center py-16">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           </div>
         ) : servers.length === 0 && !hasFolders ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border)] py-20">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--border)]">
-              <svg className="h-8 w-8 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-            </div>
-            <p className="mb-4 text-sm text-[var(--fg-subtle)]">No servers yet</p>
-            <Button variant="ghost" onClick={() => setShowAddServer(true)}>
+          <div className="px-2 py-6">
+            <p className="text-[13px] text-fg-subtle">No servers yet</p>
+            <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowAddServer(true)}>
               Add your first server
             </Button>
           </div>
         ) : visibleCount === 0 && searchQuery ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <svg className="mb-3 h-10 w-10 text-[var(--fg-subtle)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <p className="text-sm text-[var(--fg-subtle)]">No servers match "{searchQuery}"</p>
-          </div>
+          <p className="px-2 py-6 text-[13px] text-fg-subtle">No matches for "{searchQuery}"</p>
         ) : hasFolders ? (
           <div>{sections.map(renderSection)}</div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-            {sections[sections.length - 1].servers.map((server, index) =>
-              renderServerCard(server, index, UNGROUPED)
+          <div>
+            {sections[sections.length - 1].servers.map((server) =>
+              renderServerCard(server, UNGROUPED)
             )}
           </div>
         )}
 
         {/* Members section */}
         {currentOrg && (
-          <div className="mt-10">
+          <div className="mt-4">
             <button
               onClick={() => setShowMembers(!showMembers)}
-              className="mb-4 flex items-center gap-3"
+              className="flex h-8 items-center gap-2"
             >
               <svg
-                className={`h-3 w-3 text-[var(--fg-subtle)] transition-transform ${showMembers ? 'rotate-90' : ''}`}
+                className={`h-3 w-3 text-fg-subtle transition-transform ${showMembers ? 'rotate-90' : ''}`}
                 fill="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path d="M8 5v14l11-7z" />
               </svg>
-              <h2 className="text-sm font-medium text-[var(--fg-subtle)]">
+              <span className="text-[13px] font-medium text-fg-subtle">
                 Members ({members.filter((m) => m.status === 'active').length})
-              </h2>
+              </span>
               {canInvite && (
                 <span
                   role="button"
@@ -840,7 +805,7 @@ export function VaultsPage() {
             </button>
 
             {showMembers && (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
+              <div>
                 {members
                   .filter((m) => m.status === 'active')
                   .map((member) => {
@@ -853,18 +818,16 @@ export function VaultsPage() {
                     return (
                       <div
                         key={member.id}
-                        className="group/member relative flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-1)] px-3 py-2"
+                        className="group/member relative flex h-9 items-center gap-3 border-b border-edge px-2"
                       >
-                        <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-[var(--border)] text-xs uppercase text-[var(--fg)]">
-                          {displayName?.[0] || '?'}
-                        </div>
-                        <span className="flex-1 truncate text-sm text-[var(--fg)]">{displayLabel}</span>
-                        <span className={`text-xs ${member.role === 'owner' ? 'text-yellow-500' : member.role === 'admin' ? 'text-blue-400' : 'text-[var(--fg-subtle)]'}`}>
-                          {member.role}
-                        </span>
-
-                        {canEdit && (
-                          <div className="relative" ref={memberMenuId === member.id ? memberMenuRef : null}>
+                        <span className="w-48 shrink-0 truncate text-[13px] font-medium text-fg">{displayLabel}</span>
+                        <span className="ml-auto text-xs text-fg-subtle">{member.role}</span>
+                        <div
+                          className="relative h-6 w-6 shrink-0"
+                          ref={canEdit && memberMenuId === member.id ? memberMenuRef : null}
+                        >
+                          {canEdit && (
+                            <>
                             <button
                               onClick={() => setMemberMenuId(memberMenuId === member.id ? null : member.id)}
                               className="rounded p-1 text-[var(--fg-subtle)] opacity-0 group-hover/member:opacity-100 hover:bg-[var(--border)] hover:text-[var(--fg)]"
@@ -906,15 +869,29 @@ export function VaultsPage() {
                                 </button>
                               </div>
                             )}
-                          </div>
-                        )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
                 {members.filter((m) => m.status === 'pending').length > 0 && (
-                  <div className="flex items-center rounded-lg border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--fg-subtle)]">
-                    {members.filter((m) => m.status === 'pending').length} pending invite(s)
+                  <div className="flex h-9 items-center px-2 text-xs text-fg-subtle">
+                    {members.filter((m) => m.status === 'pending').length} pending
                   </div>
+                )}
+                {currentOrg.role === 'owner' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteOrgText('');
+                      setDeleteOrgError(null);
+                      setDeleteOrgOpen(true);
+                    }}
+                    className="mt-3 px-2 text-[13px] text-fg-subtle hover:text-danger"
+                  >
+                    Delete organization
+                  </button>
                 )}
               </div>
             )}
@@ -923,6 +900,63 @@ export function VaultsPage() {
 
         <SupportCard />
       </div>
+
+      <Modal isOpen={isCreatingFolder} onClose={closeFolderDialog} title="New folder">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleCreateFolder();
+          }}
+        >
+          <label htmlFor="folder-name" className="mb-1 block text-xs text-fg-subtle">Name</label>
+          <input
+            id="folder-name"
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            autoFocus
+            className="w-full border-b border-edge bg-transparent py-1 text-[13px] text-fg outline-none focus:border-accent"
+          />
+          {folderError && <p className="mt-2 text-[13px] text-danger">{folderError}</p>}
+          <div className="mt-4 flex justify-end gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={closeFolderDialog}>Cancel</Button>
+            <Button type="submit" size="sm">Create</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {deleteOrgOpen && currentOrg && (
+        <div className="no-drag fixed inset-0 z-[80] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => !deleteOrgBusy && setDeleteOrgOpen(false)} />
+          <form
+            className="relative z-10 w-full max-w-md border border-edge bg-surface-1 p-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleDeleteOrg();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && !deleteOrgBusy) setDeleteOrgOpen(false);
+            }}
+          >
+            <h2 className="text-sm font-medium text-fg">Delete {currentOrg.name}</h2>
+            <p className="mt-3 text-[13px] text-fg-subtle">Type {currentOrg.name} to confirm.</p>
+            <input
+              value={deleteOrgText}
+              onChange={(e) => setDeleteOrgText(e.target.value)}
+              autoFocus
+              className="mt-2 w-full border-b border-edge bg-transparent py-1 text-[13px] text-fg outline-none focus:border-accent"
+            />
+            {deleteOrgError && <p className="mt-2 text-[13px] text-danger">{deleteOrgError}</p>}
+            <div className="mt-4 flex justify-end gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setDeleteOrgOpen(false)} disabled={deleteOrgBusy}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="danger" size="sm" disabled={deleteOrgText !== currentOrg.name || deleteOrgBusy}>
+                {deleteOrgBusy ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <AddServerModal isOpen={showAddServer} onClose={() => setShowAddServer(false)} />
       <EditServerModal isOpen={editingServer !== null} onClose={() => setEditingServer(null)} server={editingServer} />

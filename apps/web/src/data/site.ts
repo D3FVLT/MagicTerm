@@ -6,9 +6,9 @@ export const SITE = {
   version: pkg.version,
   domain: 'magicterm.app',
   url: 'https://magicterm.app',
-  tagline: 'Your terminal, magically secure.',
+  tagline: 'SSH and SFTP client.',
   description:
-    'Cross-platform SSH/SFTP client with end-to-end encrypted credentials, cloud sync via Supabase, and a built-in SFTP file manager. macOS, Windows, Linux. Free and open-source.',
+    'Free SSH and SFTP client for macOS, Windows, and Linux. Secrets are encrypted on the device. Local mode needs no account. Builds are unsigned; SHA256 is on the download page.',
   twitter: '',
   githubRepo: 'D3FVLT/MagicTerm',
   githubUrl: 'https://github.com/D3FVLT/MagicTerm',
@@ -21,7 +21,6 @@ export const SITE = {
 
 export const NAV = [
   { label: 'Features', href: '/#features' },
-  { label: 'Themes', href: '/#themes' },
   { label: 'Security', href: '/#security' },
   { label: 'Download', href: '/download' },
   { label: 'Changelog', href: '/changelog' },

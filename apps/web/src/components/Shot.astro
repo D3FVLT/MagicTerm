@@ -1,0 +1,25 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+}
+
+const { src, alt } = Astro.props;
+---
+
+<figure class="shot">
+  <img src={src} alt={alt} width="1800" height="1200" loading="lazy" decoding="async" />
+</figure>
+
+<style>
+  .shot {
+    margin: 16px 0 0;
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+  }
+</style>

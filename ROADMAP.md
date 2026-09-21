@@ -8,21 +8,12 @@ Legend: ✅ done · 🛠 in progress · ⏳ planned · 💭 idea / not committed
 
 ---
 
-## v0.6 — Trust & Polish (next minor)
+## v0.6 — Trust & Polish
 
-The story for v0.6 is "make the security claims iron-clad and tighten the
-desktop UX". After v0.5 shipped a deep audit, the gaps that remain are mostly
-about **supply-chain trust**, not the runtime security model.
+The story for v0.6 is to tighten the desktop UX around trust. The runtime
+security model is already in place from the v0.5 audit. Code signing waits on
+paid certificates and is listed under Far-future, not under a version.
 
-- ⏳ **Code-sign macOS builds** — Apple Developer ID + notarization.
-  - Eliminates the `xattr -cr` ritual on first launch.
-  - Hardens the auto-updater: signed binary + blockmap, not just blockmap.
-  - Removes the biggest "honest disclosure" item on the website's Security section.
-  - Until then: unsigned builds, with `SHA256SUMS.txt` on every release and the
-    checksums published on `/download`.
-- ⏳ **Code-sign Windows builds** — EV cert or Azure Trusted Signing.
-  - Removes SmartScreen warning for new releases.
-  - Lower priority than macOS (Windows users tolerate the warning better).
 - ✅ **Repository checksums on the website's `/download`** — SHA256 of each
   installer on the download page; `SHA256SUMS.txt` attached to every GitHub release.
 - ⏳ **SSH key passphrase support in the UI** — currently we only handle
@@ -32,7 +23,7 @@ about **supply-chain trust**, not the runtime security model.
   hang the app on an infinite spinner, and the existing proxy UI sat behind the
   login form the proxy was preventing you from reaching. Auth startup is now
   bounded at 15 s and the loading screen offers proxy settings and a retry.
-- ⏳ **Local-only mode (no account)** — let users run Magic Term without ever
+- ✅ **Local-only mode (no account)** — let users run Magic Term without ever
   signing in to Supabase. Vault stays local, encrypted with the master password.
   Removes the only piece of friction from "free, open source, no strings".
   Sync becomes opt-in instead of mandatory.
@@ -104,6 +95,15 @@ about **supply-chain trust**, not the runtime security model.
 
 ## Far-future / wish-list
 
+Not scheduled to a version. Code signing sits here until the certificates are paid for. Until then, builds stay unsigned and every release carries `SHA256SUMS.txt`, with the checksums also published on `/download`.
+
+- ⏳ **Code-sign macOS builds** — Apple Developer ID + notarization.
+  - Eliminates the `xattr -cr` ritual on first launch.
+  - Hardens the auto-updater: signed binary + blockmap, not just blockmap.
+  - Removes the biggest "honest disclosure" item on the website's Security section.
+- ⏳ **Code-sign Windows builds** — EV cert or Azure Trusted Signing.
+  - Removes SmartScreen warning for new releases.
+  - Lower priority than macOS (Windows users tolerate the warning better).
 - 💭 **Agent forwarding** with explicit per-host opt-in.
 - 💭 **Mosh** support (UDP-based resilient SSH).
 - 💭 **WebAuthn / passkey** as a second factor for unlocking the app.
@@ -111,6 +111,7 @@ about **supply-chain trust**, not the runtime security model.
 
 ## Recently shipped
 
+- ✅ **v0.6.0**: the app and the site share a dense layout. Servers are a list, settings and dialogs are flat rows, and Onyx uses an off-white accent. Local mode needs no account: the vault stays on this computer, Lock clears the key, and Settings can move that vault onto an account that does not already have servers or snippets.
 - ✅ **v0.5.9** — snippet variables: `{{name}}` placeholders prompt for values before a snippet runs, with per-session recall and Docker/Go template strings left untouched; drag-to-reorder snippets driving the 1–9 paste shortcuts; proxy settings and retry on the startup screen after a bounded auth timeout; tooltips rendered by the app so icon-only buttons finally show them, plus accessible names on every icon button; a dismissible support card with a toggle in Settings; and one curated changelog feeding the website, the GitHub release body and a new in-app "What's new" modal.
 - ✅ **v0.5.8** — server folders for personal and org vaults ([#19](https://github.com/D3FVLT/MagicTerm/issues/19)): collapsible sections, drag-and-drop between folders, rename/delete without losing servers, pins scoped to their folder, and DB triggers enforcing folder/vault scope on top of RLS.
 - ✅ **v0.5.7** — vault switch keeps open-tab server names (no more "Unknown"); snippets keyboard workflow (Cmd/Ctrl+Shift+S, 1–9 paste, Esc) with discoverability in the shortcuts modal and panel UI.

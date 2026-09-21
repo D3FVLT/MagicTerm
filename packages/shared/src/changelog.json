@@ -2,6 +2,24 @@
   "$comment": "Single source of truth for release notes. Rendered on magicterm.app/changelog, shown in the desktop app, and pasted into the GitHub release body by .github/workflows/release.yml. Item text is Markdown-flavoured on purpose so CI can use it verbatim: only `code` and [links](url) are supported, and the label becomes a bold prefix. Newest release first — the first entry is automatically badged as the latest.",
   "releases": [
     {
+      "version": "0.6.0",
+      "date": "September 2026",
+      "items": [
+        {
+          "label": "New look",
+          "text": "The app and magicterm.app now share one dense layout. Servers are a list: name, host, and SSH or SFTP on the same row, with folders as sections. Settings, the server dialogs, and the host-key prompt are flat rows with square corners. Onyx uses an off-white accent. The site opens on that window. One frame switches between the server list, terminal, SFTP, and snippets. The privacy page and the macOS, Windows, and Linux pages describe what the app actually does."
+        },
+        {
+          "label": "No account required",
+          "text": "Sign-in now has Continue without an account. You set a master password, and servers, folders, and snippets stay on this computer, encrypted the same way as a synced vault. There is no organization, invite, or account deletion in this mode. The menu says Lock: it clears the key and leaves the vault file where it is. Proxy settings and update checks still work, and they do not send the vault."
+        },
+        {
+          "label": "Move the vault to an account",
+          "text": "Settings, Account has Move this vault to the account. It uploads that personal vault, then removes the local file only after the same servers are on the account. If the account already has servers or snippets, the move stops and nothing is merged. A different master password re-encrypts the vault before upload."
+        }
+      ]
+    },
+    {
       "version": "0.5.9",
       "date": "September 2026",
       "items": [

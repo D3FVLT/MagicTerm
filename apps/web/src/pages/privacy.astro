@@ -5,74 +5,79 @@ import Footer from '~/components/Footer.astro';
 import { SITE } from '~/data/site';
 ---
 
-<Base title="Privacy" description="Privacy policy for Magic Term — what we collect (almost nothing) and what we never share.">
+<Base title="Privacy" description="What Magic Term sends, what stays on the device, and what this website loads.">
   <Header />
   <main class="legal">
     <header class="legal__head">
       <h1>Privacy</h1>
-      <p>What we collect (almost nothing) and what we never share.</p>
+      <p>What the app sends, what stays on the device, and what this site loads.</p>
     </header>
 
     <section>
       <h2>The desktop app</h2>
-      <p>
-        Magic Term has <strong>zero telemetry</strong>. The app does not phone home, does not collect
-        analytics, does not report errors automatically. The only outgoing traffic is:
-      </p>
+      <p>The app has no telemetry SDK and does not send automatic crash reports. Outgoing traffic is:</p>
       <ul>
-        <li><strong>Your own SSH/SFTP servers</strong> — encrypted with the SSH protocol.</li>
-        <li><strong>Supabase</strong> — Magic Term currently requires an account, and your encrypted
-          vault is synced through Supabase. Your credentials are end-to-end encrypted on your device
-          before they're sent. Supabase only ever sees ciphertext, a salted scrypt verifier of your
-          master password, and metadata you choose to share with your team. A fully-local mode
-          (no account, no sync) is on the roadmap.</li>
-        <li><strong>GitHub Releases</strong> — the auto-updater pings the public releases endpoint
-          to check for new versions. No identifiers are sent.</li>
+        <li>SSH and SFTP to the hosts you connect to.</li>
+        <li>Supabase, only after you create an account or sign in. Local mode does not call Supabase.</li>
+        <li>GitHub's public releases endpoint, to see if a newer build exists. The vault is not in that request. On macOS, choosing the update opens the release page. On Windows, the installer downloads after you accept. Linux installs are manual.</li>
+        <li>An HTTP or SOCKS5 proxy, only if you turn one on.</li>
       </ul>
+    </section>
+
+    <section>
+      <h2>Local mode</h2>
+      <p>
+        You can run without an account. The vault is a file in the app's user-data directory, mode 0600, so it is readable by your OS user.
+        Host, username, password, key material, and snippet text in that file are ciphertext from the current encrypt function.
+        The master password is not written to disk. A scrypt verifier sits in the local config so a wrong password does not open the file.
+        Locking clears the key from memory and leaves the file in place.
+        Known-host fingerprints stay on this machine. They are not part of the vault upload.
+      </p>
+    </section>
+
+    <section>
+      <h2>An account</h2>
+      <p>If you sign in, Supabase stores:</p>
+      <ul>
+        <li>Your email and the auth session.</li>
+        <li>
+          Ciphertext for host, username, password or key, and snippet text.
+          Encryption is AES-256-GCM. The key is derived from the master password with PBKDF2-SHA-256, 100,000 iterations.
+          The master password is not sent.
+        </li>
+        <li>
+          A scrypt verifier of the master password (N=32768, r=8, p=1).
+          That verifier is not the password and it is not the encryption key.
+        </li>
+        <li>Plaintext labels: server name, port, auth type, connection type, comment, folder name, snippet name, pin, and sort order.</li>
+        <li>A nickname, if you set one.</li>
+        <li>Organization name and membership, if you create an organization. Team sharing is not a finished feature.</li>
+      </ul>
+      <p>
+        Remembering the master password stores it in the OS credential store on this computer (Electron safeStorage). Local mode does not do that.
+        Sign-out clears the saved password and the local verifier. It does not delete the cloud vault.
+        Deleting the account in Settings removes that account's server-side rows.
+      </p>
+      <p>
+        Secrets copied from the server form or the snippet panel are cleared from the clipboard after 30 seconds, if the clipboard still holds that exact value.
+      </p>
     </section>
 
     <section>
       <h2>This website</h2>
       <p>
-        We use <strong>Cloudflare Web Analytics</strong> on this site. It's a privacy-friendly,
-        cookie-free analytics product that aggregates anonymous traffic statistics — page views,
-        referrers, and country codes — without setting any cookies or persisting individual
-        identifiers.
-      </p>
-      <p>
-        We do not use Google Analytics. We do not load tracking pixels. We do not sell, share,
-        or correlate visitor data with any third party.
+        This site loads Cloudflare Web Analytics (<code>beacon.min.js</code>).
+        The project does not add Google Analytics or an advertising pixel.
       </p>
     </section>
 
     <section>
-      <h2>What's stored in the cloud</h2>
-      <p>
-        When you create an account, the following is stored on Supabase:
-      </p>
-      <ul>
-        <li>Your email and a Supabase auth token.</li>
-        <li>An <strong>encrypted</strong> blob containing your servers, snippets, and settings. We can't
-          decrypt it — that requires your master password, which never leaves your machine.</li>
-        <li>A <strong>scrypt verifier</strong> of your master password. We can't reverse it to your password.</li>
-      </ul>
-      <p>
-        Sign out at any time to wipe local credentials. Delete your account in Settings to remove
-        all server-side data.
-      </p>
+      <h2>Source</h2>
+      <p>The client and the database schema are public.</p>
+      <p><a href={SITE.githubUrl} target="_blank" rel="noopener">{SITE.githubUrl}</a></p>
     </section>
 
-    <section>
-      <h2>Open source</h2>
-      <p>
-        Don't take our word for it. The entire client and server schema are public:
-      </p>
-      <p>
-        <a href={SITE.githubUrl} target="_blank" rel="noopener">{SITE.githubUrl}</a>
-      </p>
-    </section>
-
-    <p class="legal__date">Last updated: May 2026</p>
+    <p class="legal__date">Last updated: 22 September 2026</p>
   </main>
   <Footer />
 </Base>
@@ -81,56 +86,54 @@ import { SITE } from '~/data/site';
   .legal {
     max-width: 720px;
     margin: 0 auto;
-    padding: 80px 24px 0;
+    padding: 40px 24px 0;
   }
 
   .legal__head {
-    margin-bottom: 48px;
+    margin-bottom: 32px;
   }
 
   .legal__head h1 {
-    font-size: clamp(36px, 6vw, 56px);
-    font-weight: 700;
-    letter-spacing: -0.03em;
+    margin: 0 0 8px;
     color: var(--fg);
-    margin: 0 0 12px;
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
   }
 
   .legal__head p {
-    color: var(--fg-muted);
-    font-size: 18px;
     margin: 0;
+    color: var(--fg-muted);
+    font-size: 16px;
   }
 
-  section { margin-bottom: 32px; }
+  section { margin-bottom: 28px; }
 
   h2 {
-    font-size: 22px;
-    font-weight: 600;
+    margin: 0 0 8px;
     color: var(--fg);
-    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 600;
   }
 
-  p {
+  p, li {
     color: var(--fg-muted);
-    font-size: 16px;
-    line-height: 1.65;
-    margin: 0 0 12px;
+    font-size: 15px;
+    line-height: 1.55;
   }
+
+  p { margin: 0 0 10px; }
 
   ul {
-    color: var(--fg-muted);
-    font-size: 16px;
-    line-height: 1.65;
-    padding-left: 20px;
-    margin: 0 0 12px;
+    margin: 0 0 10px;
+    padding-left: 18px;
   }
 
   li { margin-bottom: 6px; }
 
-  strong {
-    color: var(--fg);
-    font-weight: 600;
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
   }
 
   a {
@@ -141,8 +144,8 @@ import { SITE } from '~/data/site';
   a:hover { color: var(--accent-hover); }
 
   .legal__date {
+    margin-top: 36px;
     color: var(--fg-subtle);
     font-size: 13px;
-    margin-top: 64px;
   }
 </style>

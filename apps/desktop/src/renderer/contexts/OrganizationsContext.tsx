@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { Organization, OrganizationInput, OrgMember, InviteMemberInput, MemberRole, OrganizationWithRole } from '@magicterm/shared';
+import { useAuth } from './AuthContext';
 import {
   listOrganizations,
   createOrganization,
@@ -54,6 +55,7 @@ interface OrganizationsProviderProps {
 }
 
 export function OrganizationsProvider({ children }: OrganizationsProviderProps) {
+  const { isLocalOnly } = useAuth();
   const [organizations, setOrganizations] = useState<OrganizationWithRole[]>([]);
   const [currentOrg, setCurrentOrg] = useState<OrganizationWithRole | null>(null);
   const [pendingInvites, setPendingInvites] = useState<OrgMember[]>([]);
@@ -63,6 +65,14 @@ export function OrganizationsProvider({ children }: OrganizationsProviderProps) 
   const [hasInitialized, setHasInitialized] = useState(false);
 
   const refreshOrganizations = useCallback(async (isInitialLoad = false) => {
+    if (isLocalOnly) {
+      setOrganizations([]);
+      setPendingInvites([]);
+      setMembers([]);
+      setCurrentOrg(null);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
@@ -101,14 +111,22 @@ export function OrganizationsProvider({ children }: OrganizationsProviderProps) 
     } finally {
       setIsLoading(false);
     }
-  }, [currentOrg]);
+  }, [currentOrg, isLocalOnly]);
 
   useEffect(() => {
+    if (isLocalOnly) {
+      setOrganizations([]);
+      setCurrentOrg(null);
+      setPendingInvites([]);
+      setMembers([]);
+      setIsLoading(false);
+      return;
+    }
     if (!hasInitialized) {
-      refreshOrganizations(true);
+      void refreshOrganizations(true);
       setHasInitialized(true);
     }
-  }, [hasInitialized, refreshOrganizations]);
+  }, [hasInitialized, refreshOrganizations, isLocalOnly]);
 
   useEffect(() => {
     if (!currentOrg) {
