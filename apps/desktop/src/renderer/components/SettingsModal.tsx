@@ -7,6 +7,8 @@ import { useOrganizations } from '../contexts/OrganizationsContext';
 import { useAppTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { MoveVaultPanel } from './MoveVaultPanel';
+import { AssistantSettings } from './AssistantSettings';
+import { McpSettings } from './McpSettings';
 import {
   getUserSettings,
   updateUserSettings,
@@ -47,17 +49,20 @@ const TABS = [
   { id: 'general', label: 'General' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'terminal', label: 'Terminal' },
+  { id: 'assistant', label: 'Assistant' },
+  { id: 'mcp', label: 'AI tools' },
   { id: 'proxy', label: 'Proxy' },
   { id: 'account', label: 'Account' },
 ] as const;
 
-type SettingsTab = (typeof TABS)[number]['id'];
+export type SettingsTab = (typeof TABS)[number]['id'];
 
 const DELETE_PHRASE = 'delete my account';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: SettingsTab;
 }
 
 function plural(count: number, singular: string, pluralLabel: string): string {
@@ -137,7 +142,7 @@ function ExternalRow({ href, label, value }: { href: string; label: string; valu
   );
 }
 
-export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
+export function SettingsModal({ isOpen, onClose, initialTab = 'general' }: SettingsModalProps) {
   const { organizations } = useOrganizations();
   const { themeId: appThemeId, setTheme: setAppTheme, themes: appThemes } = useAppTheme();
   const { user, deleteAccount, isLocalOnly } = useAuth();
@@ -149,12 +154,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [proxyTestResult, setProxyTestResult] = useState<{ status: 'idle' | 'testing' | 'ok' | 'fail'; message?: string }>({ status: 'idle' });
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deletePreview, setDeletePreview] = useState<AccountDeletionPreview | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) setActiveTab(initialTab);
+  }, [isOpen, initialTab]);
 
   useEffect(() => {
     if (!isOpen || activeTab !== 'account' || isLocalOnly) return;
@@ -282,7 +291,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     : [];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Settings">
+    <Modal isOpen={isOpen} onClose={onClose} title="Settings" size="lg">
       <div>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -290,7 +299,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           </div>
         ) : (
           <>
-            <div className="flex border-b border-edge" role="tablist">
+            <div className="flex flex-wrap border-b border-edge" role="tablist">
               {TABS.map((tab) => {
                 const selected = activeTab === tab.id;
                 return (
@@ -300,7 +309,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                     role="tab"
                     aria-selected={selected}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`-mb-px border-b-2 px-2 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                    className={`-mb-px whitespace-nowrap border-b-2 px-2 py-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
                       selected
                         ? 'border-accent text-fg'
                         : 'border-transparent text-fg-subtle hover:text-fg'
@@ -501,6 +510,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 </>
               )}
 
+              {activeTab === 'assistant' && <AssistantSettings />}
+              {activeTab === 'mcp' && <McpSettings />}
+
               {activeTab === 'proxy' && (
                 <>
                   <Toggle
@@ -669,7 +681,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               <Button type="button" variant="secondary" size="sm" onClick={onClose}>
                 Close
               </Button>
-              {activeTab !== 'account' && (
+              {activeTab !== 'account' && activeTab !== 'assistant' && activeTab !== 'mcp' && (
                 <Button type="button" size="sm" onClick={() => { void handleSave(); }} disabled={isSaving}>
                   {isSaving ? 'Saving...' : success ? 'Saved' : 'Save'}
                 </Button>

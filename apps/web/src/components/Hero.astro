@@ -1,256 +1,201 @@
 ---
 import { SITE } from '~/data/site';
-
-const frames = [
-  {
-    id: 'servers',
-    label: 'Servers',
-    src: '/screenshots/servers.webp',
-    alt: 'Server list in Magic Term',
-  },
-  {
-    id: 'terminal',
-    label: 'Terminal',
-    src: '/screenshots/terminal.webp',
-    alt: 'Terminal session in Magic Term',
-  },
-  {
-    id: 'files',
-    label: 'Files',
-    src: '/screenshots/sftp.webp',
-    alt: 'SFTP file manager in Magic Term',
-  },
-  {
-    id: 'snippets',
-    label: 'Snippets',
-    src: '/screenshots/snippets.webp',
-    alt: 'Snippet list in Magic Term',
-  },
-];
 ---
 
 <section class="hero">
   <div class="hero__copy">
-    <h1>SSH, files, and secrets in one window.</h1>
-    <p>Free SSH and SFTP client for macOS, Windows, and Linux. Encryption stays on this device.</p>
+    <a href="/changelog" class="hero__release">
+      <span class="hero__dot" aria-hidden="true"></span>
+      What's new in {SITE.version}
+    </a>
+
+    <h1>A free SSH and SFTP client with an encrypted vault</h1>
+
+    <p class="hero__lead">
+      Magic Term keeps your servers, passwords, keys, and snippets encrypted on your computer. Open a
+      terminal or browse files on any of them. Use it without an account, or sign in to
+      sync the vault between machines.
+    </p>
+
     <div class="hero__actions">
-      <a href="/download" class="hero__download">Download</a>
-      <a href={SITE.githubUrl} target="_blank" rel="noopener">GitHub</a>
+      <a href="/download" class="btn btn--primary" data-os-download>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 4v12m0 0 5-5m-5 5-5-5M5 20h14" />
+        </svg>
+        <span data-os-label>Download</span>
+      </a>
+      <a href={SITE.githubUrl} class="btn btn--ghost" target="_blank" rel="noopener">Source on GitHub</a>
     </div>
+
+    <p class="hero__meta">
+      macOS, Windows, and Linux. MIT license. Builds are not code-signed; each installer has a SHA256
+      checksum on the <a href="/download#sha256" class="link">download page</a>.
+    </p>
   </div>
 
-  <div class="hero__stage" data-hero>
-    <div class="hero__tabs" role="tablist" aria-label="Screens">
-      {frames.map((frame, index) => (
-        <button
-          type="button"
-          role="tab"
-          id={`hero-tab-${frame.id}`}
-          data-tab
-          aria-selected={index === 0 ? 'true' : 'false'}
-          aria-controls={`hero-panel-${frame.id}`}
-          tabindex={index === 0 ? 0 : -1}
-        >
-          {frame.label}
-        </button>
-      ))}
-    </div>
-    <div class="hero__frames">
-      {frames.map((frame, index) => (
-        <div
-          class:list={['hero__panel', { 'is-active': index === 0 }]}
-          id={`hero-panel-${frame.id}`}
-          role="tabpanel"
-          data-panel
-          aria-labelledby={`hero-tab-${frame.id}`}
-          aria-hidden={index === 0 ? 'false' : 'true'}
-        >
-          <img
-            src={frame.src}
-            alt={frame.alt}
-            width="1800"
-            height="1200"
-            loading={index === 0 ? 'eager' : 'lazy'}
-            decoding="async"
-          />
-        </div>
-      ))}
-    </div>
-  </div>
+  <figure class="hero__shot">
+    <picture>
+      <source media="(max-width: 640px)" srcset="/screenshots/sftp-narrow.webp" width="1000" height="840" />
+      <img
+        src="/screenshots/sftp.webp"
+        alt="Magic Term with a local folder on the left and the server's /root folder on the right"
+        width="1800"
+        height="1200"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+      />
+    </picture>
+  </figure>
 </section>
 
 <script>
-  const root = document.querySelector('[data-hero]');
-  if (root) {
-    const tabs = [...root.querySelectorAll<HTMLButtonElement>('[data-tab]')];
-    const panels = [...root.querySelectorAll<HTMLElement>('[data-panel]')];
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let index = 0;
-    let timer = 0;
-
-    const show = (next: number) => {
-      index = next;
-      tabs.forEach((tab, i) => {
-        const on = i === index;
-        tab.setAttribute('aria-selected', on ? 'true' : 'false');
-        tab.tabIndex = on ? 0 : -1;
-      });
-      panels.forEach((panel, i) => {
-        panel.classList.toggle('is-active', i === index);
-        panel.setAttribute('aria-hidden', i === index ? 'false' : 'true');
-      });
-    };
-
-    const arm = () => {
-      window.clearInterval(timer);
-      if (reduced) return;
-      timer = window.setInterval(() => show((index + 1) % panels.length), 9000);
-    };
-
-    tabs.forEach((tab, i) => {
-      tab.addEventListener('click', () => {
-        show(i);
-        arm();
-      });
-    });
-
-    root.addEventListener('keydown', (event) => {
-      if (!(event instanceof KeyboardEvent)) return;
-      if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-      event.preventDefault();
-      const delta = event.key === 'ArrowRight' ? 1 : -1;
-      const next = (index + delta + tabs.length) % tabs.length;
-      show(next);
-      tabs[next]?.focus();
-      arm();
-    });
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) window.clearInterval(timer);
-      else arm();
-    });
-
-    arm();
+  // Name the visitor's OS on the button. The link still goes to /download,
+  // where the installer list and checksums are.
+  const label = document.querySelector('[data-os-label]');
+  const link = document.querySelector<HTMLAnchorElement>('[data-os-download]');
+  const platform =
+    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ||
+    navigator.userAgent;
+  const os = /mac/i.test(platform) && !/iphone|ipad/i.test(navigator.userAgent)
+    ? { name: 'macOS', id: 'macos' }
+    : /win/i.test(platform)
+      ? { name: 'Windows', id: 'windows' }
+      : /linux/i.test(platform) && !/android/i.test(navigator.userAgent)
+        ? { name: 'Linux', id: 'linux' }
+        : null;
+  if (os && label && link) {
+    label.textContent = `Download for ${os.name}`;
+    link.href = `/download#${os.id}`;
   }
 </script>
 
 <style>
   .hero {
-    max-width: 1080px;
+    max-width: 1120px;
     margin: 0 auto;
-    padding: 40px 24px 0;
+    padding: 72px 20px 0;
   }
 
-  .hero__copy h1 {
-    margin: 0;
-    max-width: 16ch;
-    color: var(--fg);
-    font-size: clamp(36px, 5vw, 52px);
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    line-height: 1.05;
+  .hero__copy {
+    max-width: 760px;
+    margin: 0 auto;
+    text-align: center;
   }
 
-  .hero__copy p {
-    max-width: 38rem;
-    margin: 12px 0 0;
+  .hero__release {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
     color: var(--fg-muted);
-    font-size: 16px;
-    line-height: 1.5;
+    font-size: 13px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .hero__release:hover {
+    border-color: var(--border-strong);
+    color: var(--fg);
+  }
+
+  .hero__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--success);
+  }
+
+  h1 {
+    margin: 20px 0 0;
+    color: var(--fg);
+    font-size: clamp(34px, 6vw, 58px);
+    font-weight: 600;
+    letter-spacing: -0.035em;
+    line-height: 1.06;
+    text-wrap: balance;
+  }
+
+  .hero__lead {
+    max-width: 600px;
+    margin: 20px auto 0;
+    color: var(--fg-muted);
+    font-size: 18px;
+    line-height: 1.55;
+    text-wrap: pretty;
   }
 
   .hero__actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
-    align-items: center;
-    margin-top: 20px;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 32px;
   }
 
-  .hero__download {
-    display: inline-flex;
-    align-items: center;
-    height: 36px;
-    padding: 0 16px;
-    background: var(--accent);
-    color: var(--accent-fg);
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
+  .hero__meta {
+    max-width: 520px;
+    margin: 20px auto 0;
+    color: var(--fg-subtle);
+    font-size: 13px;
+    line-height: 1.55;
   }
 
-  .hero__download:hover {
-    background: var(--accent-hover);
-  }
-
-  .hero__actions a:not(.hero__download) {
-    color: var(--accent);
-    font-size: 14px;
-    font-weight: 600;
-    text-decoration: none;
-  }
-
-  .hero__actions a:not(.hero__download):hover {
-    color: var(--accent-hover);
-  }
-
-  .hero__stage {
-    margin-top: 28px;
-  }
-
-  .hero__tabs {
-    display: flex;
-    gap: 4px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .hero__tabs button {
-    margin: 0;
-    padding: 8px 12px;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    background: transparent;
+  .hero__meta .link {
     color: var(--fg-muted);
-    font: inherit;
-    font-size: 14px;
-    cursor: pointer;
   }
 
-  .hero__tabs button[aria-selected='true'] {
-    color: var(--fg);
-    border-bottom-color: var(--fg);
-  }
-
-  .hero__frames {
-    position: relative;
-    aspect-ratio: 3 / 2;
+  .hero__shot {
+    margin: 56px 0 0;
+    padding: 8px;
     border: 1px solid var(--border);
-    border-top: 0;
+    border-radius: 16px;
     background: var(--surface-1);
   }
 
-  .hero__panel {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 480ms linear;
-  }
-
-  .hero__panel.is-active {
-    opacity: 1;
-  }
-
-  .hero__panel img {
+  .hero__shot img {
     display: block;
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    border-radius: 10px;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .hero__panel {
-      transition: none;
+  @media (max-width: 640px) {
+    .hero {
+      padding-top: 48px;
+    }
+
+    .hero__copy {
+      text-align: left;
+    }
+
+    .hero__lead {
+      font-size: 17px;
+      margin-left: 0;
+    }
+
+    .hero__actions {
+      justify-content: flex-start;
+    }
+
+    .hero__actions .btn {
+      flex: 1 1 100%;
+    }
+
+    .hero__meta {
+      margin-left: 0;
+    }
+
+    .hero__shot {
+      margin-top: 40px;
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .hero__shot img {
+      border-radius: 7px;
     }
   }
 </style>

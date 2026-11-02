@@ -11,6 +11,7 @@ const RELEASE_BASE = `https://github.com/${REPO}/releases/download/v${VERSION}`;
 const downloads = [
   {
     os: 'macOS',
+    id: 'macos',
     icon: 'apple',
     description: 'Apple Silicon (M-series) and Intel Macs.',
     primary: {
@@ -25,6 +26,7 @@ const downloads = [
   },
   {
     os: 'Windows',
+    id: 'windows',
     icon: 'windows',
     description: 'Windows 10 and 11, x64. The build is not signed, so SmartScreen may warn. After you accept an update, the installer downloads and runs on restart.',
     primary: {
@@ -35,6 +37,7 @@ const downloads = [
   },
   {
     os: 'Linux',
+    id: 'linux',
     icon: 'linux',
     description: 'AppImage, a .deb for Debian and Ubuntu, and an AUR package. Updates are manual.',
     primary: {
@@ -92,7 +95,7 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
 
     <div class="download-grid">
       {downloads.map((d) => (
-        <article class="download-card">
+        <article class="download-card" id={d.id}>
           <header class="download-card__head">
             <div class={`download-card__icon download-card__icon--${d.icon}`} aria-hidden="true">
               {d.icon === 'apple' && (
@@ -140,7 +143,7 @@ const sumsUrl = `${RELEASE_BASE}/SHA256SUMS.txt`;
       ))}
     </div>
 
-    <section class="verify" data-sums-url={sumsUrl}>
+    <section class="verify" id="sha256" data-sums-url={sumsUrl}>
       <header class="verify__head">
         <h2>SHA256</h2>
         <p>

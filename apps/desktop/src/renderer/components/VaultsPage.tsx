@@ -11,6 +11,7 @@ import { AddServerModal } from './AddServerModal';
 import { SupportCard } from './SupportCard';
 import { Button } from './ui/Button';
 import { Modal } from './ui/Modal';
+import { hostWithPort } from '../lib/server-address';
 import type { Server, ServerFolder, SessionType, MemberRole } from '@magicterm/shared';
 
 /** Section id for servers with folderId === null. */
@@ -113,7 +114,7 @@ export function VaultsPage() {
     const matches = (server: Server) => {
       if (!q) return true;
       const name = server.name.toLowerCase();
-      const host = (decryptedHosts[server.id] || '').toLowerCase();
+      const host = hostWithPort(decryptedHosts[server.id] || '', server.port).toLowerCase();
       const comment = (server.comment || '').toLowerCase();
       return name.includes(q) || host.includes(q) || comment.includes(q);
     };
@@ -354,7 +355,7 @@ export function VaultsPage() {
     const insertBefore = dragInsert?.id === server.id && dragInsert.side === 'before';
     const insertAfter = dragInsert?.id === server.id && dragInsert.side === 'after';
 
-    const hostLabel = `${decryptedHosts[server.id] || '...'}${server.port !== 22 ? `:${server.port}` : ''}`;
+    const hostLabel = hostWithPort(decryptedHosts[server.id] || '...', server.port);
 
     return (
       <div

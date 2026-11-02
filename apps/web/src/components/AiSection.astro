@@ -1,0 +1,126 @@
+---
+// Each line has to stay true for the shipped assistant and MCP server in apps/desktop.
+const assistant = [
+  'Works with OpenAI, Anthropic, OpenRouter, or a local Ollama model. You paste your own API key.',
+  'Chat mode answers questions and suggests commands. Agent mode reads the output after each command and suggests the next step.',
+  'A suggested command goes onto the prompt line. It runs only when you press Enter.',
+  'Commands that delete, overwrite, stop, or reboot something are marked before you insert them.',
+];
+
+const mcp = [
+  'Claude Code, Cursor, and Codex can list your servers, read open terminals, and run commands through Magic Term.',
+  'They can use only the servers you tick in Settings, and only while Magic Term is open and the vault is unlocked.',
+  'Every command waits for you to approve it in Magic Term.',
+  'They never receive passwords or private keys.',
+];
+---
+
+<section id="ai" class="ai">
+  <div class="ai__head">
+    <h2>An assistant in the terminal, and tools for coding agents</h2>
+    <p>Both features are off until you turn them on in Settings.</p>
+  </div>
+
+  <div class="ai__cols">
+    <div class="ai__col">
+      <h3>Assistant panel</h3>
+      <ul>
+        {assistant.map((line) => <li>{line}</li>)}
+      </ul>
+    </div>
+    <div class="ai__col">
+      <h3>MCP server for coding agents</h3>
+      <ul>
+        {mcp.map((line) => <li>{line}</li>)}
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .ai {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 112px 20px 0;
+  }
+
+  h2 {
+    margin: 0;
+    color: var(--fg);
+    font-size: clamp(26px, 3.2vw, 34px);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+
+  .ai__head p {
+    margin: 12px 0 0;
+    color: var(--fg-muted);
+    font-size: 17px;
+  }
+
+  .ai__cols {
+    display: grid;
+    gap: 16px;
+    margin-top: 40px;
+  }
+
+  @media (min-width: 820px) {
+    .ai__cols {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .ai__col {
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-1);
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--fg);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  ul {
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    position: relative;
+    padding-left: 18px;
+    color: var(--fg-muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  li + li {
+    margin-top: 10px;
+  }
+
+  li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 0.68em;
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--fg-subtle);
+  }
+
+  @media (max-width: 640px) {
+    .ai {
+      padding-top: 80px;
+    }
+
+    .ai__col {
+      padding: 20px;
+    }
+  }
+</style>

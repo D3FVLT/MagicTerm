@@ -6,8 +6,10 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { SnippetsPanel } from './SnippetsPanel';
+import { AssistantPanel } from './AssistantPanel';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 import { ConnectionOverlay } from './ConnectionOverlay';
+import { registerTerminal } from '../lib/terminal-registry';
 import { TERMINAL_THEMES, DEFAULT_TERMINAL_SETTINGS, type TerminalSettings } from '../lib/terminal-themes';
 import { attachTerminalKeyHandler } from '../lib/terminal-keyboard';
 import {
@@ -34,6 +36,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSnippets, setShowSnippets] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'reconnecting'>('connected');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [termSettings, setTermSettings] = useState<TerminalSettings>(DEFAULT_TERMINAL_SETTINGS);
@@ -69,6 +72,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
     setShowSearch((prev) => {
       if (!prev) {
         setShowSnippets(false);
+        setShowAssistant(false);
         setTimeout(() => searchInputRef.current?.focus(), 50);
       }
       return !prev;
@@ -77,7 +81,20 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
 
   const toggleSnippets = useCallback(() => {
     setShowSnippets((prev) => {
-      if (!prev) setShowSearch(false);
+      if (!prev) {
+        setShowSearch(false);
+        setShowAssistant(false);
+      }
+      return !prev;
+    });
+  }, []);
+
+  const toggleAssistant = useCallback(() => {
+    setShowAssistant((prev) => {
+      if (!prev) {
+        setShowSearch(false);
+        setShowSnippets(false);
+      }
       return !prev;
     });
   }, []);
@@ -199,6 +216,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
     searchAddonRef.current = searchAddon;
 
     terminal.open(containerRef.current);
+    const unregisterTerminal = registerTerminal(sessionId, terminal);
 
     try {
       const webglAddon = new WebglAddon();
@@ -216,6 +234,7 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
       terminal,
       onToggleSearch: toggleSearch,
       onToggleSnippets: toggleSnippets,
+      onToggleAssistant: toggleAssistant,
     });
 
     terminal.onData((data) => {
@@ -268,9 +287,15 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
       removeStatusListener();
       resizeObserver.disconnect();
       disposePtyResize(ptyRefs);
+      unregisterTerminal();
       terminal.dispose();
     };
-  }, [sessionId, runHandleResize, runSyncPtySize, toggleSearch, toggleSnippets]);
+  }, [sessionId, runHandleResize, runSyncPtySize, toggleSearch, toggleSnippets, toggleAssistant]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => runSyncPtySize(), 50);
+    return () => clearTimeout(timer);
+  }, [showAssistant, runSyncPtySize]);
 
   const activeTheme = TERMINAL_THEMES[termSettings.themeId] || TERMINAL_THEMES['tokyo-night'];
 
@@ -321,6 +346,24 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleAssistant();
+            }}
+            className={`rounded p-1 transition-colors ${
+              showAssistant
+                ? 'bg-[var(--accent-hover)] text-[var(--accent-fg)]'
+                : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
+            }`}
+            aria-label="Assistant (Cmd/Ctrl+Shift+A)"
+            data-tooltip=""
+          >
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h5M6 5h12a1 1 0 011 1v9a1 1 0 01-1 1H9l-4 3v-3H6a1 1 0 01-1-1V6a1 1 0 011-1z" />
+            </svg>
+          </button>
           {/* Keyboard shortcuts help */}
           <button
             onClick={(e) => {
@@ -352,7 +395,8 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
       </div>
 
       {/* Terminal content */}
-      <div className="relative flex-1">
+      <div className="flex min-h-0 flex-1">
+        <div className="relative min-w-0 flex-1">
         <div
           ref={containerRef}
           className="terminal-container absolute inset-0"
@@ -467,6 +511,22 @@ export function TerminalPane({ sessionId, isFocused, tabId }: TerminalPaneProps)
               </svg>
             </button>
           </div>
+        )}
+        </div>
+        {showAssistant && (
+          <AssistantPanel
+            serverId={session?.serverId ?? ''}
+            sessionId={sessionId}
+            getTerminal={() => terminalRef.current}
+            onInsert={(command) => {
+              handlePasteToTerminal(command);
+              terminalRef.current?.focus();
+            }}
+            onClose={() => {
+              setShowAssistant(false);
+              terminalRef.current?.focus();
+            }}
+          />
         )}
       </div>
 

@@ -1,29 +1,20 @@
 import type { Server, ServerFolder, ServerInput, Snippet, SnippetInput } from '@magicterm/shared';
 import { cryptoManager } from '@magicterm/crypto';
 import { getLocalDocument, mutateLocalDocument } from './local-vault-session';
+import { addressAfterEdit, assertUniqueAddress, changesAddress, type ServerAddress } from './server-address';
 
 function now(): string {
   return new Date().toISOString();
 }
 
-async function assertUniqueHost(host: string, ignoreId?: string): Promise<void> {
+async function assertUniqueServer(address: ServerAddress, ignoreId?: string): Promise<void> {
   const doc = getLocalDocument();
   if (!doc) throw new Error('Vault is locked');
-  for (const existing of doc.servers) {
-    if (existing.id === ignoreId) continue;
-    try {
-      const decrypted = await cryptoManager.decrypt(existing.host);
-      if (decrypted.toLowerCase() === host.toLowerCase()) {
-        throw new Error(`Server with host "${host}" already exists`);
-      }
-    } catch (error) {
-      if ((error as Error).message?.includes('already exists')) throw error;
-    }
-  }
+  await assertUniqueAddress(doc.servers, address, (value) => cryptoManager.decrypt(value), ignoreId);
 }
 
 export async function addLocalServer(input: ServerInput): Promise<Server> {
-  await assertUniqueHost(input.host);
+  await assertUniqueServer(input);
   const encryptedHost = await cryptoManager.encrypt(input.host);
   const encryptedUsername = await cryptoManager.encrypt(input.username);
   const encryptedCredentials = await cryptoManager.encrypt(input.credentials);
@@ -57,7 +48,9 @@ export async function editLocalServer(id: string, input: Partial<ServerInput>): 
   const doc = getLocalDocument();
   const current = doc?.servers.find((server) => server.id === id);
   if (!current) throw new Error('Server not found');
-  if (input.host !== undefined) await assertUniqueHost(input.host, id);
+  if (changesAddress(input)) {
+    await assertUniqueServer(await addressAfterEdit(current, input, (value) => cryptoManager.decrypt(value)), id);
+  }
 
   const host = input.host !== undefined ? await cryptoManager.encrypt(input.host) : current.host;
   const username = input.username !== undefined ? await cryptoManager.encrypt(input.username) : current.username;

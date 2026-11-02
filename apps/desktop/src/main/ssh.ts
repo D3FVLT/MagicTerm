@@ -121,7 +121,6 @@ export function setupSSHHandlers(ipcMain: IpcMain): void {
           existing.stream?.close();
           existing.client.end();
         } catch {
-          // Ignore
         }
         sessions.delete(sessionId);
       }

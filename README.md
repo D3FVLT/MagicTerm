@@ -1,7 +1,8 @@
 # Magic Term
 
-A free SSH/SFTP client with end-to-end encrypted cloud sync. Cross-platform
-desktop app for macOS, Windows and Linux.
+A free SSH/SFTP client for macOS, Windows and Linux. Servers, keys and
+snippets are encrypted on your device. Sync them through an account, or keep
+them on one computer without signing up.
 
 [![version](https://img.shields.io/github/v/release/D3FVLT/MagicTerm?color=blue&label=version)](https://github.com/D3FVLT/MagicTerm/releases)
 [![license](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
@@ -19,7 +20,8 @@ I built this because I was tired of paying Termius for cloud sync. Magic
 Term keeps your servers, snippets and credentials encrypted on your device
 with a master password you never send anywhere, and only the encrypted
 blobs are synced through Supabase. The server cannot read them, even if
-the database is dumped.
+the database is dumped. If you don't want an account at all, local mode
+keeps the vault in an encrypted file on your computer.
 
 The desktop app is a regular Electron app (xterm.js + ssh2 + react). The
 terminal does what you'd expect: 256-color, splits, search, SFTP file
@@ -32,6 +34,27 @@ terminal palettes. Multi-user organizations are supported if you want to
 share servers with a team.
 
 Screenshots and a feature tour live on [magicterm.app](https://magicterm.app).
+
+## AI, with your own key
+
+Both features below are off until you turn them on in Settings.
+
+**Assistant.** `Cmd/Ctrl+Shift+A` opens a panel next to the terminal. It
+talks to OpenAI, Anthropic or OpenRouter with your own API key, or to an
+Ollama server if you want the model on your own machine. The key is
+encrypted with the master password and is not synced. You turn the
+assistant on per server. Chat mode answers questions and suggests commands;
+Agent mode works toward a goal one command at a time and reads the output
+after each one. A suggested command goes onto the prompt line and runs only
+when you press Enter. Commands that delete, overwrite, stop or reboot
+something are marked and need a second click.
+
+**MCP server.** Settings › AI tools lets Claude Code, Cursor and Codex on
+the same computer list the servers you tick, read their open terminals and
+run commands. Each command shows up in Magic Term with the server and the
+exact text, and runs only after you click Run. Clients connect over a local
+socket, never receive passwords or keys, and get nothing while the vault is
+locked. The tab has the line to paste into each client.
 
 ## Install
 
@@ -74,12 +97,12 @@ in parallel by GitHub Actions. The workflow needs `SUPABASE_URL` and
 
 ## How the encryption works
 
-Master password goes through scrypt to derive a 256-bit key. That key
-encrypts every credential, snippet and SSH key with AES-256-GCM before
-anything leaves the device. Supabase only ever sees ciphertext, even if
-its database leaks. The master password itself is never sent or stored
-on the server — only a verifier hash that proves you know it without
-revealing it.
+The master password goes through PBKDF2-SHA-256 with 100,000 iterations
+to derive a 256-bit key. That key encrypts every credential, snippet and
+SSH key with AES-256-GCM before anything leaves the device. Supabase only
+ever sees ciphertext, even if its database leaks. The master password
+itself is never sent or stored on the server. Unlocking is checked against
+a scrypt verifier, which proves you know the password without revealing it.
 
 The renderer process runs sandboxed with `contextIsolation: true` and a
 strict CSP. SSH and SFTP go through ssh2 in the main process with

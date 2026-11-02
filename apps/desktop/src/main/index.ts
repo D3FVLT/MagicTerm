@@ -13,6 +13,7 @@ import { setupKnownHostsHandlers } from './known-hosts';
 import { setupSecureStorageHandlers } from './secure-storage';
 import { setupClipboardHandlers } from './clipboard';
 import { applyProxySettings } from './proxy';
+import { setupMcpHandlers, stopMcp } from './mcp';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -161,6 +162,7 @@ app.whenReady().then(() => {
   setupAuthHandlers(ipcMain);
   setupServerHandlers(ipcMain);
   setupUpdaterHandlers(ipcMain);
+  setupMcpHandlers(ipcMain);
 
   createWindow();
 
@@ -180,6 +182,7 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   cleanupAllSSHSessions();
   cleanupAllSFTPSessions();
+  stopMcp();
 });
 
 app.on('window-all-closed', () => {

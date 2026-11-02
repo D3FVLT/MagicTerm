@@ -3,9 +3,10 @@ import { useTerminal } from '../contexts/TerminalContext';
 import { useServers } from '../contexts/ServersContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrganizations } from '../contexts/OrganizationsContext';
-import { SettingsModal } from './SettingsModal';
+import { SettingsModal, type SettingsTab } from './SettingsModal';
 import { ChangelogModal } from './ChangelogModal';
 import { DONATE_URL } from '../lib/links';
+import { OPEN_SETTINGS_EVENT } from '../lib/ai-settings';
 
 declare const __APP_VERSION__: string;
 
@@ -23,8 +24,19 @@ export function TopBar() {
   const { currentOrg, members } = useOrganizations();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>('general');
   const [showChangelogModal, setShowChangelogModal] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onOpen = (event: Event) => {
+      const tab = (event as CustomEvent<{ tab?: SettingsTab }>).detail?.tab;
+      if (tab) setSettingsTab(tab);
+      setShowSettingsModal(true);
+    };
+    window.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
+  }, []);
 
   const currentUserNickname = members.find((m) => m.userId === user?.id)?.nickname;
   const displayName = isLocalOnly ? 'Local' : (currentUserNickname || user?.email || 'User');
@@ -150,6 +162,7 @@ export function TopBar() {
                 </div>
                 <button
                   onClick={() => {
+                    setSettingsTab('general');
                     setShowSettingsModal(true);
                     setShowUserMenu(false);
                   }}
@@ -220,7 +233,11 @@ export function TopBar() {
         </div>
       </div>
 
-      <SettingsModal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
+      <SettingsModal
+        isOpen={showSettingsModal}
+        initialTab={settingsTab}
+        onClose={() => setShowSettingsModal(false)}
+      />
       <ChangelogModal isOpen={showChangelogModal} onClose={() => setShowChangelogModal(false)} />
     </>
   );

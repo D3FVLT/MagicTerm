@@ -3,40 +3,79 @@ import { SITE } from '~/data/site';
 ---
 
 <section class="end">
-  <a href="/download">Download</a>
-  <p>v{SITE.version} for macOS, Windows, and Linux.</p>
+  <div class="end__box">
+    <h2>Download Magic Term {SITE.version}</h2>
+    <p>
+      macOS on Apple Silicon and Intel, Windows 10 and 11, and Linux as an AppImage, a .deb, or the
+      AUR package. Free, with no account required.
+    </p>
+    <div class="end__actions">
+      <a href="/download" class="btn btn--primary">Go to downloads</a>
+      <a href="/changelog" class="btn btn--ghost">Read the changelog</a>
+    </div>
+  </div>
 </section>
 
 <style>
   .end {
-    max-width: 1080px;
+    max-width: 1120px;
     margin: 0 auto;
-    padding: 28px 24px 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 16px;
-    align-items: center;
+    padding: 112px 20px 0;
   }
 
-  a {
-    display: inline-flex;
-    align-items: center;
-    height: 36px;
-    padding: 0 16px;
-    background: var(--accent);
-    color: var(--accent-fg);
-    font-size: 14px;
+  .end__box {
+    padding: 56px 24px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface-1);
+    text-align: center;
+  }
+
+  h2 {
+    margin: 0;
+    color: var(--fg);
+    font-size: clamp(26px, 3.2vw, 34px);
     font-weight: 600;
-    text-decoration: none;
-  }
-
-  a:hover {
-    background: var(--accent-hover);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
   }
 
   p {
-    margin: 0;
+    max-width: 540px;
+    margin: 14px auto 0;
     color: var(--fg-muted);
-    font-size: 14px;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .end__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 28px;
+  }
+
+  @media (max-width: 640px) {
+    .end {
+      padding-top: 80px;
+    }
+
+    .end__box {
+      padding: 36px 20px;
+      text-align: left;
+    }
+
+    p {
+      margin-left: 0;
+    }
+
+    .end__actions {
+      justify-content: flex-start;
+    }
+
+    .end__actions .btn {
+      flex: 1 1 100%;
+    }
   }
 </style>

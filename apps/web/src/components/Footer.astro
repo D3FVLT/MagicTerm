@@ -1,106 +1,129 @@
 ---
 import { SITE } from '~/data/site';
+
+const columns = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Features', href: '/#features' },
+      { label: 'Security', href: '/#security' },
+      { label: 'Download', href: '/download' },
+      { label: 'Changelog', href: '/changelog' },
+    ],
+  },
+  {
+    title: 'Platforms',
+    links: [
+      { label: 'SSH client for macOS', href: '/ssh-client-mac' },
+      { label: 'SSH client for Windows', href: '/ssh-client-windows' },
+      { label: 'SSH client for Linux', href: '/ssh-client-linux' },
+      { label: 'Termius alternative', href: '/termius-alternative' },
+    ],
+  },
+  {
+    title: 'Project',
+    links: [
+      { label: 'GitHub', href: SITE.githubUrl, external: true },
+      { label: 'Issues', href: `${SITE.githubUrl}/issues`, external: true },
+      { label: 'Roadmap', href: `${SITE.githubUrl}/blob/main/ROADMAP.md`, external: true },
+      { label: 'Releases', href: SITE.releasesUrl, external: true },
+    ],
+  },
+  {
+    title: 'About',
+    links: [
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'License (MIT)', href: `${SITE.githubUrl}/blob/main/LICENSE`, external: true },
+      { label: 'Donate', href: SITE.donateUrl, external: true },
+    ],
+  },
+];
 ---
 
 <footer class="site-footer">
   <div class="site-footer__inner">
     <div class="site-footer__brand">
-      <img src="/brand/logo.png" alt="" width="32" height="32" />
-      <div>
-        <div class="site-footer__name">{SITE.name}</div>
-        <div class="site-footer__tagline">{SITE.tagline}</div>
-      </div>
+      <a href="/" class="site-footer__name">
+        <img src="/brand/logo.png" alt="" width="24" height="24" />
+        {SITE.name}
+      </a>
+      <p>Free SSH and SFTP client for macOS, Windows, and Linux.</p>
     </div>
 
     <div class="site-footer__cols">
-      <div>
-        <h4>Product</h4>
-        <a href="/#features">Features</a>
-        <a href="/#security">Security</a>
-        <a href="/download">Download</a>
-        <a href="/changelog">Changelog</a>
-      </div>
-      <div>
-        <h4>Platforms</h4>
-        <a href="/ssh-client-mac">SSH client for macOS</a>
-        <a href="/ssh-client-windows">SSH client for Windows</a>
-        <a href="/ssh-client-linux">SSH client for Linux</a>
-        <a href="/termius-alternative">Termius alternative</a>
-      </div>
-      <div>
-        <h4>Project</h4>
-        <a href={SITE.githubUrl} target="_blank" rel="noopener">GitHub</a>
-        <a href={`${SITE.githubUrl}/issues`} target="_blank" rel="noopener">Issues</a>
-        <a href={`${SITE.githubUrl}/blob/main/ROADMAP.md`} target="_blank" rel="noopener">Roadmap</a>
-        <a href={SITE.releasesUrl} target="_blank" rel="noopener">Releases</a>
-        <a href={`${SITE.githubUrl}/blob/main/LICENSE`} target="_blank" rel="noopener">License (MIT)</a>
-      </div>
-      <div>
-        <h4>Support the project</h4>
-        <a href={SITE.donateUrl} target="_blank" rel="noopener" class="site-footer__donate">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
-          <span>Donate</span>
-        </a>
-        <a href="/privacy">Privacy</a>
-        <span class="site-footer__note">No telemetry. No tracking.</span>
-      </div>
+      {columns.map((col) => (
+        <div>
+          <h2>{col.title}</h2>
+          <ul>
+            {col.links.map((link) => (
+              <li>
+                <a
+                  href={link.href}
+                  {...('external' in link && link.external ? { target: '_blank', rel: 'noopener' } : {})}
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   </div>
 
   <div class="site-footer__bottom">
-    <span>© {new Date().getFullYear()} {SITE.author}. {SITE.license} licensed.</span>
+    <span>© {new Date().getFullYear()} {SITE.author}</span>
     <span>v{SITE.version}</span>
   </div>
 </footer>
 
 <style>
   .site-footer {
-    margin-top: 64px;
-    padding: 40px 24px 24px;
+    margin-top: 112px;
+    padding: 48px 20px 32px;
     border-top: 1px solid var(--border);
-    background: var(--bg);
   }
 
   .site-footer__inner {
-    max-width: 1080px;
+    max-width: 1120px;
     margin: 0 auto;
     display: grid;
-    gap: 48px;
-    grid-template-columns: 1fr;
+    gap: 40px;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 860px) {
     .site-footer__inner {
-      grid-template-columns: minmax(200px, 260px) 1fr;
+      grid-template-columns: 260px 1fr;
+      gap: 64px;
     }
   }
 
-  .site-footer__brand {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .site-footer__brand img { border-radius: 8px; }
-
   .site-footer__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     color: var(--fg);
+    font-size: 15px;
     font-weight: 600;
-    font-size: 18px;
+    text-decoration: none;
   }
 
-  .site-footer__tagline {
+  .site-footer__name img {
+    border-radius: 6px;
+  }
+
+  .site-footer__brand p {
+    max-width: 240px;
+    margin: 12px 0 0;
     color: var(--fg-subtle);
-    font-size: 13px;
-    margin-top: 2px;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   .site-footer__cols {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 32px;
+    gap: 32px 24px;
   }
 
   @media (min-width: 640px) {
@@ -109,20 +132,26 @@ import { SITE } from '~/data/site';
     }
   }
 
-  .site-footer__cols h4 {
-    font-size: 12px;
-    font-weight: 600;
+  h2 {
+    margin: 0 0 12px;
     color: var(--fg);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li + li {
+    margin-top: 8px;
   }
 
   .site-footer__cols a {
-    display: block;
     color: var(--fg-muted);
     font-size: 14px;
-    margin-bottom: 8px;
     text-decoration: none;
     transition: color 0.15s ease;
   }
@@ -131,34 +160,14 @@ import { SITE } from '~/data/site';
     color: var(--fg);
   }
 
-  .site-footer__note {
-    color: var(--fg-subtle);
-    font-size: 13px;
-  }
-
-  .site-footer__donate {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 6px;
-    color: var(--accent) !important;
-    font-weight: 500;
-  }
-
-  .site-footer__donate:hover {
-    color: var(--accent-hover) !important;
-  }
-
-  .site-footer__donate svg {
-    flex-shrink: 0;
-  }
-
   .site-footer__bottom {
-    max-width: 1080px;
+    max-width: 1120px;
     margin: 48px auto 0;
-    padding-top: 24px;
+    padding-top: 20px;
     border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
+    gap: 16px;
     color: var(--fg-subtle);
     font-size: 13px;
   }

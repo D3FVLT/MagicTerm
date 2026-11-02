@@ -30,9 +30,8 @@ export type HostKeyDecision =
   | { kind: 'mismatch'; fingerprint: string; storedFingerprint: string };
 
 /**
- * Pure decision logic for the ssh2 hostVerifier callback. Does NOT mutate
- * the trusted-hosts map — every first-time host now requires explicit
- * confirmation in the renderer (see ssh.ts / HostKeyDialog.tsx).
+ * Decision for the ssh2 hostVerifier callback. It never writes the trusted-hosts map:
+ * a first-time host is trusted only after the user confirms it in HostKeyDialog.
  *
  * Returns:
  *  - 'trusted'  — fingerprint matches a previously trusted entry

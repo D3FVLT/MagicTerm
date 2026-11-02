@@ -27,7 +27,6 @@ export default defineConfig({
       changefreq: 'weekly',
       priority: 0.8,
       serialize(item) {
-        // Boost priority of the homepage and the strongest landing pages.
         if (item.url === 'https://magicterm.app/') {
           return { ...item, priority: 1.0, changefreq: 'weekly' };
         }

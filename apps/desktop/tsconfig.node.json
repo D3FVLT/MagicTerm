@@ -6,5 +6,5 @@
     "module": "ESNext",
     "moduleResolution": "bundler"
   },
-  "include": ["src/main/**/*", "src/preload/**/*", "electron.vite.config.ts", "package.json"]
+  "include": ["src/main/**/*", "src/preload/**/*", "src/common/**/*", "electron.vite.config.ts", "package.json"]
 }

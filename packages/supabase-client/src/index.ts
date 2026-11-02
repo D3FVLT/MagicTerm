@@ -62,10 +62,6 @@ export function getSupabase(): SupabaseClient {
   return supabaseClient;
 }
 
-// ============================================
-// AUTH
-// ============================================
-
 export interface SignUpOptions {
   /** URL the user is sent to from the confirmation email. Overrides the
    *  Supabase project's default Site URL — important so confirmation links
@@ -186,10 +182,6 @@ export function onAuthStateChange(
 ) {
   return getSupabase().auth.onAuthStateChange(callback);
 }
-
-// ============================================
-// USER PROFILES & SETTINGS
-// ============================================
 
 export interface UserProfile {
   id: string;
@@ -317,10 +309,6 @@ export async function updateUserSettings(settings: Partial<UserSettings>): Promi
   };
 }
 
-// ============================================
-// ORGANIZATIONS
-// ============================================
-
 function mapToOrganization(row: EncryptedOrganization): Organization {
   return {
     id: row.id,
@@ -416,10 +404,6 @@ export async function deleteOrganization(id: string): Promise<void> {
 
   if (error) throw error;
 }
-
-// ============================================
-// ORGANIZATION MEMBERS
-// ============================================
 
 function mapToOrgMember(row: EncryptedOrgMember): OrgMember {
   return {
@@ -545,10 +529,6 @@ export async function getPendingInvites(): Promise<OrgMember[]> {
   if (error) throw error;
   return (data as EncryptedOrgMember[]).map(mapToOrgMember);
 }
-
-// ============================================
-// SERVERS
-// ============================================
 
 function mapToServer(row: EncryptedServer): Server {
   return {
@@ -889,10 +869,6 @@ export function subscribeToOrgMembers(
     channel.unsubscribe();
   };
 }
-
-// ============================================
-// SNIPPETS (Personal encrypted secrets)
-// ============================================
 
 function mapToSnippet(row: EncryptedSnippet): Snippet {
   return {

@@ -87,6 +87,20 @@ export const IPC_CHANNELS = {
   TERMINAL_SETTINGS_GET: 'terminalSettings:get',
   TERMINAL_SETTINGS_SET: 'terminalSettings:set',
 
+  AI_SETTINGS_GET: 'aiSettings:get',
+  AI_SETTINGS_SET: 'aiSettings:set',
+  AI_COMPLETE: 'aiSettings:complete',
+  AI_CANCEL: 'aiSettings:cancel',
+  AI_DELTA: 'aiSettings:delta',
+
+  MCP_SETTINGS_GET: 'mcp:settingsGet',
+  MCP_SETTINGS_SET: 'mcp:settingsSet',
+  MCP_CLIENT_CONFIG: 'mcp:clientConfig',
+  MCP_CALL: 'mcp:call',
+  MCP_RESULT: 'mcp:result',
+  MCP_EXEC: 'mcp:exec',
+  AI_VERIFY: 'aiSettings:verify',
+
   SSH_CONFIG_IMPORT: 'sshConfig:import',
 } as const;
 
@@ -100,4 +114,6 @@ export const STORAGE_KEYS = {
   TERMINAL_SETTINGS: 'terminalSettings',
   SSH_KNOWN_HOSTS: 'sshKnownHosts',
   LOCAL_ONLY: 'localOnly',
+  AI_ASSISTANT: 'aiAssistant',
+  MCP: 'mcp',
 } as const;

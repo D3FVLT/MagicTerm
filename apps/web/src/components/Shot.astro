@@ -13,13 +13,17 @@ const { src, alt } = Astro.props;
 
 <style>
   .shot {
-    margin: 16px 0 0;
+    margin: 24px 0 0;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-1);
   }
 
   img {
     display: block;
     width: 100%;
     height: auto;
-    border: 1px solid var(--border);
+    border-radius: 8px;
   }
 </style>

@@ -1,23 +1,24 @@
 .landing {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 40px 24px 0;
+  padding: 64px 20px 0;
 }
 
 .landing__header h1 {
   margin: 0;
   color: var(--fg);
-  font-size: clamp(28px, 4vw, 36px);
+  font-size: clamp(30px, 5vw, 44px);
   font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  text-wrap: balance;
 }
 
 .landing__lead {
-  margin: 12px 0 0;
+  margin: 16px 0 0;
   color: var(--fg-muted);
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.6;
 }
 
 .landing__cta {
@@ -25,16 +26,17 @@
   flex-wrap: wrap;
   gap: 12px 16px;
   align-items: center;
-  margin-top: 20px;
+  margin-top: 28px;
 }
 
 .landing__button {
   display: inline-flex;
   align-items: center;
-  height: 36px;
-  padding: 0 16px;
-  font-size: 14px;
-  font-weight: 600;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
   text-decoration: none;
 }
 
@@ -46,24 +48,23 @@
 .landing__button--primary:hover { background: var(--accent-hover); }
 
 .landing__button--secondary {
-  padding: 0;
-  height: auto;
-  background: none;
-  color: var(--accent);
+  border: 1px solid var(--border-strong);
+  color: var(--fg);
 }
 
-.landing__button--secondary:hover { color: var(--accent-hover); }
+.landing__button--secondary:hover { background: var(--surface-2); }
 
 .landing__section {
-  margin-top: 36px;
+  margin-top: 56px;
 }
 
 .landing__section h2,
 .landing__section h3 {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   color: var(--fg);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .landing__section h3 {
@@ -75,8 +76,8 @@
 .landing__list {
   margin: 0;
   color: var(--fg-muted);
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.65;
 }
 
 .landing__list {
@@ -86,11 +87,13 @@
 .landing__list li + li { margin-top: 8px; }
 
 .landing__section a {
-  color: var(--accent);
-  text-decoration: none;
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
 }
 
-.landing__section a:hover { color: var(--accent-hover); }
+.landing__section a:hover { text-decoration-color: var(--fg); }
 
 .landing__code {
   margin: 8px 0 0;
@@ -99,6 +102,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   border: 1px solid var(--border);
+  border-radius: 8px;
   background: var(--surface-1);
   color: var(--fg);
   font-family: var(--font-mono);

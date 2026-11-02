@@ -21,7 +21,13 @@ import { SITE } from '~/data/site';
         <li>Supabase, only after you create an account or sign in. Local mode does not call Supabase.</li>
         <li>GitHub's public releases endpoint, to see if a newer build exists. The vault is not in that request. On macOS, choosing the update opens the release page. On Windows, the installer downloads after you accept. Linux installs are manual.</li>
         <li>An HTTP or SOCKS5 proxy, only if you turn one on.</li>
+        <li>The assistant, after you add a checked model and turn it on for that server. Chat sends terminal output when that option is on. Agent mode always sends the current terminal and asks before pasting a command. The request goes to OpenAI, Anthropic, OpenRouter, or an Ollama address you set. Each model's API key is encrypted with the master password and stays on this computer. A pasted command does not run until you press Enter. Chat text is not written to disk.</li>
       </ul>
+      <p>
+        AI tools (MCP) are off by default. After you turn them on and tick servers in Settings, Claude Code, Cursor, or Codex on this computer can connect to the app through a local socket, not over the network.
+        They see the names and addresses of those servers, can read their open terminals, and can run commands you approve one at a time.
+        The app does not give them passwords or keys. What they read is sent to the model each tool uses, under that tool's own terms.
+      </p>
     </section>
 
     <section>

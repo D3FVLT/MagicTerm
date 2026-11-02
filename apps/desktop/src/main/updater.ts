@@ -135,7 +135,6 @@ export function setupAutoUpdater(window: BrowserWindow) {
 }
 
 export function setupUpdaterHandlers(ipc: typeof ipcMain) {
-  // Return platform info to renderer
   ipc.handle('updater:getPlatform', () => {
     return { platform: process.platform, isMac };
   });
@@ -150,7 +149,7 @@ export function setupUpdaterHandlers(ipc: typeof ipcMain) {
   });
 
   ipc.handle('updater:download', async () => {
-    // On macOS, don't download - just open release page
+    // Without a Developer ID signature the macOS build cannot update itself, so it sends people to the release page.
     if (isMac) {
       shell.openExternal(RELEASES_URL);
       return { success: true, openedExternal: true };
@@ -179,7 +178,6 @@ export function setupUpdaterHandlers(ipc: typeof ipcMain) {
   });
 
   ipc.handle('updater:install', () => {
-    // On macOS, just open release page (shouldn't reach here normally)
     if (isMac) {
       shell.openExternal(RELEASES_URL);
       return;
@@ -195,7 +193,6 @@ export function setupUpdaterHandlers(ipc: typeof ipcMain) {
     });
   });
 
-  // Open releases page directly
   ipc.handle('updater:openReleasePage', () => {
     shell.openExternal(RELEASES_URL);
   });

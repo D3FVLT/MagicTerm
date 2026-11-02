@@ -7,6 +7,7 @@ import { VaultsPage } from '../components/VaultsPage';
 import { UpdateBanner } from '../components/UpdateBanner';
 import { useTerminal } from '../contexts/TerminalContext';
 import { useServers } from '../contexts/ServersContext';
+import { McpBridge } from '../components/McpBridge';
 
 export function MainLayout() {
   const { tabs, activeTabId, activeView, reconnect, getSession, splitPane, closePane } = useTerminal();
@@ -49,6 +50,7 @@ export function MainLayout() {
     <div className="flex h-screen flex-col bg-app">
       <TopBar />
       <UpdateBanner />
+      <McpBridge />
 
       <div className="relative flex-1 overflow-hidden">
         {/* Vaults page */}

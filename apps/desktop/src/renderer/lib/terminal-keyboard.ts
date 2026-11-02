@@ -12,6 +12,7 @@ export interface TerminalKeyHandlerOptions {
   terminal: Terminal;
   onToggleSearch?: () => void;
   onToggleSnippets?: () => void;
+  onToggleAssistant?: () => void;
 }
 
 /**
@@ -20,7 +21,7 @@ export interface TerminalKeyHandlerOptions {
  * and is flaky on macOS (Ctrl+R etc.). We always map via ev.code instead.
  */
 export function attachTerminalKeyHandler(options: TerminalKeyHandlerOptions): void {
-  const { sessionId, terminal, onToggleSearch, onToggleSnippets } = options;
+  const { sessionId, terminal, onToggleSearch, onToggleSnippets, onToggleAssistant } = options;
 
   terminal.attachCustomKeyEventHandler((ev) => {
     if (ev.type !== 'keydown') return true;
@@ -64,6 +65,12 @@ export function attachTerminalKeyHandler(options: TerminalKeyHandlerOptions): vo
 
     if (hasCtrl && ev.shiftKey && physical === 's' && onToggleSnippets) {
       onToggleSnippets();
+      ev.preventDefault();
+      return false;
+    }
+
+    if (hasCtrl && ev.shiftKey && physical === 'a' && onToggleAssistant) {
+      onToggleAssistant();
       ev.preventDefault();
       return false;
     }

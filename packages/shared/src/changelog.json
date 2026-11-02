@@ -2,6 +2,48 @@
   "$comment": "Single source of truth for release notes. Rendered on magicterm.app/changelog, shown in the desktop app, and pasted into the GitHub release body by .github/workflows/release.yml. Item text is Markdown-flavoured on purpose so CI can use it verbatim: only `code` and [links](url) are supported, and the label becomes a bold prefix. Newest release first — the first entry is automatically badged as the latest.",
   "releases": [
     {
+      "version": "0.7.0",
+      "date": "November 2026",
+      "items": [
+        {
+          "label": "AI assistant",
+          "text": "Press `Cmd/Ctrl+Shift+A` in a terminal to open the assistant panel. It works with your own key for OpenAI, Anthropic, or OpenRouter, or with an Ollama server if you want the model on your own machine. Add models in Settings › Assistant. A model appears in the chat only after the provider confirms the key can use it. Keys are encrypted with the master password and stay on this computer."
+        },
+        {
+          "label": "Off until you turn it on",
+          "text": "The assistant is off for every server until you turn it on for that server. In Chat mode, terminal output is sent only while Include terminal output is ticked. Agent mode always sends the current screen, because it needs it to choose the next step. The conversation is kept in memory and is gone when you close the app."
+        },
+        {
+          "label": "Commands never run on their own",
+          "text": "A suggested command appears right under the sentence that explains it, with Copy and Insert. Insert puts it on the prompt line, and it runs only when you press Enter. Commands that delete, overwrite, stop, kill, or reboot something get a yellow border, and Insert needs a second click. Long commands wrap instead of hiding their end off-screen."
+        },
+        {
+          "label": "Agent mode",
+          "text": "Describe the result you want. The agent suggests one command at a time. After you insert and run it, the agent waits for the command to finish, reads the output, and suggests the next step or says the goal is reached."
+        },
+        {
+          "label": "Replies stream in",
+          "text": "Text appears as the model writes it. Stop ends the request at the provider and keeps what arrived. If you scroll up to read while a reply comes in, the panel stays where you are."
+        },
+        {
+          "label": "AI tools for Claude Code, Cursor, and Codex",
+          "text": "Settings › AI tools turns on an MCP server, so coding agents on this computer can list your servers, see which terminals are open, read what is on screen, and run commands. Each command opens a dialog in Magic Term with the server and the exact command, and runs only after you click Run. The tab shows the line to paste into each client."
+        },
+        {
+          "label": "What AI tools can reach",
+          "text": "Only the servers you tick, and only while Magic Term is open and the vault is unlocked. Clients connect through a local socket, not the network, and never receive passwords or keys. Commands run on a separate SSH connection, not in your terminal, and only on hosts whose key you already trusted. Every call goes into an activity log on the same tab."
+        },
+        {
+          "label": "Same address, different ports",
+          "text": "You can add several servers on one IP or hostname with different ports, or different users on the same port. A server counts as a duplicate only when user, host, and port all match. The server list and the SFTP title show the port when it is not 22, and search finds `host:port`. Closes [#20](https://github.com/D3FVLT/MagicTerm/issues/20)."
+        },
+        {
+          "label": "New website",
+          "text": "magicterm.app has a new home page that follows your system's light or dark theme and fits a phone screen. The privacy page now says what the assistant and AI tools send and where."
+        }
+      ]
+    },
+    {
       "version": "0.6.0",
       "date": "September 2026",
       "items": [

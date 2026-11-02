@@ -53,7 +53,6 @@ export function UpdateBanner() {
 
   const handleDownload = async () => {
     if (isMac) {
-      // On macOS, just open release page
       await window.electronAPI.updater.openReleasePage();
       setDismissed(true);
     } else {

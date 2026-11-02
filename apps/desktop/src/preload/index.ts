@@ -179,8 +179,38 @@ const api = {
     set: (settings: Record<string, unknown>) =>
       ipcRenderer.invoke(IPC_CHANNELS.TERMINAL_SETTINGS_SET, settings),
   },
+  aiSettings: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.AI_SETTINGS_GET),
+    set: (settings: unknown) => ipcRenderer.invoke(IPC_CHANNELS.AI_SETTINGS_SET, settings),
+  },
+  ai: {
+    complete: (input: unknown) => ipcRenderer.invoke(IPC_CHANNELS.AI_COMPLETE, input),
+    cancel: (requestId: string) => ipcRenderer.invoke(IPC_CHANNELS.AI_CANCEL, requestId),
+    onDelta: (callback: (event: { requestId: string; delta: string }) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: { requestId: string; delta: string }) => callback(payload);
+      ipcRenderer.on(IPC_CHANNELS.AI_DELTA, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.AI_DELTA, handler);
+    },
+    verify: (input: unknown) => ipcRenderer.invoke(IPC_CHANNELS.AI_VERIFY, input),
+  },
   sshConfig: {
     import: () => ipcRenderer.invoke(IPC_CHANNELS.SSH_CONFIG_IMPORT),
+  },
+  mcp: {
+    getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.MCP_SETTINGS_GET),
+    setSettings: (settings: unknown) => ipcRenderer.invoke(IPC_CHANNELS.MCP_SETTINGS_SET, settings),
+    clientConfig: () => ipcRenderer.invoke(IPC_CHANNELS.MCP_CLIENT_CONFIG),
+    onCall: (callback: (call: { callId: string; name: string; args: Record<string, unknown>; client: string }) => void) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        call: { callId: string; name: string; args: Record<string, unknown>; client: string }
+      ) => callback(call);
+      ipcRenderer.on(IPC_CHANNELS.MCP_CALL, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.MCP_CALL, handler);
+    },
+    respond: (callId: string, result: unknown) => ipcRenderer.invoke(IPC_CHANNELS.MCP_RESULT, callId, result),
+    exec: (config: unknown, command: string, timeoutSeconds: number) =>
+      ipcRenderer.invoke(IPC_CHANNELS.MCP_EXEC, config, command, timeoutSeconds),
   },
 };
 

@@ -43,6 +43,7 @@ const GROUPS: ShortcutGroup[] = [
       { keys: ['Mod+Shift+D'], description: 'Split pane vertically' },
       { keys: ['Mod+W'], description: 'Close focused pane / tab' },
       { keys: ['Mod+F'], description: 'Search in terminal buffer' },
+      { keys: ['Mod+Shift+A'], description: 'Open / close the assistant' },
       { keys: ['Esc'], description: 'Close search bar' },
     ],
   },

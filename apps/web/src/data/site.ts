@@ -8,7 +8,7 @@ export const SITE = {
   url: 'https://magicterm.app',
   tagline: 'SSH and SFTP client.',
   description:
-    'Free SSH and SFTP client for macOS, Windows, and Linux. Secrets are encrypted on the device. Local mode needs no account. Builds are unsigned; SHA256 is on the download page.',
+    'Free, open-source SSH and SFTP client for macOS, Windows, and Linux. Servers, passwords, keys, and snippets are encrypted on your device. Works without an account.',
   twitter: '',
   githubRepo: 'D3FVLT/MagicTerm',
   githubUrl: 'https://github.com/D3FVLT/MagicTerm',

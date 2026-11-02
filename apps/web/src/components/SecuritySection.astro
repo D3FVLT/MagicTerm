@@ -1,30 +1,151 @@
+---
+const facts = [
+  {
+    term: 'Encryption',
+    text: 'AES-256-GCM. The key is derived from your master password with PBKDF2-SHA-256 and 100,000 iterations.',
+  },
+  {
+    term: 'Master password',
+    text: 'Never sent to a server. When you sign in with an account, the app can keep it in the OS credential store on this computer. Local mode does not. Unlock is checked against a scrypt verifier, which is neither the password nor the key.',
+  },
+  {
+    term: 'Sync',
+    text: 'Optional. The server gets ciphertext for hosts, usernames, passwords, keys, and snippet text. Labels such as server and folder names are stored as plain text.',
+  },
+  {
+    term: 'Host keys',
+    text: 'Fingerprints you accept are kept on this computer and are not part of the vault upload.',
+  },
+  {
+    term: 'Telemetry',
+    text: 'The app has no telemetry SDK and sends no crash reports. This website uses Cloudflare Web Analytics.',
+  },
+];
+
+const missing = [
+  'Builds are not code-signed. macOS blocks the first launch until you allow it, and Windows SmartScreen may warn.',
+  'The app does not prompt for SSH key passphrases yet.',
+  'No port forwarding screen.',
+  'No mobile app.',
+];
+---
+
 <section id="security" class="security">
-  <h2>Before you install</h2>
-  <ul>
-    <li>Encrypted on this device. The master password is not uploaded.</li>
-    <li>Local mode needs no account. Sync is optional.</li>
-    <li>Builds are not signed.</li>
-    <li>SHA256 for each installer is on the <a href="/download">download page</a>.</li>
-  </ul>
+  <div class="security__main">
+    <h2>How your data is stored</h2>
+    <p class="security__lead">
+      The details are in the <a href="/privacy" class="link">privacy page</a> and the
+      <a href="https://github.com/D3FVLT/MagicTerm" class="link" target="_blank" rel="noopener">source code</a>.
+    </p>
+    <dl>
+      {facts.map((fact) => (
+        <div>
+          <dt>{fact.term}</dt>
+          <dd>{fact.text}</dd>
+        </div>
+      ))}
+    </dl>
+  </div>
+
+  <aside class="security__missing" aria-labelledby="missing-title">
+    <h3 id="missing-title">Not in the app yet</h3>
+    <ul>
+      {missing.map((line) => <li>{line}</li>)}
+    </ul>
+    <p>
+      Planned work is on the
+      <a href="https://github.com/D3FVLT/MagicTerm/blob/main/ROADMAP.md" class="link" target="_blank" rel="noopener">roadmap</a>.
+    </p>
+  </aside>
 </section>
 
 <style>
   .security {
-    max-width: 1080px;
+    max-width: 1120px;
     margin: 0 auto;
-    padding: 64px 24px 0;
+    padding: 112px 20px 0;
+    display: grid;
+    gap: 40px;
+  }
+
+  @media (min-width: 900px) {
+    .security {
+      grid-template-columns: 1.6fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
   }
 
   h2 {
-    margin: 0 0 12px;
+    margin: 0;
     color: var(--fg);
-    font-size: 22px;
+    font-size: clamp(26px, 3.2vw, 34px);
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+
+  .security__lead {
+    margin: 12px 0 0;
+    color: var(--fg-muted);
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  dl {
+    margin: 32px 0 0;
+    border-top: 1px solid var(--border);
+  }
+
+  dl > div {
+    display: grid;
+    gap: 4px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  @media (min-width: 640px) {
+    dl > div {
+      grid-template-columns: 160px 1fr;
+      gap: 24px;
+    }
+  }
+
+  dt {
+    color: var(--fg);
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .security__missing {
+    padding: 24px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-1);
+  }
+
+  @media (min-width: 900px) {
+    .security__missing {
+      margin-top: 8px;
+    }
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--fg);
+    font-size: 16px;
+    font-weight: 600;
   }
 
   ul {
-    margin: 0;
+    margin: 16px 0 0;
     padding: 0;
     list-style: none;
   }
@@ -32,21 +153,26 @@
   li {
     padding: 10px 0;
     border-top: 1px solid var(--border);
-    color: var(--fg);
-    font-size: 15px;
-    line-height: 1.45;
+    color: var(--fg-muted);
+    font-size: 14px;
+    line-height: 1.55;
   }
 
-  li:last-child {
-    border-bottom: 1px solid var(--border);
+  .security__missing p {
+    margin: 12px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    color: var(--fg-subtle);
+    font-size: 14px;
   }
 
-  a {
-    color: var(--accent);
-    text-decoration: none;
-  }
+  @media (max-width: 640px) {
+    .security {
+      padding-top: 80px;
+    }
 
-  a:hover {
-    color: var(--accent-hover);
+    .security__missing {
+      padding: 20px;
+    }
   }
 </style>

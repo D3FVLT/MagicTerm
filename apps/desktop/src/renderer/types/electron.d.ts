@@ -133,6 +133,41 @@ export interface ElectronAPI {
     get: () => Promise<{ success: boolean; settings: Record<string, unknown> | null }>;
     set: (settings: Record<string, unknown>) => Promise<{ success: boolean }>;
   };
+  aiSettings: {
+    get: () => Promise<{ success: boolean; settings: unknown }>;
+    set: (settings: unknown) => Promise<{ success: boolean; error?: string }>;
+  };
+  ai: {
+    complete: (input: {
+      provider: 'openai' | 'anthropic' | 'openrouter' | 'ollama';
+      model: string;
+      baseUrl: string;
+      apiKey: string;
+      system: string;
+      messages: { role: 'user' | 'assistant'; content: string }[];
+      requestId?: string;
+    }) => Promise<{ success: boolean; text?: string; error?: string }>;
+    cancel: (requestId: string) => Promise<{ success: boolean }>;
+    onDelta: (callback: (event: { requestId: string; delta: string }) => void) => () => void;
+    verify: (input: {
+      provider: 'openai' | 'anthropic' | 'openrouter' | 'ollama';
+      model: string;
+      baseUrl: string;
+      apiKey: string;
+    }) => Promise<{ success: boolean; error?: string }>;
+  };
+  mcp: {
+    getSettings: () => Promise<{ success: boolean; settings: { enabled: boolean; serverIds: string[] } }>;
+    setSettings: (settings: { enabled: boolean; serverIds: string[] }) => Promise<{ success: boolean; settings: { enabled: boolean; serverIds: string[] } }>;
+    clientConfig: () => Promise<{ success: boolean; config: { command: string; args: string[]; env: Record<string, string> } }>;
+    onCall: (callback: (call: { callId: string; name: string; args: Record<string, unknown>; client: string }) => void) => () => void;
+    respond: (callId: string, result: { text: string; isError?: boolean; structured?: unknown }) => Promise<{ success: boolean }>;
+    exec: (config: SSHConnectionConfig, command: string, timeoutSeconds: number) => Promise<{
+      success: boolean;
+      error?: string;
+      result?: { exitCode: number | null; signal: string | null; stdout: string; stderr: string; truncated: boolean; timedOut: boolean };
+    }>;
+  };
   sshConfig: {
     import: () => Promise<{ success: boolean; hosts: { name: string; host: string; port: number; username: string; identityFile?: string }[]; error?: string }>;
   };

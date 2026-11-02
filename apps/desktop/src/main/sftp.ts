@@ -681,11 +681,7 @@ export function setupSFTPHandlers(ipcMain: IpcMain): void {
     }
   );
 
-  // Native dialog wrappers so the renderer never needs to construct a local
-  // FS path itself for upload/download. Used by future "Browse..." entry
-  // points; see security plan H2 (block C). Existing dual-pane file manager
-  // continues to use SFTP_UPLOAD / SFTP_DOWNLOAD with paths that are now
-  // strictly validated above.
+  // Native dialogs, so the renderer never has to build a local path for upload or download itself.
   ipcMain.handle('sftp:pickUploadFiles', async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     const result = await dialog.showOpenDialog(win ?? undefined!, {

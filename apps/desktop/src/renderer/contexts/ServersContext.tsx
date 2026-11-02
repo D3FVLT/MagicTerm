@@ -18,6 +18,7 @@ import { cryptoManager } from '@magicterm/crypto';
 import { useOrganizations } from './OrganizationsContext';
 import { useAuth } from './AuthContext';
 import { getLocalDocument } from '../lib/local-vault-session';
+import { addressAfterEdit, assertUniqueAddress, changesAddress } from '../lib/server-address';
 import {
   addLocalFolder,
   addLocalServer,
@@ -146,18 +147,7 @@ export function ServersProvider({ children }: ServersProviderProps) {
       setServers(getLocalDocument()?.servers ?? []);
       return server;
     }
-    // Check for duplicate host in current scope
-    for (const existingServer of servers) {
-      try {
-        const decryptedHost = await cryptoManager.decrypt(existingServer.host);
-        if (decryptedHost.toLowerCase() === input.host.toLowerCase()) {
-          throw new Error(`Server with host "${input.host}" already exists`);
-        }
-      } catch (e) {
-        // If decryption fails, skip this server
-        if ((e as Error).message?.includes('already exists')) throw e;
-      }
-    }
+    await assertUniqueAddress(servers, input, (value) => cryptoManager.decrypt(value));
 
     const encryptedHost = await cryptoManager.encrypt(input.host);
     const encryptedUsername = await cryptoManager.encrypt(input.username);
@@ -188,19 +178,12 @@ export function ServersProvider({ children }: ServersProviderProps) {
     }
     const updates: Record<string, unknown> = {};
 
-    // Check for duplicate host if host is being changed
+    const current = servers.find((server) => server.id === id);
+    if (current && changesAddress(input)) {
+      const decrypt = (value: string) => cryptoManager.decrypt(value);
+      await assertUniqueAddress(servers, await addressAfterEdit(current, input, decrypt), decrypt, id);
+    }
     if (input.host !== undefined) {
-      for (const existingServer of servers) {
-        if (existingServer.id === id) continue; // Skip self
-        try {
-          const decryptedHost = await cryptoManager.decrypt(existingServer.host);
-          if (decryptedHost.toLowerCase() === input.host.toLowerCase()) {
-            throw new Error(`Server with host "${input.host}" already exists`);
-          }
-        } catch (e) {
-          if ((e as Error).message?.includes('already exists')) throw e;
-        }
-      }
       updates.host = await cryptoManager.encrypt(input.host);
     }
 

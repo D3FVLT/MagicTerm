@@ -123,7 +123,6 @@ const isConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
             window.location.replace('/auth/reset-password');
             return;
           }
-          // Success — redirect to the friendly landing page.
           window.location.replace('/auth/confirmed');
         })
         .catch((err: unknown) => {

@@ -5,11 +5,8 @@
 @import '@fontsource/inter/400.css';
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
-@import '@fontsource/inter/700.css';
-@import '@fontsource/inter/800.css';
 @import '@fontsource/jetbrains-mono/400.css';
 @import '@fontsource/jetbrains-mono/500.css';
-@import '@fontsource/jetbrains-mono/600.css';
 
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -32,65 +29,53 @@
   --color-danger: var(--danger);
 }
 
-:root,
-[data-theme='midnight'] {
-  --bg: #0a0b14;
-  --surface-1: #11121d;
-  --surface-2: #1a1b26;
-  --surface-3: #24283b;
-  --border: #292e42;
-  --border-strong: #414868;
-  --fg: #c0caf5;
-  --fg-muted: #a9b1d6;
-  --fg-subtle: #565f89;
-  --accent: #7aa2f7;
-  --accent-hover: #6991ec;
-  --accent-fg: #0a0b14;
-  --success: #9ece6a;
-  --warning: #e0af68;
-  --danger: #f7768e;
-}
-
-[data-theme='onyx'] {
-  --bg: #000000;
-  --surface-1: #0d0d10;
-  --surface-2: #15151a;
-  --surface-3: #1f1f26;
-  --border: #1f1f26;
-  --border-strong: #2a2a33;
-  --fg: #e6edf3;
-  --fg-muted: #b1bac4;
-  --fg-subtle: #6e7681;
+/* Dark is the default and follows the app's Onyx theme. Light follows the
+   system setting; there is no toggle. */
+:root {
+  color-scheme: dark;
+  --bg: #09090b;
+  --surface-1: #111114;
+  --surface-2: #18181c;
+  --surface-3: #232328;
+  --border: #232328;
+  --border-strong: #34343b;
+  --fg: #ededf0;
+  --fg-muted: #a6a6b0;
+  --fg-subtle: #80808a;
   --accent: #f4f1ea;
-  --accent-hover: #e4dfd4;
-  --accent-fg: #000000;
+  --accent-hover: #ffffff;
+  --accent-fg: #09090b;
   --success: #56d364;
   --warning: #e3b341;
   --danger: #ff7b72;
 }
 
-[data-theme='daylight'] {
-  --bg: #ffffff;
-  --surface-1: #f5f6f8;
-  --surface-2: #eaecef;
-  --surface-3: #d8dde2;
-  --border: #d0d7de;
-  --border-strong: #afb8c1;
-  --fg: #1f2328;
-  --fg-muted: #57606a;
-  --fg-subtle: #7d8590;
-  --accent: #0969da;
-  --accent-hover: #0550ae;
-  --accent-fg: #ffffff;
-  --success: #1a7f37;
-  --warning: #9a6700;
-  --danger: #cf222e;
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface-1: #f6f6f7;
+    --surface-2: #ededf0;
+    --surface-3: #e2e2e6;
+    --border: #e4e4e8;
+    --border-strong: #cfcfd6;
+    --fg: #18181b;
+    --fg-muted: #52525b;
+    --fg-subtle: #6b6b75;
+    --accent: #18181b;
+    --accent-hover: #3f3f46;
+    --accent-fg: #ffffff;
+    --success: #1a7f37;
+    --warning: #9a6700;
+    --danger: #cf222e;
+  }
 }
 
 html {
   background: var(--bg);
   color: var(--fg);
   scroll-behavior: smooth;
+  scroll-padding-top: 72px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -109,8 +94,59 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fg);
   outline-offset: 2px;
+}
+
+/* Shared button styles for every page. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn--sm {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.btn--primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn--ghost {
+  border: 1px solid var(--border-strong);
+  color: var(--fg);
+}
+
+.btn--ghost:hover {
+  background: var(--surface-2);
+}
+
+.link {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  text-decoration-color: var(--fg);
 }
 
 @media (prefers-reduced-motion: reduce) {

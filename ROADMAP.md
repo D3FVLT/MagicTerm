@@ -38,7 +38,7 @@ paid certificates and is listed under Far-future, not under a version.
 
 ## v0.7 — Desktop QoL & Power Features
 
-- ⏳ **AI assistant, bring-your-own-key** — the big one for this minor. You paste
+- ✅ **AI assistant, bring-your-own-key** — the big one for this minor. You paste
   your own provider key (OpenAI / Anthropic / OpenRouter, or point it at a local
   Ollama endpoint) and get an assistant that works inside the terminal: describe
   what you want and get a command back, explain a command before you run it,
@@ -49,12 +49,20 @@ paid certificates and is listed under Far-future, not under a version.
     and press Enter yourself — the same rule snippet paste follows.
   - The hard part isn't calling a model, it's deciding what leaves the machine.
     Terminal output from a production host is full of hostnames, tokens and
-    paths. So: off by default, opt-in per server, and the exact payload is shown
-    before the first send. Nothing is sent implicitly in the background.
+    paths. So it is off by default and turned on per server. Chat sends terminal
+    output only while "Include terminal output" is ticked; Agent mode sends the
+    current screen with each step. Nothing is sent in the background.
+  - ⏳ Show the exact payload before the first send to a server. Not in 0.7.0.
   - A local Ollama endpoint is the zero-egress option and should be a
     first-class choice, not an afterthought.
   - Ships together with an update to the website's privacy wording — "your data
     never leaves your machine" needs a precise carve-out once this exists.
+- ✅ **MCP server for coding agents** — Settings › AI tools lets Claude Code,
+  Cursor and Codex list allowed servers, read open terminals and run commands.
+  Every command waits for approval in Magic Term, clients connect over a local
+  socket, and they never receive passwords or keys.
+- ✅ **Servers on one address with different ports** ([#20](https://github.com/D3FVLT/MagicTerm/issues/20)) —
+  a duplicate is now the same user, host and port, not the same host.
 - ✅ **SSH config import** — read `~/.ssh/config` and offer to import hosts as
   read-only entries (no creds, just hostnames + ports).
 - ✅ **Snippet variables** — `{{name}}` / `{{name=default}}` placeholders inside a
@@ -111,6 +119,7 @@ Not scheduled to a version. Code signing sits here until the certificates are pa
 
 ## Recently shipped
 
+- ✅ **v0.7.0**: an AI assistant with your own key (OpenAI, Anthropic, OpenRouter or Ollama), with Chat and Agent modes, streamed replies, and commands that only run when you press Enter. An MCP server lets Claude Code, Cursor and Codex use allowed servers, with every command approved in Magic Term. Several servers can share one address on different ports ([#20](https://github.com/D3FVLT/MagicTerm/issues/20)). New home page on magicterm.app.
 - ✅ **v0.6.0**: the app and the site share a dense layout. Servers are a list, settings and dialogs are flat rows, and Onyx uses an off-white accent. Local mode needs no account: the vault stays on this computer, Lock clears the key, and Settings can move that vault onto an account that does not already have servers or snippets.
 - ✅ **v0.5.9** — snippet variables: `{{name}}` placeholders prompt for values before a snippet runs, with per-session recall and Docker/Go template strings left untouched; drag-to-reorder snippets driving the 1–9 paste shortcuts; proxy settings and retry on the startup screen after a bounded auth timeout; tooltips rendered by the app so icon-only buttons finally show them, plus accessible names on every icon button; a dismissible support card with a toggle in Settings; and one curated changelog feeding the website, the GitHub release body and a new in-app "What's new" modal.
 - ✅ **v0.5.8** — server folders for personal and org vaults ([#19](https://github.com/D3FVLT/MagicTerm/issues/19)): collapsible sections, drag-and-drop between folders, rename/delete without losing servers, pins scoped to their folder, and DB triggers enforcing folder/vault scope on top of RLS.

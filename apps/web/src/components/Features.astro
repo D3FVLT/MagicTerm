@@ -1,61 +1,257 @@
 ---
-import Shot from './Shot.astro';
-
-const rows = [
+const items = [
   {
     title: 'Terminal',
-    text: 'Split panes, search in the scrollback, 256 colors.',
-    src: '/screenshots/terminal.webp',
-    alt: 'Terminal session in Magic Term',
+    text: 'Session tabs, split panes, and search in the scrollback. Ctrl+R and other readline shortcuts work on non-Latin keyboard layouts too.',
   },
   {
     title: 'SFTP',
-    text: 'Upload and download on the same SSH connection.',
-    src: '/screenshots/sftp.webp',
-    alt: 'SFTP file manager in Magic Term',
+    text: 'Local and remote folders side by side. Upload and download files without a separate SFTP login.',
   },
   {
-    title: 'Snippets',
-    text: 'Encrypted commands. {{name}} asks for a value before it pastes.',
-    src: '/screenshots/snippets.webp',
-    alt: 'Snippet list in Magic Term',
+    title: 'Encrypted vault',
+    text: 'Hosts, usernames, passwords, private keys, and snippet text are encrypted with AES-256-GCM before they are written to disk or synced.',
+  },
+  {
+    title: 'No account needed',
+    text: 'Local mode keeps the vault in a file on this computer. Create an account later if you want the same vault on another machine.',
+  },
+  {
+    title: 'Folders',
+    text: 'Group servers by client, project, or environment. Pinned servers stay at the top of their folder.',
+  },
+  {
+    title: 'SSH config and host keys',
+    text: 'Import hosts from ~/.ssh/config. The first connection to a host asks you to confirm its key, and a changed key shows a warning.',
   },
 ];
 ---
 
 <section id="features" class="features">
-  {rows.map((row) => (
-    <article>
-      <h2>{row.title}</h2>
-      <p>{row.text}</p>
-      <Shot src={row.src} alt={row.alt} />
-    </article>
-  ))}
+  <div class="section-head">
+    <h2>What it does</h2>
+    <p>One desktop app for the servers you connect to every day.</p>
+  </div>
+
+  <ul class="features__grid">
+    {items.map((item) => (
+      <li>
+        <h3>{item.title}</h3>
+        <p>{item.text}</p>
+      </li>
+    ))}
+  </ul>
+
+  <div class="snippets">
+    <div class="snippets__copy">
+      <h2>Snippets that ask for values</h2>
+      <p>
+        Save a command once and use it on any server. Write <code>{'{{name}}'}</code> where a value
+        goes, or <code>{'{{name=default}}'}</code> to prefill it. Magic Term asks for the values,
+        shows the finished command, and pastes it into the terminal. It does not press Enter for you.
+      </p>
+      <pre class="snippets__code"><code><span class="snippets__prompt">$</span> git pull && npm run build && pm2 restart <mark>{'{{app=1}}'}</mark></code></pre>
+      <p class="snippets__keys">
+        <kbd>⌘</kbd><kbd>⇧</kbd><kbd>S</kbd> opens the panel on macOS, <kbd>Ctrl</kbd><kbd>⇧</kbd><kbd>S</kbd>
+        on Windows and Linux. Keys <kbd>1</kbd> to <kbd>9</kbd> paste a snippet.
+      </p>
+    </div>
+    <figure class="snippets__shot">
+      <img
+        src="/screenshots/snippets-panel.webp"
+        alt="Snippets panel with four saved commands numbered 1 to 4"
+        width="462"
+        height="420"
+        loading="lazy"
+        decoding="async"
+      />
+    </figure>
+  </div>
 </section>
 
 <style>
   .features {
-    max-width: 1080px;
+    max-width: 1120px;
     margin: 0 auto;
-    padding: 64px 24px 0;
+    padding: 112px 20px 0;
   }
 
-  article + article {
-    margin-top: 48px;
-  }
-
-  h2 {
+  .section-head h2,
+  .snippets h2 {
     margin: 0;
     color: var(--fg);
-    font-size: 22px;
+    font-size: clamp(26px, 3.2vw, 34px);
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
   }
 
-  p {
+  .section-head p {
+    margin: 12px 0 0;
+    color: var(--fg-muted);
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  .features__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin: 40px 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .features__grid li {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--fg);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .features__grid p {
     margin: 8px 0 0;
     color: var(--fg-muted);
-    font-size: 16px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 720px) {
+    .features__grid {
+      grid-template-columns: repeat(2, 1fr);
+      column-gap: 48px;
+    }
+  }
+
+  @media (min-width: 1000px) {
+    .features__grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .snippets {
+    display: grid;
+    gap: 40px;
+    align-items: center;
+    margin-top: 112px;
+  }
+
+  /* Let the code block scroll instead of widening the column on phones. */
+  .snippets > * {
+    min-width: 0;
+  }
+
+  @media (min-width: 900px) {
+    .snippets {
+      grid-template-columns: 1.15fr 1fr;
+      gap: 64px;
+    }
+  }
+
+  .snippets__copy > p {
+    margin: 16px 0 0;
+    color: var(--fg-muted);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  code,
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+  }
+
+  .snippets__copy > p code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--surface-2);
+    color: var(--fg);
+  }
+
+  .snippets__code {
+    margin: 24px 0 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-1);
+    color: var(--fg);
+    font-size: 14px;
     line-height: 1.5;
+  }
+
+  .snippets__code code {
+    font-size: 13.5px;
+    white-space: pre;
+  }
+
+  .snippets__prompt {
+    color: var(--fg-subtle);
+    user-select: none;
+  }
+
+  .snippets__code mark {
+    padding: 1px 3px;
+    border-radius: 4px;
+    background: var(--surface-3);
+    color: var(--fg);
+  }
+
+  .snippets__keys {
+    margin: 16px 0 0;
+    color: var(--fg-subtle);
+    font-size: 14px;
+    line-height: 1.9;
+  }
+
+  kbd {
+    display: inline-block;
+    min-width: 22px;
+    margin: 0 2px;
+    padding: 0 5px;
+    border: 1px solid var(--border-strong);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--surface-1);
+    color: var(--fg-muted);
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+  }
+
+  /* Same colour as the terminal behind the cropped panel, so the crop has no visible edge. */
+  .snippets__shot {
+    margin: 0;
+    padding: 32px 24px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: #0c1216;
+  }
+
+  .snippets__shot img {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 640px) {
+    .features {
+      padding-top: 80px;
+    }
+
+    .snippets {
+      margin-top: 80px;
+    }
+
+    .snippets__shot {
+      padding: 12px;
+    }
   }
 </style>

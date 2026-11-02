@@ -7,5 +7,5 @@
     "module": "ESNext",
     "moduleResolution": "bundler"
   },
-  "include": ["src/renderer/**/*"]
+  "include": ["src/renderer/**/*", "src/common/**/*"]
 }

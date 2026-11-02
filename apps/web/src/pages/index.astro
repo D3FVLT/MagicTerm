@@ -3,13 +3,14 @@ import Base from '~/layouts/Base.astro';
 import Header from '~/components/Header.astro';
 import Hero from '~/components/Hero.astro';
 import Features from '~/components/Features.astro';
+import AiSection from '~/components/AiSection.astro';
 import SecuritySection from '~/components/SecuritySection.astro';
 import DownloadCTA from '~/components/DownloadCTA.astro';
 import Footer from '~/components/Footer.astro';
 
 const title = 'SSH and SFTP client for macOS, Windows, and Linux';
 const description =
-  'Magic Term is a free SSH and SFTP client. Secrets are encrypted on the device. Local mode needs no account. Builds are unsigned; SHA256 is on the download page.';
+  'Magic Term is a free, open-source SSH and SFTP client. Servers, passwords, keys, and snippets are encrypted on your device. Works without an account.';
 ---
 
 <Base title={title} description={description}>
@@ -17,6 +18,7 @@ const description =
   <main>
     <Hero />
     <Features />
+    <AiSection />
     <SecuritySection />
     <DownloadCTA />
   </main>

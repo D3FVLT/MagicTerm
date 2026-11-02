@@ -11,8 +11,12 @@ import {
   type ProxyConfig,
 } from './proxy';
 import { clearCachedVerifier, getCachedVerifier } from './master-key';
+import { parseAiSettings } from '../common/ai-assistant';
+import { completeChat, verifyModel } from './ai-complete';
 
 const store = new Store();
+
+const aiRequests = new Map<string, AbortController>();
 
 const PROXY_PROBE_URL = 'https://www.cloudflare.com/cdn-cgi/trace';
 
@@ -109,6 +113,109 @@ export function setupAuthHandlers(ipcMain: IpcMain): void {
   ipcMain.handle(IPC_CHANNELS.TERMINAL_SETTINGS_SET, async (_event, settings: Record<string, unknown>) => {
     store.set(STORAGE_KEYS.TERMINAL_SETTINGS, settings);
     return { success: true };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AI_SETTINGS_GET, async () => {
+    return { success: true, settings: store.get(STORAGE_KEYS.AI_ASSISTANT) ?? null };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AI_SETTINGS_SET, async (_event, settings: unknown) => {
+    const parsed = parseAiSettings(settings);
+    if (!parsed.ok) return { success: false, error: parsed.error };
+    store.set(STORAGE_KEYS.AI_ASSISTANT, parsed.settings);
+    return { success: true };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AI_CANCEL, async (_event, requestId: unknown) => {
+    if (typeof requestId === 'string') aiRequests.get(requestId)?.abort();
+    return { success: true };
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AI_COMPLETE, async (event, input: unknown) => {
+    if (!input || typeof input !== 'object') return { success: false, error: 'Bad request' };
+    const raw = input as Record<string, unknown>;
+    const provider = raw.provider;
+    if (provider !== 'openai' && provider !== 'anthropic' && provider !== 'openrouter' && provider !== 'ollama') {
+      return { success: false, error: 'Unknown provider' };
+    }
+    if (typeof raw.model !== 'string' || !raw.model.trim() || raw.model.length > 120) {
+      return { success: false, error: 'Model is missing' };
+    }
+    if (typeof raw.baseUrl !== 'string') return { success: false, error: 'URL is missing' };
+    const apiKey = typeof raw.apiKey === 'string' ? raw.apiKey : '';
+    if (provider !== 'ollama' && !apiKey) return { success: false, error: 'API key is missing' };
+    if (apiKey.length > 500) return { success: false, error: 'API key is too long' };
+    if (typeof raw.system !== 'string' || raw.system.length > 4000) return { success: false, error: 'Bad request' };
+    if (!Array.isArray(raw.messages) || raw.messages.length === 0 || raw.messages.length > 20) {
+      return { success: false, error: 'Bad request' };
+    }
+    const messages: { role: 'user' | 'assistant'; content: string }[] = [];
+    for (const message of raw.messages) {
+      if (!message || typeof message !== 'object') return { success: false, error: 'Bad request' };
+      const role = (message as { role?: unknown }).role;
+      const content = (message as { content?: unknown }).content;
+      if ((role !== 'user' && role !== 'assistant') || typeof content !== 'string' || content.length > 8000) {
+        return { success: false, error: 'Bad request' };
+      }
+      messages.push({ role, content });
+    }
+    const requestId = typeof raw.requestId === 'string' && raw.requestId.length <= 80 ? raw.requestId : '';
+    const controller = new AbortController();
+    if (requestId) aiRequests.set(requestId, controller);
+    try {
+      const text = await completeChat(
+        {
+          provider,
+          model: raw.model.trim(),
+          baseUrl: raw.baseUrl,
+          apiKey,
+          system: raw.system,
+          messages,
+        },
+        {
+          signal: controller.signal,
+          onDelta: requestId
+            ? (delta) => {
+                if (!event.sender.isDestroyed()) event.sender.send(IPC_CHANNELS.AI_DELTA, { requestId, delta });
+              }
+            : undefined,
+        }
+      );
+      return { success: true, text };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Request failed';
+      return { success: false, error: apiKey && message.includes(apiKey) ? 'Request failed' : message.slice(0, 300) };
+    } finally {
+      if (requestId) aiRequests.delete(requestId);
+    }
+  });
+
+  ipcMain.handle(IPC_CHANNELS.AI_VERIFY, async (_event, input: unknown) => {
+    if (!input || typeof input !== 'object') return { success: false, error: 'Bad request' };
+    const raw = input as Record<string, unknown>;
+    const provider = raw.provider;
+    if (provider !== 'openai' && provider !== 'anthropic' && provider !== 'openrouter' && provider !== 'ollama') {
+      return { success: false, error: 'Unknown provider' };
+    }
+    if (typeof raw.model !== 'string' || !raw.model.trim() || raw.model.length > 120) {
+      return { success: false, error: 'Model is missing' };
+    }
+    if (typeof raw.baseUrl !== 'string') return { success: false, error: 'URL is missing' };
+    const apiKey = typeof raw.apiKey === 'string' ? raw.apiKey : '';
+    if (provider !== 'ollama' && !apiKey) return { success: false, error: 'API key is missing' };
+    if (apiKey.length > 500) return { success: false, error: 'API key is too long' };
+    try {
+      await verifyModel({
+        provider,
+        model: raw.model.trim(),
+        baseUrl: raw.baseUrl,
+        apiKey,
+      });
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Check failed';
+      return { success: false, error: apiKey && message.includes(apiKey) ? 'Check failed' : message.slice(0, 300) };
+    }
   });
 
   ipcMain.handle(IPC_CHANNELS.SSH_CONFIG_IMPORT, async () => {

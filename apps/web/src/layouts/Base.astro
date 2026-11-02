@@ -64,7 +64,7 @@ const softwareApp = {
 ---
 
 <!doctype html>
-<html lang="en" data-theme="onyx">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -96,15 +96,20 @@ const softwareApp = {
     <meta name="twitter:image" content={ogImageUrl} />
     <meta name="twitter:image:alt" content={`${SITE.name}. ${SITE.tagline}`} />
 
-    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 
     <script type="application/ld+json" set:html={JSON.stringify(softwareApp)} />
 
-    <script
-      defer
-      src="https://static.cloudflareinsights.com/beacon.min.js"
-      data-cf-beacon='{"token": "5b62871b1f644566bb47b239a81538f7"}'
-    ></script>
+    {import.meta.env.PROD && (
+      <script
+        is:inline
+        defer
+        src="https://static.cloudflareinsights.com/beacon.min.js"
+        data-cf-beacon='{"token": "5b62871b1f644566bb47b239a81538f7"}'
+      ></script>
+    )}
   </head>
   <body>
     <slot />

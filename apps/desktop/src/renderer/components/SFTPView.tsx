@@ -4,6 +4,7 @@ import { TransferPanel } from './TransferPanel';
 import { TextEditorModal } from './TextEditorModal';
 import type { FileEntry, TransferProgress, SSHConnectionConfig } from '@magicterm/shared';
 import { useHostKey } from '../contexts/HostKeyContext';
+import { hostWithPort } from '../lib/server-address';
 import type { SftpConnectResult } from '../types/electron';
 
 interface SFTPViewProps {
@@ -460,7 +461,7 @@ export function SFTPView({ sessionId, serverName, config }: SFTPViewProps) {
           onDragOver={handleDragOver}
         >
           <FilePanel
-            title={`Remote (${config.host})`}
+            title={`Remote (${hostWithPort(config.host, config.port)})`}
             type="remote"
             currentPath={remotePath}
             entries={remoteEntries}
