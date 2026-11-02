@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createLineReader, createMcpSession, type McpServerContext } from '../src/common/mcp-protocol.js';
 import { MCP_TOOLS, formatExecResult, parseMcpCall, parseMcpSettings } from '../src/common/mcp-tools.js';
-import { mcpClientSnippet } from '../src/common/mcp-client-config.js';
+import { mcpClientSnippet, mcpSocketPathFor } from '../src/common/mcp-client-config.js';
 
 const META = {
   'io.modelcontextprotocol/protocolVersion': '2026-07-28',
@@ -167,4 +167,14 @@ test('client snippets quote paths with spaces', () => {
   const toml = mcpClientSnippet('codex', { ...launch, command: 'C:\\Program Files\\MagicTerm\\MagicTerm.exe' });
   assert.match(toml, /^\[mcp_servers\.magicterm\]\ncommand = "C:\\\\Program Files\\\\MagicTerm\\\\MagicTerm.exe"/);
   assert.match(toml, /env = \{ ELECTRON_RUN_AS_NODE = "1" \}$/);
+});
+
+test('a long user data path moves the socket to the temp folder', () => {
+  assert.equal(
+    mcpSocketPathFor('darwin', '/Users/me/Library/Application Support/@magicterm/desktop', '/var/folders/x/T/', 'abc123'),
+    '/Users/me/Library/Application Support/@magicterm/desktop/mcp.sock'
+  );
+  const long = `/Users/${'a'.repeat(60)}/Library/Application Support/@magicterm/desktop`;
+  assert.equal(mcpSocketPathFor('darwin', long, '/var/folders/x/T/', 'abc123'), '/var/folders/x/T/magicterm-mcp-abc123.sock');
+  assert.equal(mcpSocketPathFor('win32', long, 'C:\\Temp', 'abc123'), '\\\\.\\pipe\\magicterm-mcp-abc123');
 });

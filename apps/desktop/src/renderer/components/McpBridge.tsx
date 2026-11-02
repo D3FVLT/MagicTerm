@@ -105,7 +105,7 @@ export function McpBridge() {
         folder: folders.find((folder) => folder.id === server.folderId)?.name ?? null,
         comment: server.comment ?? null,
       })));
-      log(`${rows.length} servers`, 'ok');
+      log(`${rows.length} server${rows.length === 1 ? '' : 's'}`, 'ok');
       return {
         text: rows
           .map((row) => `${row.name} (id ${row.id}): ${row.address}${row.folder ? `, folder ${row.folder}` : ''}${row.comment ? `, ${row.comment}` : ''}`)
@@ -123,7 +123,7 @@ export function McpBridge() {
           server: allowed.find((server) => server.id === session.serverId)?.name ?? '',
           status: session.status,
         }));
-      log(`${rows.length} sessions`, 'ok');
+      log(`${rows.length} session${rows.length === 1 ? '' : 's'}`, 'ok');
       return {
         text: rows.length
           ? rows.map((row) => `${row.server}: session ${row.session_id} (${row.status})`).join('\n')

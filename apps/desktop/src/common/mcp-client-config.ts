@@ -6,6 +6,20 @@ export interface McpLaunch {
 
 export type McpClient = 'claude' | 'cursor' | 'codex';
 
+/** macOS caps a unix socket path at 104 bytes and Linux at 108. */
+const MAX_SOCKET_PATH = 100;
+
+/**
+ * Where the app listens for MCP clients. A user data folder with a long path would push
+ * the socket past the limit, so it then goes in the per-user temp folder instead.
+ */
+export function mcpSocketPathFor(platform: string, userData: string, tempDir: string, scope: string): string {
+  if (platform === 'win32') return `\\\\.\\pipe\\magicterm-mcp-${scope}`;
+  const preferred = `${userData.replace(/\/+$/, '')}/mcp.sock`;
+  if (new TextEncoder().encode(preferred).length <= MAX_SOCKET_PATH) return preferred;
+  return `${tempDir.replace(/\/+$/, '')}/magicterm-mcp-${scope}.sock`;
+}
+
 function shellQuote(value: string): string {
   return /^[\w@%+=:,./-]+$/.test(value) ? value : `'${value.replace(/'/g, `'\\''`)}'`;
 }

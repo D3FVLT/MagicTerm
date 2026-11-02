@@ -2,6 +2,20 @@
   "$comment": "Single source of truth for release notes. Rendered on magicterm.app/changelog, shown in the desktop app, and pasted into the GitHub release body by .github/workflows/release.yml. Item text is Markdown-flavoured on purpose so CI can use it verbatim: only `code` and [links](url) are supported, and the label becomes a bold prefix. Newest release first — the first entry is automatically badged as the latest.",
   "releases": [
     {
+      "version": "0.7.1",
+      "date": "November 2026",
+      "items": [
+        {
+          "label": "Fixed",
+          "text": "AI tools (MCP) did not start when the app's data folder had a long path, for example with a long macOS user name, while Settings still showed them as on. Claude Code, Cursor, and Codex could not connect. The app now opens its connection in your temporary folder when the usual path is too long, and it is readable only by your user from the moment it is created."
+        },
+        {
+          "label": "Fixed",
+          "text": "The AI tools activity log said \"1 servers\" and \"1 sessions\"."
+        }
+      ]
+    },
+    {
       "version": "0.7.0",
       "date": "November 2026",
       "items": [

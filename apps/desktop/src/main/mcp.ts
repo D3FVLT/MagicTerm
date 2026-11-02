@@ -3,10 +3,12 @@ import Store from 'electron-store';
 import { createHash, randomUUID } from 'crypto';
 import { chmodSync, existsSync, unlinkSync, writeFileSync } from 'fs';
 import { createServer, type Server as NetServer, type Socket } from 'net';
+import { tmpdir } from 'os';
 import { join } from 'path';
 import { IPC_CHANNELS, STORAGE_KEYS, type SSHConnectionConfig } from '@magicterm/shared';
 import { createLineReader, createMcpSession, rpcError, RPC_PARSE_ERROR, type ToolResult } from '../common/mcp-protocol';
 import { MCP_INSTRUCTIONS, MCP_TOOLS, parseMcpSettings, type McpSettings } from '../common/mcp-tools';
+import { mcpSocketPathFor } from '../common/mcp-client-config';
 import { execOverSsh } from './ssh-exec';
 
 const store = new Store();
@@ -43,11 +45,9 @@ function readSettings(): McpSettings {
 }
 
 export function mcpSocketPath(): string {
-  if (process.platform === 'win32') {
-    const scope = createHash('sha256').update(app.getPath('userData')).digest('hex').slice(0, 12);
-    return `\\\\.\\pipe\\magicterm-mcp-${scope}`;
-  }
-  return join(app.getPath('userData'), 'mcp.sock');
+  const userData = app.getPath('userData');
+  const scope = createHash('sha256').update(userData).digest('hex').slice(0, 12);
+  return mcpSocketPathFor(process.platform, userData, tmpdir(), scope);
 }
 
 function shimPath(): string {
@@ -131,8 +131,14 @@ function start(): void {
     console.error('[MCP] socket error:', err.message);
     if (server === next) server = null;
   });
+  // The socket must never be reachable by other users, not even before the chmod below.
+  const previousUmask = process.platform === 'win32' ? null : process.umask(0o177);
   next.listen(path, () => {
+    if (previousUmask !== null) process.umask(previousUmask);
     if (process.platform !== 'win32') chmodSync(path, 0o600);
+  });
+  next.once('error', () => {
+    if (previousUmask !== null) process.umask(previousUmask);
   });
   server = next;
 }
