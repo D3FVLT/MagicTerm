@@ -1,4 +1,4 @@
-import type { Server, ServerFolder, ServerInput, Snippet, SnippetInput } from '@magicterm/shared';
+import type { DeployRunRow, Server, ServerFolder, ServerInput, Snippet, SnippetInput } from '@magicterm/shared';
 import { cryptoManager } from '@magicterm/crypto';
 import { getLocalDocument, mutateLocalDocument } from './local-vault-session';
 import { addressAfterEdit, assertUniqueAddress, changesAddress, type ServerAddress } from './server-address';
@@ -75,9 +75,37 @@ export async function editLocalServer(id: string, input: Partial<ServerInput>): 
   return updated;
 }
 
+export async function setLocalServerForwards(id: string, portForwards: string | undefined): Promise<void> {
+  await mutateLocalDocument((draft) => {
+    draft.servers = draft.servers.map((server) => (
+      server.id === id ? { ...server, portForwards, updatedAt: now() } : server
+    ));
+  });
+}
+
+export async function setLocalServerMonitor(id: string, monitor: string | undefined): Promise<void> {
+  await mutateLocalDocument((draft) => {
+    draft.servers = draft.servers.map((server) => (
+      server.id === id ? { ...server, monitor, updatedAt: now() } : server
+    ));
+  });
+}
+
+/** Keeps the newest 50 runs per server in the local vault. */
+export async function addLocalDeployRun(serverId: string, payload: string, userId: string): Promise<DeployRunRow> {
+  const run: DeployRunRow = { id: crypto.randomUUID(), serverId, userId, payload, createdAt: now() };
+  await mutateLocalDocument((draft) => {
+    const others = (draft.deployRuns ?? []).filter((r) => r.serverId !== serverId);
+    const mine = [run, ...(draft.deployRuns ?? []).filter((r) => r.serverId === serverId)].slice(0, 50);
+    draft.deployRuns = [...others, ...mine];
+  });
+  return run;
+}
+
 export async function removeLocalServer(id: string): Promise<void> {
   await mutateLocalDocument((draft) => {
     draft.servers = draft.servers.filter((server) => server.id !== id);
+    if (draft.deployRuns) draft.deployRuns = draft.deployRuns.filter((run) => run.serverId !== id);
   });
 }
 

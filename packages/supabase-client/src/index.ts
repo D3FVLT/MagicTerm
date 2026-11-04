@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient, Session, User, RealtimeChannel } from '@supabase/supabase-js';
 import type {
+  DeployRunRow,
   EncryptedServer,
   EncryptedOrganization,
   EncryptedOrgMember,
@@ -546,6 +547,8 @@ function mapToServer(row: EncryptedServer): Server {
     isPinned: row.is_pinned ?? false,
     sortOrder: row.sort_order ?? 0,
     folderId: row.folder_id ?? null,
+    portForwards: row.port_forwards ?? undefined,
+    monitor: row.monitor ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -674,6 +677,87 @@ export async function updateServer(
 
   if (error) throw error;
   return mapToServer(data as EncryptedServer);
+}
+
+/** `portForwards` is ciphertext, or null to clear. Needs add-port-forwards.sql. */
+export async function updateServerPortForwards(id: string, portForwards: string | null): Promise<Server> {
+  const { data, error } = await getSupabase()
+    .from('servers')
+    .update({ port_forwards: portForwards, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST204' || /port_forwards/.test(error.message ?? '')) {
+      throw new Error('This database has no port_forwards column yet. Run supabase/add-port-forwards.sql.');
+    }
+    throw error;
+  }
+  return mapToServer(data as EncryptedServer);
+}
+
+/** `monitor` is ciphertext, or null to stop monitoring. Needs add-service-monitor.sql. */
+export async function updateServerMonitor(id: string, monitor: string | null): Promise<Server> {
+  const { data, error } = await getSupabase()
+    .from('servers')
+    .update({ monitor, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST204' || /\bmonitor\b/.test(error.message ?? '')) {
+      throw new Error('This database has no monitor column yet. Run supabase/add-service-monitor.sql.');
+    }
+    throw error;
+  }
+  return mapToServer(data as EncryptedServer);
+}
+
+interface DeployRunDbRow {
+  id: string;
+  server_id: string;
+  user_id: string;
+  payload: string;
+  created_at: string;
+}
+
+function mapToDeployRun(row: DeployRunDbRow): DeployRunRow {
+  return { id: row.id, serverId: row.server_id, userId: row.user_id, payload: row.payload, createdAt: row.created_at };
+}
+
+function deployRunsMissing(error: { code?: string; message?: string }): boolean {
+  return error.code === '42P01' || error.code === 'PGRST205' || /service_deploy_runs/.test(error.message ?? '');
+}
+
+/** Newest first. Needs add-deploy-runs.sql. */
+export async function listDeployRuns(serverId: string, limit = 200): Promise<DeployRunRow[]> {
+  const { data, error } = await getSupabase()
+    .from('service_deploy_runs')
+    .select('*')
+    .eq('server_id', serverId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    if (deployRunsMissing(error)) throw new Error('This database has no deploy history table yet. Run supabase/add-deploy-runs.sql.');
+    throw error;
+  }
+  return (data as DeployRunDbRow[]).map(mapToDeployRun);
+}
+
+/** `payload` is ciphertext. Needs add-deploy-runs.sql. */
+export async function createDeployRun(serverId: string, payload: string): Promise<DeployRunRow> {
+  const { data, error } = await getSupabase()
+    .from('service_deploy_runs')
+    .insert({ server_id: serverId, payload })
+    .select()
+    .single();
+  if (error) {
+    if (deployRunsMissing(error)) throw new Error('This database has no deploy history table yet. Run supabase/add-deploy-runs.sql.');
+    throw error;
+  }
+  return mapToDeployRun(data as DeployRunDbRow);
 }
 
 export async function toggleServerPin(id: string, isPinned: boolean): Promise<Server> {

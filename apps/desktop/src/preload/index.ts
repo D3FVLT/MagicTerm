@@ -53,6 +53,60 @@ const api = {
       return () => ipcRenderer.removeListener(IPC_CHANNELS.SSH_STATUS, handler);
     },
   },
+  portForward: {
+    start: (key: string, config: SSHConnectionConfig, preset: unknown) =>
+      ipcRenderer.invoke(IPC_CHANNELS.PORT_FORWARD_START, key, config, preset),
+    stop: (key: string, presetId: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.PORT_FORWARD_STOP, key, presetId),
+    stopAll: (key: string) => ipcRenderer.invoke(IPC_CHANNELS.PORT_FORWARD_STOP_ALL, key),
+    list: (key: string) => ipcRenderer.invoke(IPC_CHANNELS.PORT_FORWARD_LIST, key),
+    onStatus: (callback: (key: string, status: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, key: string, status: unknown) => callback(key, status);
+      ipcRenderer.on(IPC_CHANNELS.PORT_FORWARD_STATUS, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.PORT_FORWARD_STATUS, handler);
+    },
+  },
+  monitor: {
+    discover: (serverId: string, config: SSHConnectionConfig, sudoPassword?: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.MONITOR_DISCOVER, serverId, config, sudoPassword),
+    disconnect: (serverId: string) => ipcRenderer.invoke(IPC_CHANNELS.MONITOR_DISCONNECT, serverId),
+    watch: (serverId: string, config: SSHConnectionConfig, discovery: unknown) =>
+      ipcRenderer.invoke(IPC_CHANNELS.MONITOR_WATCH, serverId, config, discovery),
+    unwatch: (serverId: string) => ipcRenderer.invoke(IPC_CHANNELS.MONITOR_UNWATCH, serverId),
+    checkSites: (serverId: string) => ipcRenderer.invoke(IPC_CHANNELS.MONITOR_CHECK_SITES, serverId),
+    onSample: (callback: (serverId: string, sample: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, serverId: string, sample: unknown) => callback(serverId, sample);
+      ipcRenderer.on(IPC_CHANNELS.MONITOR_SAMPLE, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.MONITOR_SAMPLE, handler);
+    },
+    startLogs: (streamId: string, serverId: string, config: SSHConnectionConfig, service: unknown, options: unknown) =>
+      ipcRenderer.invoke(IPC_CHANNELS.MONITOR_LOGS_START, streamId, serverId, config, service, options),
+    stopLogs: (streamId: string) => ipcRenderer.invoke(IPC_CHANNELS.MONITOR_LOGS_STOP, streamId),
+    onLogData: (callback: (streamId: string, text: string) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, streamId: string, text: string) => callback(streamId, text);
+      ipcRenderer.on(IPC_CHANNELS.MONITOR_LOG_DATA, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.MONITOR_LOG_DATA, handler);
+    },
+    onLogEnd: (callback: (streamId: string, result: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, streamId: string, result: unknown) => callback(streamId, result);
+      ipcRenderer.on(IPC_CHANNELS.MONITOR_LOG_END, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.MONITOR_LOG_END, handler);
+    },
+    readLogs: (serverId: string, config: SSHConnectionConfig, service: unknown, lines: number, sudoPassword?: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.MONITOR_LOGS_READ, serverId, config, service, lines, sudoPassword),
+    action: (serverId: string, config: SSHConnectionConfig, request: unknown, sudoPassword?: string) =>
+      ipcRenderer.invoke(IPC_CHANNELS.MONITOR_ACTION, serverId, config, request, sudoPassword),
+    startDeploy: (runId: string, serverId: string, config: SSHConnectionConfig, scenario: unknown) =>
+      ipcRenderer.invoke(IPC_CHANNELS.MONITOR_DEPLOY_START, runId, serverId, config, scenario),
+    answerDeploy: (runId: string, askId: string, value: string | null) =>
+      ipcRenderer.invoke(IPC_CHANNELS.MONITOR_DEPLOY_ANSWER, runId, askId, value),
+    cancelDeploy: (runId: string) => ipcRenderer.invoke(IPC_CHANNELS.MONITOR_DEPLOY_CANCEL, runId),
+    onDeployEvent: (callback: (runId: string, event: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, runId: string, event: unknown) => callback(runId, event);
+      ipcRenderer.on(IPC_CHANNELS.MONITOR_DEPLOY_EVENT, handler);
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.MONITOR_DEPLOY_EVENT, handler);
+    },
+  },
   auth: {
     setMasterKeyHash: (hash: string) =>
       ipcRenderer.invoke(IPC_CHANNELS.CRYPTO_SET_MASTER_KEY, hash),

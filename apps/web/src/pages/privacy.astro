@@ -47,7 +47,8 @@ import { SITE } from '~/data/site';
       <ul>
         <li>Your email and the auth session.</li>
         <li>
-          Ciphertext for host, username, password or key, and snippet text.
+          Ciphertext for host, username, password or key, snippet text, port forward presets, the Services scan and deploy scenarios, and deploy history.
+          For each deploy run, the server it ran on, who ran it, and when are stored as plain fields.
           Encryption is AES-256-GCM. The key is derived from the master password with PBKDF2-SHA-256, 100,000 iterations.
           The master password is not sent.
         </li>

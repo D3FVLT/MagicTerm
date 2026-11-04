@@ -45,7 +45,7 @@ test('legacy clients get the initialize handshake and are named by it', async ()
   const list = await mcp.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list' });
   assert.ok(list && 'result' in list);
   assert.deepEqual((list.result.tools as { name: string }[]).map((tool) => tool.name), [
-    'list_servers', 'list_sessions', 'read_terminal', 'run_command',
+    'list_servers', 'list_sessions', 'read_terminal', 'run_command', 'list_services', 'get_service', 'scan_server', 'run_service_action', 'list_deploy_scenarios', 'run_deploy', 'read_service_logs',
   ]);
   assert.equal('resultType' in list.result, false);
 
@@ -135,6 +135,23 @@ test('tool arguments are validated before anything runs', () => {
   assert.throws(() => parseMcpCall('run_command', { server_id: 's1', command: '   ' }), /command is required/);
   assert.throws(() => parseMcpCall('run_command', { server_id: 's1', command: 'ls', timeout_seconds: 9999 }), /timeout_seconds/);
   assert.throws(() => parseMcpCall('read_terminal', { lines: 5 }), /session_id is required/);
+  assert.deepEqual(parseMcpCall('list_services', {}), { tool: 'list_services', serverId: null, query: '' });
+  assert.deepEqual(parseMcpCall('list_services', { server_id: 's1', query: ' acme/api ' }), { tool: 'list_services', serverId: 's1', query: 'acme/api' });
+  assert.throws(() => parseMcpCall('list_services', { query: 5 }), /query must be text/);
+  assert.deepEqual(parseMcpCall('get_service', { server_id: 's1', service_id: 'pm2:deploy:web' }), { tool: 'get_service', serverId: 's1', serviceId: 'pm2:deploy:web' });
+  assert.throws(() => parseMcpCall('get_service', { server_id: 's1' }), /service_id is required/);
+  assert.deepEqual(parseMcpCall('scan_server', { server_id: 's1' }), { tool: 'scan_server', serverId: 's1' });
+  assert.deepEqual(parseMcpCall('read_service_logs', { server_id: 's1', service_id: 'systemd:api.service' }), { tool: 'read_service_logs', serverId: 's1', serviceId: 'systemd:api.service', lines: 200 });
+  assert.throws(() => parseMcpCall('read_service_logs', { server_id: 's1', service_id: 'x', lines: 5000 }), /lines/);
+  assert.deepEqual(parseMcpCall('run_service_action', { server_id: 's1', service_id: 'pm2:deploy:web', action: 'restart' }), { tool: 'run_service_action', serverId: 's1', serviceId: 'pm2:deploy:web', action: 'restart' });
+  assert.deepEqual(parseMcpCall('run_service_action', { server_id: 's1', service_id: 'nginx', action: 'test' }).tool, 'run_service_action');
+  assert.throws(() => parseMcpCall('run_service_action', { server_id: 's1', service_id: 'nginx', action: 'stop' }), /nginx takes test or reload/);
+  assert.throws(() => parseMcpCall('run_service_action', { server_id: 's1', service_id: 'systemd:a.service', action: 'test' }), /only for service_id "nginx"/);
+  assert.throws(() => parseMcpCall('run_service_action', { server_id: 's1', service_id: 'x', action: 'kill' }), /action must be/);
+  assert.deepEqual(parseMcpCall('list_deploy_scenarios', {}), { tool: 'list_deploy_scenarios', serverId: null, serviceId: null });
+  assert.deepEqual(parseMcpCall('run_deploy', { server_id: 's1', service_id: 'pm2:deploy:web', variables: { branch: 'main' } }), { tool: 'run_deploy', serverId: 's1', serviceId: 'pm2:deploy:web', variables: { branch: 'main' } });
+  assert.throws(() => parseMcpCall('run_deploy', { server_id: 's1', service_id: 'x', variables: { a: 'x\ny' } }), /one line/);
+  assert.throws(() => parseMcpCall('run_deploy', { server_id: 's1', service_id: 'x', variables: ['a'] }), /object/);
   assert.throws(() => parseMcpCall('read_terminal', { session_id: 'a', lines: 2.5 }), /lines/);
 });
 

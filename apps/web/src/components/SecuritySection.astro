@@ -10,7 +10,7 @@ const facts = [
   },
   {
     term: 'Sync',
-    text: 'Optional. The server gets ciphertext for hosts, usernames, passwords, keys, and snippet text. Labels such as server and folder names are stored as plain text.',
+    text: 'Optional. The server gets ciphertext for hosts, usernames, passwords, keys, snippet text, port forwards, and Services scans and deploys. Labels such as server and folder names are stored as plain text.',
   },
   {
     term: 'Host keys',
@@ -25,7 +25,6 @@ const facts = [
 const missing = [
   'Builds are not code-signed. macOS blocks the first launch until you allow it, and Windows SmartScreen may warn.',
   'The app does not prompt for SSH key passphrases yet.',
-  'No port forwarding screen.',
   'No mobile app.',
 ];
 ---

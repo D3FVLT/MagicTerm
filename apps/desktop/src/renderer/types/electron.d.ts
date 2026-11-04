@@ -5,6 +5,11 @@ import type {
   TransferProgress,
   LocalVaultDocument,
 } from '@magicterm/shared';
+import type { PortForwardPreset, PortForwardStatus } from '../../common/port-forward';
+import type { DiscoveredService, DiscoveryResult } from '../../common/monitor/types';
+import type { LiveSample } from '../../common/monitor/live';
+import type { ActionRequest, ActionResult } from '../../common/monitor/actions';
+import type { DeployRunEvent, DeployScenario } from '../../common/monitor/deploy';
 
 export type SSHDataCallback = (sessionId: string, data: string) => void;
 export type SSHStatusCallback = (sessionId: string, status: string, error?: string) => void;
@@ -59,6 +64,61 @@ export interface ElectronAPI {
     resize: (sessionId: string, size: TerminalSize) => Promise<{ applied: boolean; queued: boolean }>;
     onData: (callback: SSHDataCallback) => () => void;
     onStatus: (callback: SSHStatusCallback) => () => void;
+  };
+  portForward: {
+    /** `key` is the tab id. Forwards of one tab share one SSH connection. */
+    start: (key: string, config: SSHConnectionConfig, preset: PortForwardPreset) => Promise<PortForwardStatus>;
+    stop: (key: string, presetId: string) => Promise<{ success: boolean }>;
+    stopAll: (key: string) => Promise<{ success: boolean }>;
+    list: (key: string) => Promise<PortForwardStatus[]>;
+    onStatus: (callback: (key: string, status: PortForwardStatus) => void) => () => void;
+  };
+  monitor: {
+    /** Read-only scan over a background connection. The password, if any, goes to sudo on stdin. */
+    discover: (serverId: string, config: SSHConnectionConfig, sudoPassword?: string) => Promise<{
+      success: boolean;
+      result?: DiscoveryResult;
+      error?: string;
+      /** The host key is not trusted; ask with the host-key dialog, then scan again. */
+      hostKey?: HostKeyChallenge;
+    }>;
+    disconnect: (serverId: string) => Promise<{ success: boolean }>;
+    /** Samples the server every 5 s and checks its sites every minute, over the background connection. */
+    watch: (serverId: string, config: SSHConnectionConfig, discovery: DiscoveryResult) => Promise<{ success: boolean; error?: string }>;
+    unwatch: (serverId: string) => Promise<{ success: boolean }>;
+    checkSites: (serverId: string) => Promise<{ success: boolean }>;
+    onSample: (callback: (serverId: string, sample: LiveSample) => void) => () => void;
+    /** Follows a service's log; the password, if any, goes to sudo on stdin. */
+    startLogs: (
+      streamId: string,
+      serverId: string,
+      config: SSHConnectionConfig,
+      service: DiscoveredService,
+      options: { lines: number; sudoPassword?: string }
+    ) => Promise<{ success: boolean; error?: string }>;
+    stopLogs: (streamId: string) => Promise<{ success: boolean }>;
+    onLogData: (callback: (streamId: string, text: string) => void) => () => void;
+    onLogEnd: (callback: (streamId: string, result: { exitCode: number | null; error: string | null }) => void) => () => void;
+    readLogs: (
+      serverId: string,
+      config: SSHConnectionConfig,
+      service: DiscoveredService,
+      lines: number,
+      sudoPassword?: string
+    ) => Promise<{ success: boolean; text?: string; truncated?: boolean; error?: string }>;
+    /** Start, stop, restart, reload, nginx test or reload. The password, if any, goes to sudo on stdin. */
+    action: (
+      serverId: string,
+      config: SSHConnectionConfig,
+      request: ActionRequest,
+      sudoPassword?: string
+    ) => Promise<{ success: boolean; result?: ActionResult; error?: string }>;
+    /** Runs a deploy scenario; output, prompts and the end arrive through onDeployEvent. */
+    startDeploy: (runId: string, serverId: string, config: SSHConnectionConfig, scenario: DeployScenario) => Promise<{ success: boolean; error?: string }>;
+    /** Hands the user's answer to the waiting git or sudo prompt; null makes it fail. */
+    answerDeploy: (runId: string, askId: string, value: string | null) => Promise<{ success: boolean; error?: string }>;
+    cancelDeploy: (runId: string) => Promise<{ success: boolean }>;
+    onDeployEvent: (callback: (runId: string, event: DeployRunEvent) => void) => () => void;
   };
   auth: {
     /** @deprecated Legacy SHA-256 hash channel. Prefer masterKey.createVerifier. */

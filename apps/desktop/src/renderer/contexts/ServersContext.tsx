@@ -13,6 +13,8 @@ import {
   renameServerFolder,
   deleteServerFolder,
   moveServerToFolder,
+  updateServerPortForwards,
+  updateServerMonitor,
 } from '@magicterm/supabase-client';
 import { cryptoManager } from '@magicterm/crypto';
 import { useOrganizations } from './OrganizationsContext';
@@ -29,7 +31,11 @@ import {
   removeLocalServer,
   renameLocalFolder,
   reorderLocalServers,
+  setLocalServerForwards,
+  setLocalServerMonitor,
 } from '../lib/local-vault-data';
+import { parsePresets, serializePresets, type PortForwardPreset } from '../../common/port-forward';
+import { parseMonitorConfig, serializeMonitorConfig, type MonitorConfig } from '../../common/monitor/config';
 
 interface ServersContextValue {
   servers: Server[];
@@ -50,6 +56,13 @@ interface ServersContextValue {
   renameFolder: (id: string, name: string) => Promise<void>;
   removeFolder: (id: string) => Promise<void>;
   moveServer: (id: string, folderId: string | null) => Promise<void>;
+  decryptServerForwards: (server: Server) => Promise<PortForwardPreset[]>;
+  /** Saves the whole preset list, encrypted like host and username. */
+  saveServerForwards: (id: string, presets: PortForwardPreset[]) => Promise<void>;
+  /** null when the server is not in the Services tab. */
+  decryptServerMonitor: (server: Server) => Promise<MonitorConfig | null>;
+  /** Saves the Services monitor config encrypted; null removes the server from Services. */
+  saveServerMonitor: (id: string, config: MonitorConfig | null) => Promise<void>;
 }
 
 /** Pins stick to the top of the folder the server lives in. */
@@ -328,6 +341,40 @@ export function ServersProvider({ children }: ServersProviderProps) {
     }
   };
 
+  const decryptServerForwards = async (server: Server): Promise<PortForwardPreset[]> => {
+    if (!server.portForwards) return [];
+    return parsePresets(await cryptoManager.decrypt(server.portForwards));
+  };
+
+  const saveServerForwards = async (id: string, presets: PortForwardPreset[]): Promise<void> => {
+    const encrypted = presets.length > 0 ? await cryptoManager.encrypt(serializePresets(presets)) : undefined;
+    if (isLocalOnly) {
+      await setLocalServerForwards(id, encrypted);
+      setServers(getLocalDocument()?.servers ?? []);
+      return;
+    }
+    reorderLockUntil.current = Date.now() + 3000;
+    const updated = await updateServerPortForwards(id, encrypted ?? null);
+    setServers((prev) => prev.map((s) => (s.id === id ? { ...s, portForwards: updated.portForwards } : s)));
+  };
+
+  const decryptServerMonitor = async (server: Server): Promise<MonitorConfig | null> => {
+    if (!server.monitor) return null;
+    return parseMonitorConfig(await cryptoManager.decrypt(server.monitor));
+  };
+
+  const saveServerMonitor = async (id: string, config: MonitorConfig | null): Promise<void> => {
+    const encrypted = config ? await cryptoManager.encrypt(serializeMonitorConfig(config)) : undefined;
+    if (isLocalOnly) {
+      await setLocalServerMonitor(id, encrypted);
+      setServers(getLocalDocument()?.servers ?? []);
+      return;
+    }
+    reorderLockUntil.current = Date.now() + 3000;
+    const updated = await updateServerMonitor(id, encrypted ?? null);
+    setServers((prev) => prev.map((s) => (s.id === id ? { ...s, monitor: updated.monitor } : s)));
+  };
+
   const value: ServersContextValue = {
     servers,
     folders,
@@ -346,6 +393,10 @@ export function ServersProvider({ children }: ServersProviderProps) {
     renameFolder,
     removeFolder,
     moveServer,
+    decryptServerForwards,
+    saveServerForwards,
+    decryptServerMonitor,
+    saveServerMonitor,
   };
 
   return <ServersContext.Provider value={value}>{children}</ServersContext.Provider>;

@@ -72,8 +72,8 @@ paid certificates and is listed under Far-future, not under a version.
 - ✅ **Custom snippet order** — drag snippets in the panel to arrange them; the
   1–9 shortcuts follow that order instead of the alphabet, so adding a snippet
   no longer reshuffles anyone's muscle memory.
-- ⏳ **Port forwarding UI** — local/remote/dynamic forwards with one-click toggles
-  and per-server presets.
+- ✅ **Port forwarding UI** ([#2](https://github.com/D3FVLT/MagicTerm/issues/2)) — local, remote and SOCKS
+  forwards with one-click toggles and per-server presets, shipped in 0.8.0.
 - ⏳ **Command palette (Cmd+K)** — fuzzy search across servers, snippets, settings,
   and recent commands.
 - ⏳ **Per-server environment** — environment variables and starting working
@@ -86,6 +86,11 @@ paid certificates and is listed under Far-future, not under a version.
 
 ## v0.8 — Collaboration & Sharing
 
+- ✅ **Services monitor** — agentless discovery of systemd, PM2, Docker and
+  nginx over SSH, live numbers and logs, start/stop/restart/reload, deploy
+  scenarios with passwords asked per use, and MCP tools for coding agents.
+- 💭 **Alerts while the app is closed** — needs a server-side checker; a
+  candidate for a paid tier.
 - 💭 **Vault sharing** — invite a teammate to a shared organisation vault. Already
   scaffolded server-side; needs UX and permission model.
 - 💭 **Audit log** — see who connected to what, when, from which workspace.
@@ -119,6 +124,7 @@ Not scheduled to a version. Code signing sits here until the certificates are pa
 
 ## Recently shipped
 
+- ✅ **v0.8.0**: port forwarding (local, remote, SOCKS) saved per server ([#2](https://github.com/D3FVLT/MagicTerm/issues/2)); a Services tab that finds systemd, PM2, Docker and nginx on a server over SSH, with live numbers, logs, actions, deploy scenarios and MCP tools.
 - ✅ **v0.7.1**: AI tools (MCP) start when the app's data folder has a long path; the activity log counts servers and sessions correctly.
 - ✅ **v0.7.0**: an AI assistant with your own key (OpenAI, Anthropic, OpenRouter or Ollama), with Chat and Agent modes, streamed replies, and commands that only run when you press Enter. An MCP server lets Claude Code, Cursor and Codex use allowed servers, with every command approved in Magic Term. Several servers can share one address on different ports ([#20](https://github.com/D3FVLT/MagicTerm/issues/20)). New home page on magicterm.app.
 - ✅ **v0.6.0**: the app and the site share a dense layout. Servers are a list, settings and dialogs are flat rows, and Onyx uses an off-white accent. Local mode needs no account: the vault stays on this computer, Lock clears the key, and Settings can move that vault onto an account that does not already have servers or snippets.

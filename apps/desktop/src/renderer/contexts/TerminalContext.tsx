@@ -21,7 +21,8 @@ interface TabState {
   focusedPaneId: string;
 }
 
-type ActiveView = 'vaults' | string;
+/** 'vaults', 'services' or the root session id of a tab. */
+type ActiveView = 'vaults' | 'services' | string;
 
 interface TerminalContextValue {
   sessions: ExtendedSession[];
@@ -128,7 +129,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
 
   const setActiveView = useCallback((view: ActiveView) => {
     setActiveViewState(view);
-    if (view !== 'vaults') {
+    if (view !== 'vaults' && view !== 'services') {
       setActiveTabId(view);
     }
   }, []);
@@ -217,6 +218,7 @@ export function TerminalProvider({ children }: TerminalProviderProps) {
   const disconnect = useCallback(async (sessionId: string): Promise<void> => {
     const tab = tabs.find((t) => t.rootSessionId === sessionId);
     if (tab) {
+      await window.electronAPI.portForward.stopAll(tab.rootSessionId);
       const allIds = getAllSessionIds(tab.splitTree);
       for (const id of allIds) {
         const session = sessions.find((s) => s.id === id);

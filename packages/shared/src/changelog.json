@@ -2,6 +2,52 @@
   "$comment": "Single source of truth for release notes. Rendered on magicterm.app/changelog, shown in the desktop app, and pasted into the GitHub release body by .github/workflows/release.yml. Item text is Markdown-flavoured on purpose so CI can use it verbatim: only `code` and [links](url) are supported, and the label becomes a bold prefix. Newest release first — the first entry is automatically badged as the latest.",
   "releases": [
     {
+      "version": "0.8.0",
+      "date": "November 2026",
+      "items": [
+        {
+          "label": "Port forwarding",
+          "text": "The Ports button in a server tab sets up forwards, the same three kinds as `ssh -L`, `-R` and `-D`: a port on this computer that reaches a host through the server, a port on the server that reaches back to this computer, and a SOCKS5 proxy. The list shows whether each one listens, how many connections it carries, and the address to open. Closes [#2](https://github.com/D3FVLT/MagicTerm/issues/2)."
+        },
+        {
+          "label": "Forwards are saved with the server",
+          "text": "Presets are encrypted like the server's host and sync with the vault. Each can start when a tab to that server connects. They listen on 127.0.0.1 unless you allow other devices on your network. Forwards use their own connection, so closing a split pane does not cut them, and they stop when the tab closes."
+        },
+        {
+          "label": "Services tab",
+          "text": "A new tab next to Vaults scans servers over SSH, with nothing installed on them. It finds systemd units in `/etc/systemd/system`, PM2 apps of every user, Docker containers and compose projects, processes listening on a port, and nginx sites, and links them: domain, nginx, port, service, folder, git branch and how far it is behind its upstream."
+        },
+        {
+          "label": "Live view and logs",
+          "text": "While a server is open in Services, it shows CPU and memory for each service, plus load, memory and disk, and follows logs from journalctl, PM2 or Docker. Each nginx domain gets an HTTP check from the server and its certificate expiry date."
+        },
+        {
+          "label": "Start, stop, restart, reload",
+          "text": "Services run with the tool that manages them: systemctl, PM2 as the app's own user, or docker. nginx can be tested and reloaded, and reload runs only if `nginx -t` passes. Anything other than starting a stopped service asks first, and the result shows the output and exit code."
+        },
+        {
+          "label": "Deploy scenarios",
+          "text": "Each service can have a list of steps that run in its folder and stop at the first failure. MagicTerm suggests one from the project it found, for example `git pull --ff-only`, `pnpm install --frozen-lockfile`, `pnpm run build`, `pm2 reload api`. Runs show live output, can be cancelled, and go into an encrypted history."
+        },
+        {
+          "label": "Passwords are asked when needed",
+          "text": "When git asks for a token or sudo for a password during a scan, an action or a deploy, MagicTerm asks you in a dialog for that one use. What you type is not saved and does not appear in a command line or the server's process list."
+        },
+        {
+          "label": "Teams",
+          "text": "In an organization vault, scans and deploy scenarios are shared with everyone who sees the server. Viewers can look and scan, but cannot run actions or deploys or change scenarios."
+        },
+        {
+          "label": "AI tools can use Services",
+          "text": "Claude Code, Cursor and Codex get MCP tools to find which server a project or domain runs on, read service logs, scan a server, run an action and run a deploy. Actions and deploys need your approval in MagicTerm, and you answer any password dialog yourself; the agent never sees what you type."
+        },
+        {
+          "label": "Self-hosted backend",
+          "text": "Apply `add-port-forwards.sql`, `add-service-monitor.sql` and `add-deploy-runs.sql` from `supabase/`, in the order in `supabase/README.md`."
+        }
+      ]
+    },
+    {
       "version": "0.7.1",
       "date": "November 2026",
       "items": [

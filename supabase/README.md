@@ -28,6 +28,9 @@ actually been run in production.
 | 11 | `harden-functions.sql` | Pins `search_path` on every function that existed at this point, closing the Database Advisor warnings. |
 | 12 | `add-server-folders.sql` | `server_folders`, `servers.folder_id`, and the triggers that keep a folder and its servers in the same vault. Needs 8, because pins are scoped per folder. |
 | 13 | `add-snippet-order.sql` | `snippets.sort_order`, which drives the 1–9 paste shortcuts. Needs 7. |
+| 14 | `add-port-forwards.sql` | `servers.port_forwards`, the encrypted list of port forward presets. Without it the app still runs, but saving a forward to a cloud server fails with a message naming this file. |
+| 15 | `add-service-monitor.sql` | `servers.monitor`, the encrypted Services monitor settings and last scan. Without it the app still runs, but adding a cloud server to Services fails with a message naming this file. |
+| 16 | `add-deploy-runs.sql` | `service_deploy_runs`, the encrypted deploy history per server, readable by everyone who sees the server and pruned to the newest 200 runs. Needs 15. Without it deploys still run, but their history is not saved and the app says so. |
 
 Files 12 and 13 arrived after `harden-functions.sql` and set
 `search_path` on their own functions inline, so there is nothing left to

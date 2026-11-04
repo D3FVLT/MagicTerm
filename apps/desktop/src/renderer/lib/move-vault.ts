@@ -9,6 +9,8 @@ export interface MoveVaultCloud {
   createFolder: (folder: ServerFolder) => Promise<ServerFolder>;
   createServer: (server: Server, folderId: string | null) => Promise<Server>;
   createSnippet: (snippet: Snippet) => Promise<Snippet>;
+  /** Uploads one deploy history entry. History is not required, so a failure here is ignored. */
+  createDeployRun?: (serverId: string, payload: string) => Promise<void>;
   removeFolder: (id: string) => Promise<void>;
   removeServer: (id: string) => Promise<void>;
   removeSnippet: (id: string) => Promise<void>;
@@ -108,10 +110,16 @@ async function reencrypt(local: LocalVaultDocument, crypto: MoveVaultCrypto): Pr
     hostPlain: await crypto.decrypt(server.host),
     usernamePlain: await crypto.decrypt(server.username),
     credentialsPlain: server.credentials ? await crypto.decrypt(server.credentials) : undefined,
+    portForwardsPlain: server.portForwards ? await crypto.decrypt(server.portForwards) : undefined,
+    monitorPlain: server.monitor ? await crypto.decrypt(server.monitor) : undefined,
   })));
   const snippets = await Promise.all(local.snippets.map(async (snippet) => ({
     ...snippet,
     valuePlain: await crypto.decrypt(snippet.value),
+  })));
+  const deployRuns = await Promise.all((local.deployRuns ?? []).map(async (run) => ({
+    ...run,
+    payloadPlain: await crypto.decrypt(run.payload),
   })));
 
   crypto.useNextPassword();
@@ -134,6 +142,8 @@ async function reencrypt(local: LocalVaultDocument, crypto: MoveVaultCrypto): Pr
         isPinned: server.isPinned,
         sortOrder: server.sortOrder,
         folderId: server.folderId,
+        portForwards: server.portForwardsPlain === undefined ? undefined : await crypto.encrypt(server.portForwardsPlain),
+        monitor: server.monitorPlain === undefined ? undefined : await crypto.encrypt(server.monitorPlain),
         createdAt: server.createdAt,
         updatedAt: server.updatedAt,
       }))),
@@ -145,6 +155,10 @@ async function reencrypt(local: LocalVaultDocument, crypto: MoveVaultCrypto): Pr
         sortOrder: snippet.sortOrder,
         createdAt: snippet.createdAt,
         updatedAt: snippet.updatedAt,
+      }))),
+      deployRuns: await Promise.all(deployRuns.map(async ({ payloadPlain, ...run }) => ({
+        ...run,
+        payload: await crypto.encrypt(payloadPlain),
       }))),
     };
   } catch (error) {
@@ -159,6 +173,7 @@ function personalCopy(local: LocalVaultDocument): LocalVaultDocument {
     folders: local.folders.map((folder) => ({ ...folder, orgId: null })),
     servers: local.servers.map((server) => ({ ...server, orgId: null })),
     snippets: local.snippets.map((snippet) => ({ ...snippet })),
+    deployRuns: (local.deployRuns ?? []).map((run) => ({ ...run })),
   };
 }
 
@@ -224,6 +239,12 @@ export async function moveVaultToAccount(input: MoveVaultInput): Promise<MoveVau
       const created = await input.cloud.createServer({ ...server, orgId: null, folderId }, folderId);
       createdServers.push(created.id);
       uploadedServers.push({ ...created, folderId, orgId: null });
+      if (input.cloud.createDeployRun) {
+        const runs = (payload.deployRuns ?? [])
+          .filter((run) => run.serverId === server.id)
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+        for (const run of runs) await input.cloud.createDeployRun(created.id, run.payload).catch(() => {});
+      }
     }
 
     const uploadedSnippets: Snippet[] = [];

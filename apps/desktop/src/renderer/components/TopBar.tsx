@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useOrganizations } from '../contexts/OrganizationsContext';
 import { SettingsModal, type SettingsTab } from './SettingsModal';
 import { ChangelogModal } from './ChangelogModal';
+import { PortForwardsPanel } from './PortForwardsPanel';
+import { usePortForwards } from '../contexts/PortForwardsContext';
 import { DONATE_URL } from '../lib/links';
 import { OPEN_SETTINGS_EVENT } from '../lib/ai-settings';
 
@@ -27,6 +29,31 @@ export function TopBar() {
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('general');
   const [showChangelogModal, setShowChangelogModal] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const { statusesFor } = usePortForwards();
+  const [showForwards, setShowForwards] = useState(false);
+  const forwardsRef = useRef<HTMLDivElement>(null);
+  const activeTab = tabs.find((t) => t.rootSessionId === activeView);
+  const activeForwards = activeTab
+    ? Object.values(statusesFor(activeTab.rootSessionId)).filter((s) => s.state === 'listening').length
+    : 0;
+  const forwardErrors = activeTab
+    ? Object.values(statusesFor(activeTab.rootSessionId)).some((s) => s.state === 'error')
+    : false;
+
+  useEffect(() => {
+    if (!showForwards) return;
+    const handler = (e: MouseEvent) => {
+      if (forwardsRef.current && !forwardsRef.current.contains(e.target as Node)) {
+        setShowForwards(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showForwards]);
+
+  useEffect(() => {
+    if (!activeTab) setShowForwards(false);
+  }, [activeTab]);
 
   useEffect(() => {
     const onOpen = (event: Event) => {
@@ -75,6 +102,20 @@ export function TopBar() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
           </svg>
           Vaults
+        </button>
+
+        <button
+          onClick={() => setActiveView('services')}
+          className={`no-drag flex h-full items-center gap-2 border-b-2 px-4 text-sm font-medium transition-colors ${
+            activeView === 'services'
+              ? 'border-[var(--accent)] text-[var(--fg)]'
+              : 'border-transparent text-[var(--fg-subtle)] hover:text-[var(--fg)]'
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+          </svg>
+          Services
         </button>
 
         {/* Session tabs */}
@@ -135,6 +176,39 @@ export function TopBar() {
 
         {/* Right side: org indicator + user */}
         <div className="no-drag flex items-center gap-2 pr-4">
+          {activeTab && (
+            <div className="relative" ref={forwardsRef}>
+              <button
+                type="button"
+                onClick={() => setShowForwards((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors ${
+                  showForwards
+                    ? 'bg-[var(--border)] text-[var(--fg)]'
+                    : 'text-[var(--fg-subtle)] hover:bg-[var(--border)] hover:text-[var(--fg)]'
+                }`}
+                aria-label="Port forwarding"
+                data-tooltip=""
+              >
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                Ports
+                {activeForwards > 0 && (
+                  <span className="rounded-full bg-green-500/20 px-1.5 text-[10px] font-medium text-green-500">{activeForwards}</span>
+                )}
+                {forwardErrors && <span className="h-1.5 w-1.5 rounded-full bg-red-500" />}
+              </button>
+              {showForwards && (
+                <PortForwardsPanel
+                  key={activeTab.rootSessionId}
+                  tabId={activeTab.rootSessionId}
+                  serverId={activeTab.serverId}
+                  onClose={() => setShowForwards(false)}
+                />
+              )}
+            </div>
+          )}
+
           {currentOrg && (
             <div className="flex items-center gap-1.5 rounded-md bg-[var(--border)] px-2 py-1">
               <div className="flex h-4 w-4 items-center justify-center rounded bg-accent text-[10px] font-medium text-accent-fg">

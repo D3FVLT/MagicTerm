@@ -14,6 +14,10 @@ import { setupSecureStorageHandlers } from './secure-storage';
 import { setupClipboardHandlers } from './clipboard';
 import { applyProxySettings } from './proxy';
 import { setupMcpHandlers, stopMcp } from './mcp';
+import { setupPortForwardHandlers, cleanupAllForwards } from './port-forward';
+import { setupMonitorHandlers, closeMonitorConnections } from './monitor';
+import { setupMonitorLiveHandlers, stopAllLive } from './monitor-live';
+import { setupMonitorDeployHandlers, cancelAllDeploys } from './monitor-deploy';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -158,11 +162,15 @@ app.whenReady().then(() => {
   setupClipboardHandlers(ipcMain);
   setupSSHHandlers(ipcMain);
   setupSFTPHandlers(ipcMain);
+  setupPortForwardHandlers(ipcMain);
   setupLocalFsHandlers(ipcMain);
   setupAuthHandlers(ipcMain);
   setupServerHandlers(ipcMain);
   setupUpdaterHandlers(ipcMain);
   setupMcpHandlers(ipcMain);
+  setupMonitorHandlers(ipcMain);
+  setupMonitorLiveHandlers(ipcMain);
+  setupMonitorDeployHandlers(ipcMain);
 
   createWindow();
 
@@ -180,9 +188,13 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  cleanupAllForwards();
   cleanupAllSSHSessions();
   cleanupAllSFTPSessions();
   stopMcp();
+  stopAllLive();
+  cancelAllDeploys();
+  closeMonitorConnections();
 });
 
 app.on('window-all-closed', () => {

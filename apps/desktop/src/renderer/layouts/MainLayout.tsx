@@ -4,6 +4,7 @@ import { SFTPView } from '../components/SFTPView';
 import { SplitContainer } from '../components/SplitContainer';
 import { TopBar } from '../components/TopBar';
 import { VaultsPage } from '../components/VaultsPage';
+import { ServicesPage } from '../components/ServicesPage';
 import { UpdateBanner } from '../components/UpdateBanner';
 import { useTerminal } from '../contexts/TerminalContext';
 import { useServers } from '../contexts/ServersContext';
@@ -56,6 +57,10 @@ export function MainLayout() {
         {/* Vaults page */}
         <div className={`absolute inset-0 ${activeView === 'vaults' ? 'z-10 visible' : 'z-0 invisible'}`}>
           <VaultsPage />
+        </div>
+
+        <div className={`absolute inset-0 ${activeView === 'services' ? 'z-10 visible' : 'z-0 invisible'}`}>
+          <ServicesPage />
         </div>
 
         {/* Session views */}

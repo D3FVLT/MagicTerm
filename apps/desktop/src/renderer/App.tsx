@@ -5,6 +5,9 @@ import { TerminalProvider } from './contexts/TerminalContext';
 import { SnippetsProvider } from './contexts/SnippetsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { HostKeyProvider } from './contexts/HostKeyContext';
+import { PortForwardsProvider } from './contexts/PortForwardsContext';
+import { ServicesProvider } from './contexts/ServicesContext';
+import { DeploysProvider } from './contexts/DeploysContext';
 import { StartupScreen } from './components/StartupScreen';
 import { LoginPage } from './pages/LoginPage';
 import { SetupMasterKeyPage } from './pages/SetupMasterKeyPage';
@@ -45,7 +48,13 @@ function AppContent() {
         <SnippetsProvider>
           <HostKeyProvider>
             <TerminalProvider>
-              <MainLayout />
+              <PortForwardsProvider>
+                <ServicesProvider>
+                  <DeploysProvider>
+                    <MainLayout />
+                  </DeploysProvider>
+                </ServicesProvider>
+              </PortForwardsProvider>
             </TerminalProvider>
           </HostKeyProvider>
         </SnippetsProvider>

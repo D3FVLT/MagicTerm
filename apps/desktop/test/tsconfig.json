@@ -10,5 +10,5 @@
     "esModuleInterop": true,
     "types": ["node"]
   },
-  "files": ["local-mode.test.ts", "ai-assistant.test.ts", "server-address.test.ts", "mcp.test.ts"]
+  "files": ["local-mode.test.ts", "ai-assistant.test.ts", "server-address.test.ts", "mcp.test.ts", "port-forward.test.ts", "monitor.test.ts", "monitor-live.test.ts", "monitor-actions.test.ts", "monitor-deploy.test.ts"]
 }

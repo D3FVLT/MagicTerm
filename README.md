@@ -35,6 +35,22 @@ share servers with a team.
 
 Screenshots and a feature tour live on [magicterm.app](https://magicterm.app).
 
+## Port forwarding and Services
+
+**Port forwarding.** The Ports button in a server tab sets up local, remote
+and SOCKS forwards, the same as `ssh -L`, `-R` and `-D`. Forwards are saved
+with the server, encrypted like its host, and listen on 127.0.0.1 unless you
+allow other devices on your network.
+
+**Services.** The Services tab scans a server over SSH, with nothing
+installed on it, and lists its systemd units, PM2 apps, Docker containers,
+processes on open ports and nginx sites, linked from domain to folder and
+git branch. It shows CPU, memory and logs while open, checks each domain
+and its certificate, and can start, stop, restart and reload services. A
+deploy scenario runs steps such as `git pull` and a build in the service's
+folder. When git or sudo asks for a password, MagicTerm asks you for that
+one use and does not store it.
+
 ## AI, with your own key
 
 Both features below are off until you turn them on in Settings.

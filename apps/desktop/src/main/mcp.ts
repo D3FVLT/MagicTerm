@@ -16,6 +16,13 @@ const store = new Store();
 /** How long the user has to answer an approval prompt, on top of the command's own timeout. */
 const APPROVAL_WINDOW_MS = 120_000;
 const READ_TOOL_TIMEOUT_MS = 15_000;
+/** Discovery can take two passes of up to 90 and 60 seconds on a slow host. */
+const SCAN_TOOL_TIMEOUT_MS = 170_000;
+const LOG_TOOL_TIMEOUT_MS = 60_000;
+/** Approval, up to two sudo prompts of two minutes each, and the action itself. */
+const SERVICE_ACTION_WAIT_MS = APPROVAL_WINDOW_MS + 2 * 120_000 + 180_000 + 30_000;
+/** Approval plus an hour of deploy; longer runs go on in MagicTerm and their result is in the history. */
+const DEPLOY_WAIT_MS = APPROVAL_WINDOW_MS + 60 * 60_000;
 const MAX_CONNECTIONS = 8;
 
 /**
@@ -64,8 +71,13 @@ function forwardToRenderer(name: string, args: Record<string, unknown>, client: 
   if (!window) return Promise.resolve({ text: 'MagicTerm has no open window.', isError: true });
 
   const timeoutSeconds = typeof args.timeout_seconds === 'number' ? Math.min(Math.max(args.timeout_seconds, 1), 600) : 60;
-  const waitMs = name === 'run_command' ? APPROVAL_WINDOW_MS + timeoutSeconds * 1000 + 30_000 : READ_TOOL_TIMEOUT_MS;
-  if (name === 'run_command') {
+  const waitMs = name === 'run_command'
+    ? APPROVAL_WINDOW_MS + timeoutSeconds * 1000 + 30_000
+    : name === 'run_service_action' ? SERVICE_ACTION_WAIT_MS
+    : name === 'run_deploy' ? DEPLOY_WAIT_MS
+    : name === 'scan_server' ? SCAN_TOOL_TIMEOUT_MS
+      : name === 'read_service_logs' ? LOG_TOOL_TIMEOUT_MS : READ_TOOL_TIMEOUT_MS;
+  if (name === 'run_command' || name === 'run_service_action' || name === 'run_deploy') {
     if (window.isMinimized()) window.restore();
     window.show();
     app.dock?.bounce('informational');

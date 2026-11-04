@@ -14,6 +14,9 @@ import {
   listSnippets,
   setMasterKeyVerifier,
   toggleServerPin,
+  updateServerPortForwards,
+  updateServerMonitor,
+  createDeployRun,
   updateServerFolderOrders,
   updateServerOrders,
 } from '@magicterm/supabase-client';
@@ -122,11 +125,16 @@ export function MoveVaultPanel() {
               comment: server.comment,
               folderId,
             });
+            if (server.portForwards) await updateServerPortForwards(created.id, server.portForwards).catch(() => {});
+            if (server.monitor) await updateServerMonitor(created.id, server.monitor).catch(() => {});
             if (server.isPinned) await toggleServerPin(created.id, true);
             if (server.sortOrder) {
               await updateServerOrders([{ id: created.id, sort_order: server.sortOrder }]);
             }
             return created;
+          },
+          createDeployRun: async (serverId, payload) => {
+            await createDeployRun(serverId, payload);
           },
           createSnippet: (snippet) => createSnippet({
             name: snippet.name,

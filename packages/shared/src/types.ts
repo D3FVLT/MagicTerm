@@ -50,6 +50,10 @@ export interface Server {
   sortOrder: number;
   /** null = Ungrouped. Pins and sortOrder apply within the folder. */
   folderId: string | null;
+  /** Encrypted JSON list of port forward presets. */
+  portForwards?: string;
+  /** Encrypted Services monitor config and last scan. */
+  monitor?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -107,6 +111,10 @@ export interface EncryptedServer {
   is_pinned: boolean;
   sort_order: number;
   folder_id: string | null;
+  /** Missing until add-port-forwards.sql has been applied. */
+  port_forwards?: string | null;
+  /** Missing until add-service-monitor.sql has been applied. */
+  monitor?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -258,4 +266,15 @@ export interface LocalVaultDocument {
   servers: Server[];
   folders: ServerFolder[];
   snippets: Snippet[];
+  /** Services monitor deploy history; missing in vaults made before it. */
+  deployRuns?: DeployRunRow[];
+}
+
+/** One deploy run. `payload` is ciphertext: service, folder, steps, exit codes and output. */
+export interface DeployRunRow {
+  id: string;
+  serverId: string;
+  userId: string;
+  payload: string;
+  createdAt: string;
 }
